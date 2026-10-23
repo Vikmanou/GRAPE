@@ -17,3 +17,6 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# Personal Claude Code overrides
+.claude/settings.local.json

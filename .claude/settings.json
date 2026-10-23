@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo *)",
+      "PowerShell(cargo *)",
+      "Bash(pnpm *)",
+      "PowerShell(pnpm *)",
+      "Bash(node scripts/check.mjs *)",
+      "PowerShell(node scripts/check.mjs *)",
+      "Bash(git status *)",
+      "PowerShell(git status *)",
+      "Bash(git diff *)",
+      "PowerShell(git diff *)",
+      "Bash(git log *)",
+      "PowerShell(git log *)",
+      "Bash(git add *)",
+      "PowerShell(git add *)",
+      "Bash(git commit *)",
+      "PowerShell(git commit *)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "PowerShell(git push *)"
+    ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
+}
