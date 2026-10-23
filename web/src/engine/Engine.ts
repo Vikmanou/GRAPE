@@ -31,7 +31,12 @@ export class Engine {
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) this.resize(entry);
     });
-    this.resizeObserver.observe(host, { box: 'device-pixel-content-box' });
+    try {
+      this.resizeObserver.observe(host, { box: 'device-pixel-content-box' });
+    } catch {
+      // Safari rejects this box type; resize() falls back to CSS size × DPR.
+      this.resizeObserver.observe(host);
+    }
 
     void device.lost.then((info) => {
       if (this.destroyed) return;
@@ -87,9 +92,9 @@ export class Engine {
   }
 
   private resize(entry: ResizeObserverEntry): void {
-    const box = entry.devicePixelContentBoxSize[0];
+    // `devicePixelContentBoxSize` is undefined, not empty, in Safari.
+    const box = (entry.devicePixelContentBoxSize as ResizeObserverSize[] | undefined)?.[0];
     const dpr = window.devicePixelRatio;
-    // Fall back to CSS size times DPR where device-pixel boxes are unsupported.
     const width = box ? box.inlineSize : Math.round(entry.contentRect.width * dpr);
     const height = box ? box.blockSize : Math.round(entry.contentRect.height * dpr);
     const max = this.device.limits.maxTextureDimension2D;
