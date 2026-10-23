@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
 import { Engine } from '../engine/Engine';
 import { onSystemThemeChange, systemTheme } from '../state/theme';
-import { StatusBar } from './StatusBar';
+import { ParseClient } from '../workers/ParseClient';
+import { StatusBar, type CoreStatus } from './StatusBar';
 import { Unsupported } from './Unsupported';
+
+/** Tiny GFA used to check the worker and WASM path at startup. */
+const PING_SAMPLE = new TextEncoder().encode('H\tVN:Z:1.0\nS\t1\tACGT\nS\t2\tGGCC\nL\t1\t+\t2\t+\t0M\n');
 
 export function App() {
   const [backend, setBackend] = useState<Backend | 'detecting'>('detecting');
   const [engineError, setEngineError] = useState<string>();
+  const [core, setCore] = useState<CoreStatus>({ state: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
@@ -16,6 +21,23 @@ export function App() {
     });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const client = new ParseClient();
+    client.ping(PING_SAMPLE).then(
+      (result) => {
+        setCore({ state: 'ready', version: result.coreVersion, roundTripMs: result.roundTripMs });
+      },
+      (error: unknown) => {
+        // Termination on unmount rejects the ping; that is not a failure.
+        if (error instanceof Error && error.message === 'parse worker terminated') return;
+        setCore({ state: 'error', message: error instanceof Error ? error.message : String(error) });
+      },
+    );
+    return () => {
+      client.terminate();
     };
   }, []);
 
@@ -29,7 +51,7 @@ export function App() {
       ) : (
         <p className="empty-note">Files are processed on your computer and never uploaded.</p>
       )}
-      <StatusBar backend={backend} />
+      <StatusBar backend={backend} core={core} />
     </main>
   );
 }
