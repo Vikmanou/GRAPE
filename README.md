@@ -14,34 +14,39 @@ Chrome and Edge are the primary targets.
 
 ## Development
 
-Prerequisites: Rust (pinned by `rust-toolchain.toml`), Node 22+, pnpm, and
-`wasm-bindgen-cli` at the exact version pinned in `Cargo.toml`:
+Prerequisites: Rust (the toolchain pinned in `rust-toolchain.toml` installs
+itself), Node 22+, pnpm, and `wasm-bindgen-cli` at the exact version in
+`Cargo.lock` (the build prints the install command if it is missing or wrong):
 
 ```sh
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 ```
 
+From the repo root:
+
 ```sh
-cargo test --workspace          # Rust core, native
-cd web
 pnpm install
-pnpm dev                        # builds the WASM module, then starts Vite
-pnpm test                       # Vitest
-pnpm e2e                        # Playwright (run `pnpm wasm` first)
-pnpm e2e --headed               # same, with a real GPU so WebGPU is exercised
+pnpm dev                          # build the WASM core, start Vite
+pnpm check                        # full gate: what CI runs
+pnpm check:quick                  # Rust + TS checks and unit tests only
+node scripts/check.mjs --headed   # full gate, Playwright on the real GPU
 ```
 
-`pnpm typecheck` and `pnpm e2e` need the WASM bindings in `web/src/wasm/pkg`,
-which `pnpm wasm` (or `pnpm dev`) generates. Headless Chromium usually has no
-WebGPU adapter, so headless runs exercise the fallback path only.
+Headless Chromium has no WebGPU adapter, so a plain `pnpm check` exercises
+the fallback path only; `--headed` covers WebGPU.
 
 ## Layout
 
 ```
-crates/gfa-core/   parser, graph store, algorithms (pure Rust, tested natively)
-crates/gfa-wasm/   wasm-bindgen bindings around gfa-core
-web/               Vite + React + TypeScript app, WebGPU engine, workers
-docs/decisions.md  design decision log
+crates/gfa-core/    parser, graph store, algorithms (pure Rust, tested natively)
+crates/gfa-wasm/    wasm-bindgen bindings around gfa-core
+web/src/engine/     WebGPU device and canvas (owns all GPU objects)
+web/src/workers/    parse worker and its message protocol
+web/src/ui/         React panels
+web/src/state/      view state
+web/tests/          Vitest (unit/) and Playwright (e2e/)
+scripts/check.mjs   the quality gate
+docs/decisions.md   design decision log
 ```
 
 ## License

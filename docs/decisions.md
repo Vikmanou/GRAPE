@@ -72,3 +72,13 @@ decision, reason, alternatives considered.
 
 - **Decision**: install pnpm with `npm i -g pnpm`; CI uses `pnpm/action-setup`.
 - **Reason**: Node 25+ no longer bundles corepack.
+
+## 2026-10-23: Root pnpm workspace and one gate script
+
+- **Decision**: the repo root is a pnpm workspace (`web` is its only package)
+  with one lockfile, and `scripts/check.mjs` is the single quality gate, run
+  locally and by CI on Linux and Windows.
+- **Reason**: everything runs from the root, and CI cannot drift from local
+  runs because it runs the same script.
+- **Alternatives**: separate `check.sh` and `check.ps1`; listing every step
+  in the CI YAML.
