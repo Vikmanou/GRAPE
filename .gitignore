@@ -1,0 +1,19 @@
+# Rust
+/target/
+
+# Web
+node_modules/
+/web/dist/
+/web/src/wasm/pkg/
+/web/test-results/
+/web/playwright-report/
+*.tsbuildinfo
+
+# Large real test graphs fetched by scripts/fetch-testdata.sh
+/testdata/large/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
