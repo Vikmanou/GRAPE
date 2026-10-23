@@ -3,6 +3,7 @@
 // Usage: node scripts/build-wasm.mjs [--dev]
 
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,13 +17,37 @@ function run(cmd, args) {
   const result = spawnSync(cmd, args, { cwd: repoRoot, stdio: 'inherit' });
   if (result.error) {
     console.error(`failed to start ${cmd}: ${result.error.message}`);
-    if (cmd === 'wasm-bindgen') {
-      console.error('install it with: cargo install wasm-bindgen-cli --version 0.2.129 --locked');
-    }
     process.exit(1);
   }
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
+
+/** The wasm-bindgen crate version Cargo resolved; the CLI must match it exactly. */
+function lockedBindgenVersion() {
+  const lock = readFileSync(join(repoRoot, 'Cargo.lock'), 'utf8');
+  const match = /name = "wasm-bindgen"\r?\nversion = "([^"]+)"/.exec(lock);
+  if (!match?.[1]) throw new Error('wasm-bindgen not found in Cargo.lock');
+  return match[1];
+}
+
+// A CLI/crate mismatch otherwise fails deep inside wasm-bindgen with a schema
+// error that does not name the fix.
+function checkBindgenCli() {
+  const wanted = lockedBindgenVersion();
+  const installHint = `install it with: cargo install wasm-bindgen-cli --version ${wanted} --locked`;
+  const result = spawnSync('wasm-bindgen', ['--version'], { encoding: 'utf8' });
+  if (result.error) {
+    console.error(`wasm-bindgen CLI not found; ${installHint}`);
+    process.exit(1);
+  }
+  const found = /(\d+\.\d+\.\d+)/.exec(result.stdout)?.[1];
+  if (found !== wanted) {
+    console.error(`wasm-bindgen CLI is ${found ?? 'unknown'}, Cargo.lock wants ${wanted}; ${installHint}`);
+    process.exit(1);
+  }
+}
+
+checkBindgenCli();
 
 run('cargo', [
   'build',
