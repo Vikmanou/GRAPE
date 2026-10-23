@@ -1,0 +1,9 @@
+[package]
+name = "gfa-core"
+description = "GFA parser, graph store and algorithms for GRAPE"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
