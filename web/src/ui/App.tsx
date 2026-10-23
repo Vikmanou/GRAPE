@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
 import { Engine } from '../engine/Engine';
 import { onSystemThemeChange, systemTheme } from '../state/theme';
-import { ParseClient } from '../workers/ParseClient';
+import { ParseClient, WorkerTerminatedError } from '../workers/ParseClient';
 import { StatusBar, type CoreStatus } from './StatusBar';
 import { Unsupported } from './Unsupported';
 
@@ -32,7 +32,7 @@ export function App() {
       },
       (error: unknown) => {
         // Termination on unmount rejects the ping; that is not a failure.
-        if (error instanceof Error && error.message === 'parse worker terminated') return;
+        if (error instanceof WorkerTerminatedError) return;
         setCore({ state: 'error', message: error instanceof Error ? error.message : String(error) });
       },
     );

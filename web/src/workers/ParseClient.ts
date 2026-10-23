@@ -1,5 +1,13 @@
 import type { ParseRequest, ParseResponse } from './protocol';
 
+/** Rejection for requests still pending when the client is terminated. */
+export class WorkerTerminatedError extends Error {
+  constructor() {
+    super('parse worker terminated');
+    this.name = 'WorkerTerminatedError';
+  }
+}
+
 export interface PingResult {
   coreVersion: string;
   lines: number;
@@ -50,7 +58,7 @@ export class ParseClient {
 
   terminate(): void {
     this.worker.terminate();
-    this.failAll(new Error('parse worker terminated'));
+    this.failAll(new WorkerTerminatedError());
   }
 
   private settle(response: ParseResponse): void {
