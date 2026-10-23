@@ -54,6 +54,20 @@ decision, reason, alternatives considered.
 - **Alternatives**: TypeScript 7 without type-aware lint rules. Revisit when
   `typescript-eslint` supports 7.
 
+## 2026-10-23: Engine requests its own adapter
+
+- **Decision**: `detectBackend` probes for an adapter and discards it; the
+  engine requests a fresh adapter when it creates its device.
+- **Reason**: a WebGPU adapter can create only one device, and React
+  StrictMode mounts effects twice in development.
+
+## 2026-10-23: Smoke test accepts any renderer
+
+- **Decision**: the Playwright smoke test passes on WebGPU, the WebGL2 notice
+  or the unsupported message, as long as the WASM core loads and there are no
+  page errors. WebGPU is verified locally with `pnpm e2e --headed`.
+- **Reason**: headless Chromium on CI and on Windows returns no WebGPU adapter.
+
 ## 2026-10-23: pnpm installed with npm
 
 - **Decision**: install pnpm with `npm i -g pnpm`; CI uses `pnpm/action-setup`.

@@ -27,8 +27,13 @@ cd web
 pnpm install
 pnpm dev                        # builds the WASM module, then starts Vite
 pnpm test                       # Vitest
-pnpm e2e                        # Playwright
+pnpm e2e                        # Playwright (run `pnpm wasm` first)
+pnpm e2e --headed               # same, with a real GPU so WebGPU is exercised
 ```
+
+`pnpm typecheck` and `pnpm e2e` need the WASM bindings in `web/src/wasm/pkg`,
+which `pnpm wasm` (or `pnpm dev`) generates. Headless Chromium usually has no
+WebGPU adapter, so headless runs exercise the fallback path only.
 
 ## Layout
 
