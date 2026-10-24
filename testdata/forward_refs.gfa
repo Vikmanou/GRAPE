@@ -1,0 +1,7 @@
+H	VN:Z:1.0
+L	1	+	2	+	0M
+P	p1	1+,2+,3-	*
+S	2	ACGT
+S	1	ACGTT
+S	3	GG
+L	3	+	9	+	0M

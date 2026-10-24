@@ -1,0 +1,6 @@
+>EDGE_1_length_4_cov_x;
+ACGT
+>NODE:EDGE_2_length_4_cov_1;
+>EDGE_2_length_4_cov_1:BOGUS;
+AC
+>EDGE_2_length_4_cov_1;

@@ -1,0 +1,7 @@
+H	VN:Z:1.0
+S	1	ACGTAC	dp:f:5
+S	2	GGTTAA	dp:f:5
+S	3	CCAATT	dp:f:5
+L	1	+	2	+	0M
+L	2	+	3	+	0M
+L	3	+	1	+	0M

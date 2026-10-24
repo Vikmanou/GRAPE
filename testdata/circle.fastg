@@ -1,0 +1,9 @@
+>EDGE_1_length_12_cov_8.5:EDGE_2_length_6_cov_8.5;
+ACGTAC
+GTACGT
+>EDGE_1_length_12_cov_8.5':EDGE_2_length_6_cov_8.5';
+ACGTACGTACGT
+>EDGE_2_length_6_cov_8.5:EDGE_1_length_12_cov_8.5;
+GGCCAA
+>EDGE_2_length_6_cov_8.5':EDGE_1_length_12_cov_8.5';
+TTGGCC

@@ -1,0 +1,14 @@
+H	VN:Z:1.0
+S	a	ACGTACGTAC	dp:f:10
+S	b	ACGTACGTAC	dp:f:10
+S	c	ACGTACGTAC	dp:f:10
+S	r	ACGTACGTACGTACGTACGT	dp:f:30
+S	d	ACGTACGTAC	dp:f:10
+S	e	ACGTACGTAC	dp:f:10
+S	f	ACGTACGTAC	dp:f:10
+L	a	+	r	+	0M
+L	b	+	r	+	0M
+L	c	+	r	+	0M
+L	r	+	d	+	0M
+L	r	+	e	+	0M
+L	r	+	f	+	0M

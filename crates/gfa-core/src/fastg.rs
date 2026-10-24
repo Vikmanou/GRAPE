@@ -21,7 +21,6 @@ use crate::warnings::{WarningKind, show};
 #[derive(Debug, Default)]
 pub(crate) struct Fastg {
     current: Option<Record>,
-    seen_header: bool,
 }
 
 /// The record whose sequence lines are streaming in.
@@ -36,9 +35,8 @@ struct Record {
 
 impl Fastg {
     pub(crate) fn line(&mut self, b: &mut Builder, line: &[u8], offset: u64, no: u64) {
-        if let Some(header) = line.strip_prefix(b">") {
+        if let Some(header) = line.trim_ascii_start().strip_prefix(b">") {
             self.close(b);
-            self.seen_header = true;
             self.header(b, header, no);
             return;
         }
@@ -47,13 +45,6 @@ impl Fastg {
             return;
         }
         let Some(record) = &mut self.current else {
-            if !self.seen_header {
-                b.warn(
-                    no,
-                    WarningKind::Malformed,
-                    "Sequence before the first FASTG header".to_owned(),
-                );
-            }
             return;
         };
         record.count.add(seq);

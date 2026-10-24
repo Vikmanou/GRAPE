@@ -1,0 +1,17 @@
+>EDGE_1_length_8_cov_10:EDGE_2_length_6_cov_5,EDGE_3_length_6_cov_5;
+AAAA
+AAAA
+>EDGE_1_length_8_cov_10';
+TTTTTTTT
+>EDGE_2_length_6_cov_5:EDGE_4_length_7_cov_10;
+CCCCCC
+>EDGE_2_length_6_cov_5':EDGE_1_length_8_cov_10';
+GGGGGG
+>EDGE_3_length_6_cov_5:EDGE_4_length_7_cov_10;
+GGGGGG
+>EDGE_3_length_6_cov_5':EDGE_1_length_8_cov_10';
+CCCCCC
+>EDGE_4_length_7_cov_10;
+TTTTTTT
+>EDGE_4_length_7_cov_10':EDGE_2_length_6_cov_5',EDGE_3_length_6_cov_5';
+AAAAAAA
