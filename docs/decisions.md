@@ -172,3 +172,38 @@ decision, reason, alternatives considered.
   only.
 - **Alternatives**: commit the permissively licensed small files; record a
   hash and expected counts per file.
+
+## 2026-10-24: Links keep both overlap sides (supersedes "Link overlaps keep one side")
+
+- **Decision**: each link stores the overlap on its From and its To segment.
+  When the mirror of a stored link repeats it with a different simple `nM`,
+  that value is taken as the overlap on the mirror line's own From segment
+  (counted, no warning). A repeat in the same direction with a different
+  overlap is still a conflict.
+- **Reason**: miniasm and hifiasm measure each strand's overlap on its own
+  read, so a link and its mirror legitimately differ; the potato hifiasm
+  sample produced 1,839 false conflict warnings. Costs 4 bytes per link.
+- **Alternatives**: keep one side and warn (noise on two common assemblers);
+  keep one side silently (loses the second length).
+
+## 2026-10-24: Parse speed on dense graphs
+
+- **Decision**: decimal names (no leading zeros, below 10^9) are looked up in
+  a dense array instead of the hash table; the last defined segment is cached
+  for the From name of the L lines that follow it; forward references are
+  tracked in a per-segment array instead of a hash map; lines and fields are
+  split with `memchr`; GC counting is written so LLVM vectorizes it; the WASM
+  build enables `simd128`.
+- **Reason**: real graphs with many short segments spent their time in cache
+  misses on hash tables, not in reading bytes. The densest sample
+  (*M. xanthus*, 595k segments) went from 31 to about 55 MB/s in WASM, and
+  sequence-heavy synthetic graphs from about 115 to over 400 MB/s.
+- **Alternatives**: sort-based link deduplication at the end of parsing
+  (more transient memory); resolving names in batches. Left for later.
+- **Dependency**: `memchr` 2.8.3, the standard SIMD byte search crate.
+
+## 2026-10-24: WASM SIMD required
+
+- **Decision**: `.cargo/config.toml` builds the WASM core with `simd128`.
+- **Reason**: every browser GRAPE supports has WASM SIMD (Chrome 91, Firefox
+  89, Safari 16.4), and the parser's byte scanning uses it.
