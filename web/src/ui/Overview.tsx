@@ -36,7 +36,7 @@ export function Overview({ result }: Props) {
   return (
     <aside className="sidebar" aria-label="Overview">
       <h2>Overview</h2>
-      <p className="muted" data-testid="format">
+      <p className="muted" data-testid="format" data-parse-ms={Math.round(result.parseMs)}>
         {format}
         {compressionLabel[result.compression]} · parsed in {formatCount(result.parseMs)} ms
       </p>
