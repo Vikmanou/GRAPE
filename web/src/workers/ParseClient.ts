@@ -1,6 +1,6 @@
-import type { ParseRequest, ParseResponse } from './protocol';
+import type { ParseRequest, ParseResponse, ParseResult } from './protocol';
 
-/** Rejection for requests still pending when the client is terminated. */
+/** Rejection for requests still pending when the worker is stopped. */
 export class WorkerTerminatedError extends Error {
   constructor() {
     super('parse worker terminated');
@@ -10,50 +10,46 @@ export class WorkerTerminatedError extends Error {
 
 export interface PingResult {
   coreVersion: string;
-  lines: number;
   roundTripMs: number;
 }
 
-type Pending = {
-  resolve: (response: Extract<ParseResponse, { type: 'pong' }>) => void;
-  reject: (error: Error) => void;
-};
+export type ProgressListener = (bytesRead: number, totalBytes: number) => void;
 
-/** Main-thread handle to the parse worker, with promise-based requests. */
+type Settled = Extract<ParseResponse, { type: 'pong' | 'parsed' }>;
+
+interface Pending {
+  resolve: (response: Settled) => void;
+  reject: (error: Error) => void;
+  onProgress?: ProgressListener;
+}
+
 export class ParseClient {
-  private readonly worker: Worker;
+  private worker: Worker;
   private readonly pending = new Map<number, Pending>();
   private nextId = 1;
 
   constructor() {
-    this.worker = new Worker(new URL('./parse.worker.ts', import.meta.url), {
-      type: 'module',
-      name: 'parse',
-    });
-    this.worker.addEventListener('message', (event: MessageEvent<ParseResponse>) => {
-      this.settle(event.data);
-    });
-    this.worker.addEventListener('error', (event) => {
-      this.failAll(new Error(`parse worker failed: ${event.message || 'unknown error'}`));
-    });
+    this.worker = this.spawn();
   }
 
-  /** Round trip through the worker and WASM, used as a health check. */
-  async ping(sample: Uint8Array): Promise<PingResult> {
+  async ping(): Promise<PingResult> {
     const start = performance.now();
-    const id = this.nextId++;
-    const response = await new Promise<Extract<ParseResponse, { type: 'pong' }>>(
-      (resolve, reject) => {
-        this.pending.set(id, { resolve, reject });
-        const request: ParseRequest = { type: 'ping', id, sample };
-        this.worker.postMessage(request);
-      },
-    );
-    return {
-      coreVersion: response.coreVersion,
-      lines: response.lines,
-      roundTripMs: performance.now() - start,
-    };
+    const response = await this.request({ type: 'ping', id: this.nextId++ });
+    if (response.type !== 'pong') throw new Error(`unexpected ${response.type} response`);
+    return { coreVersion: response.coreVersion, roundTripMs: performance.now() - start };
+  }
+
+  async parse(file: File, onProgress?: ProgressListener): Promise<ParseResult> {
+    const response = await this.request({ type: 'parse', id: this.nextId++, file }, onProgress);
+    if (response.type !== 'parsed') throw new Error(`unexpected ${response.type} response`);
+    return response.result;
+  }
+
+  /** WASM cannot be interrupted mid-call, so cancelling replaces the worker. */
+  cancel(): void {
+    this.worker.terminate();
+    this.failAll(new WorkerTerminatedError());
+    this.worker = this.spawn();
   }
 
   terminate(): void {
@@ -61,12 +57,34 @@ export class ParseClient {
     this.failAll(new WorkerTerminatedError());
   }
 
+  private spawn(): Worker {
+    const worker = new Worker(new URL('./parse.worker.ts', import.meta.url), { type: 'module', name: 'parse' });
+    worker.addEventListener('message', (event: MessageEvent<ParseResponse>) => {
+      this.settle(event.data);
+    });
+    worker.addEventListener('error', (event) => {
+      this.failAll(new Error(`parse worker failed: ${event.message || 'unknown error'}`));
+    });
+    return worker;
+  }
+
+  private request(request: ParseRequest, onProgress?: ProgressListener): Promise<Settled> {
+    return new Promise((resolve, reject) => {
+      this.pending.set(request.id, { resolve, reject, ...(onProgress ? { onProgress } : {}) });
+      this.worker.postMessage(request);
+    });
+  }
+
   private settle(response: ParseResponse): void {
     const pending = this.pending.get(response.id);
     if (!pending) return;
+    if (response.type === 'progress') {
+      pending.onProgress?.(response.bytesRead, response.totalBytes);
+      return;
+    }
     this.pending.delete(response.id);
-    if (response.type === 'pong') pending.resolve(response);
-    else pending.reject(new Error(response.message));
+    if (response.type === 'error') pending.reject(new Error(response.message));
+    else pending.resolve(response);
   }
 
   private failAll(error: Error): void {

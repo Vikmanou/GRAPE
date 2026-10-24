@@ -6,9 +6,6 @@ import { ParseClient, WorkerTerminatedError } from '../workers/ParseClient';
 import { StatusBar, type CoreStatus } from './StatusBar';
 import { Unsupported } from './Unsupported';
 
-/** Tiny GFA used to check the worker and WASM path at startup. */
-const PING_SAMPLE = new TextEncoder().encode('H\tVN:Z:1.0\nS\t1\tACGT\nS\t2\tGGCC\nL\t1\t+\t2\t+\t0M\n');
-
 export function App() {
   const [backend, setBackend] = useState<Backend | 'detecting'>('detecting');
   const [engineError, setEngineError] = useState<string>();
@@ -26,7 +23,7 @@ export function App() {
 
   useEffect(() => {
     const client = new ParseClient();
-    client.ping(PING_SAMPLE).then(
+    client.ping().then(
       (result) => {
         setCore({ state: 'ready', version: result.coreVersion, roundTripMs: result.roundTripMs });
       },

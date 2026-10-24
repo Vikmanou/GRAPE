@@ -30,11 +30,3 @@ pub use warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warni
 
 /// Version of this crate, reported to the UI so a stale WASM build is visible.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// Placeholder from milestone 0 that proves the WASM call path; replaced by
-/// the parser bindings.
-pub fn count_lines(bytes: &[u8]) -> u64 {
-    let newlines = bytes.iter().filter(|&&b| b == b'\n').count() as u64;
-    let unterminated = matches!(bytes.last(), Some(&b) if b != b'\n');
-    newlines + u64::from(unterminated)
-}
