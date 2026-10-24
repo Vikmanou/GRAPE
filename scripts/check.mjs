@@ -33,6 +33,10 @@ const steps = [
     : [
         ['vite build', ...web('build:site')],
         ['bundle size', ...web('size')],
+        // Playwright's browser is a separate download from `npm install`.
+        // This is a no-op once the browser is present, so it runs every time
+        // instead of being a setup step to remember.
+        ['browser', 'npx', ['playwright', 'install', 'chromium']],
         ['playwright', ...web('e2e', ...(headed ? ['--headed'] : []))],
       ]),
 ];
@@ -41,11 +45,12 @@ const results = [];
 for (const [name, cmd, args] of steps) {
   console.log(`\n=== ${name}: ${cmd} ${args.join(' ')}`);
   const start = performance.now();
-  // npm is a .cmd shim on Windows, which spawn can only start through a shell.
+  // npm and npx are .cmd shims on Windows, which spawn can only start through
+  // a shell.
   const result = spawnSync(cmd, args, {
     cwd: root,
     stdio: 'inherit',
-    shell: process.platform === 'win32' && cmd === 'npm',
+    shell: process.platform === 'win32' && (cmd === 'npm' || cmd === 'npx'),
   });
   const seconds = ((performance.now() - start) / 1000).toFixed(1);
   const ok = result.status === 0;

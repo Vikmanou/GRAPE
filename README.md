@@ -15,14 +15,13 @@ Chrome and Edge are the primary targets.
 ## Development
 
 Prerequisites: Rust and Node 22+ (npm comes with it). The pinned Rust
-toolchain and the matching `wasm-bindgen-cli` install themselves on the
-first build.
+toolchain, the matching `wasm-bindgen-cli` and the test browser install
+themselves the first time they are needed.
 
 From the repo root:
 
 ```sh
 npm install
-npx playwright install chromium   # once, for the browser tests
 npm run dev                       # build the WASM core, start Vite
 npm run check                     # full gate: what CI runs
 npm run check:quick               # Rust + TS checks and unit tests only
