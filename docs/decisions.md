@@ -219,3 +219,26 @@ decision, reason, alternatives considered.
   uncertain gain, and the absolute time (about 2 s) is acceptable.
 - **Alternatives**: sort-based link deduplication at the end of parsing;
   resolving names in batches. Revisit if a real graph parses too slowly.
+
+## 2026-10-24: The CPU reference layout is multilevel
+
+- **Decision**: the CPU reference layout uses the spec's multilevel scheme
+  (heavy-edge coarsening down to 8 nodes per component, 500 iterations on
+  the coarsest level, then refinement with 50 iterations on level 0,
+  doubling per level up to 400). Children are split towards their own
+  neighbours. Repulsion is Barnes-Hut `k^2 / d` with `k` the level's mean
+  rest length and no mass weighting; springs pull with Hooke's law up to
+  their rest length and with the square of the stretch beyond it. Merged
+  node extents add in quadrature. Point counts and drawn lengths follow
+  Bandage's automatic node length.
+- **Reason**: a single-level layout left real graphs tangled (pangenome
+  chains folded into balls) and took 43 ms per iteration at 15k points.
+  Each change was measured on the samples with the spec's metrics and
+  against `Bandage image` renders: adding extents linearly made coarse
+  layouts 10 times too large (median link 436 units against a rest of 5,
+  now about 38); mass-weighted repulsion crossed coarse edges; more
+  iterations on cheap coarse levels removed most remaining crossings.
+  The M3 GPU layout reuses this coarsening, so it is compared against the
+  same scheme.
+- **Alternatives**: FMMM (Bandage's OGDF layout), stress majorization;
+  both heavier to port to WGSL.

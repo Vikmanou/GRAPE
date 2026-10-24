@@ -1,6 +1,7 @@
 use crate::builder::{Builder, RecordCounts};
 use crate::components::{self, Components};
 use crate::csr::Adjacency;
+use crate::layout::Topology;
 use crate::names::Names;
 use crate::paths::Paths;
 use crate::seq::{Packed, SeqMode};
@@ -96,6 +97,16 @@ impl Graph {
         if let Some(p) = &mut self.packed {
             p.bits.shrink_to_fit();
             p.runs.shrink_to_fit();
+        }
+    }
+
+    pub fn topology(&self) -> Topology<'_> {
+        Topology {
+            lengths: &self.segments.length,
+            components: &self.segments.component,
+            link_from: &self.links.from,
+            link_to: &self.links.to,
+            link_bits: &self.links.bits,
         }
     }
 
