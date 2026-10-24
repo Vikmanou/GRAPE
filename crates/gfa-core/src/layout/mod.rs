@@ -14,7 +14,9 @@ mod quality;
 pub mod rng;
 
 pub use pack::{Rect, rows, skyline};
-pub use points::{Chains, Springs, drawn_length, drawn_per_base, link_points, pieces};
+pub use points::{
+    Chains, Springs, drawn_length, drawn_per_base, link_geometry, link_points, pieces,
+};
 pub use quadtree::{QuadTree, brute_force};
 pub use quality::{Quality, measure};
 

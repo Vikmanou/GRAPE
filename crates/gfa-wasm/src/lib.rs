@@ -1,6 +1,9 @@
 //! wasm-bindgen bindings around `gfa-core`: conversions and error mapping only.
 
+mod layout;
+
 use gfa_core::{DEFAULT_BUDGET, Format, Graph, ParseOptions, PathKind, SeqMode, Severity};
+pub use layout::Layout;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = coreVersion)]
@@ -135,6 +138,32 @@ impl Loaded {
             sequence_bytes: memory.sequence_bytes as f64,
             sequences_dropped: g.packed.as_ref().is_some_and(|p| p.dropped),
         }
+    }
+
+    /// Copies of the arrays the layout needs, handed to the layout worker.
+    #[wasm_bindgen(js_name = segmentLengths)]
+    pub fn segment_lengths(&self) -> Vec<u32> {
+        self.graph.segments.length.clone()
+    }
+
+    #[wasm_bindgen(js_name = segmentComponents)]
+    pub fn segment_components(&self) -> Vec<u32> {
+        self.graph.segments.component.clone()
+    }
+
+    #[wasm_bindgen(js_name = linkFrom)]
+    pub fn link_from(&self) -> Vec<u32> {
+        self.graph.links.from.clone()
+    }
+
+    #[wasm_bindgen(js_name = linkTo)]
+    pub fn link_to(&self) -> Vec<u32> {
+        self.graph.links.to.clone()
+    }
+
+    #[wasm_bindgen(js_name = linkBits)]
+    pub fn link_bits(&self) -> Vec<u8> {
+        self.graph.links.bits.clone()
     }
 
     #[wasm_bindgen(js_name = componentSegments)]
