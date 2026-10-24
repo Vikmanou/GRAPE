@@ -16,6 +16,7 @@
     "check:quick": "node scripts/check.mjs --quick",
     "check:headed": "node scripts/check.mjs --headed",
     "fuzz": "node scripts/fuzz.mjs",
-    "bench:parse": "node scripts/bench-parse.mjs"
+    "bench:parse": "node scripts/bench-parse.mjs",
+    "samples": "node scripts/fetch-samples.mjs"
   }
 }

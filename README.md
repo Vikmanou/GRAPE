@@ -19,9 +19,7 @@ Chrome and Edge are the primary targets.
 
 ## Development
 
-Prerequisites: Rust and Node 22+ (npm comes with it). The pinned Rust
-toolchain, the matching `wasm-bindgen-cli` and the test browser install
-themselves the first time they are needed.
+Prerequisites: Rust and Node 22+
 
 From the repo root:
 
@@ -33,6 +31,7 @@ npm run check:quick               # Rust + TS checks and unit tests only
 npm run check:headed              # full gate, browser tests on the real GPU
 npm run fuzz                      # fuzz the parser (10 min; installs nightly and cargo-fuzz)
 npm run bench:parse               # parse timing on a synthetic 200k-segment graph
+npm run samples                   # download real sample graphs into samples/
 ```
 
 Headless Chromium has no WebGPU adapter, so a plain `npm run check` exercises
@@ -46,12 +45,13 @@ crates/gfa-wasm/    wasm-bindgen bindings around gfa-core
 crates/gfa-gen/     synthetic graph generator for tests and benchmarks
 fuzz/               cargo-fuzz target for the parser
 testdata/           small handcrafted graphs
+samples/            real public graphs, downloaded on demand (see samples/README.md)
 web/src/engine/     WebGPU device and canvas (owns all GPU objects)
 web/src/workers/    parse worker and its message protocol
 web/src/ui/         React panels
 web/src/state/      view state
 web/tests/          Vitest (unit/) and Playwright (e2e/)
-scripts/            quality gate, WASM build, bundle size, fuzz and bench runners
+scripts/            quality gate, WASM build, bundle size, fuzz, bench and sample fetching
 docs/decisions.md   design decision log
 ```
 

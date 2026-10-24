@@ -1,12 +1,12 @@
 //! Times a native parse in 4 MB chunks, as the parse worker reads files.
 //! `cargo run -p gfa-core --release --example parse_file -- <path>`
 
-use gfa_core::{DEFAULT_BUDGET, ParseOptions, Parser, SeqMode};
+use gfa_core::{DEFAULT_BUDGET, ParseOptions, Parser, PathKind, SeqMode};
 use std::time::Instant;
 
 fn main() {
     let Some(path) = std::env::args().nth(1) else {
-        eprintln!("usage: parse_file <path> [--packed]");
+        eprintln!("usage: parse_file <path> [--packed] [--warnings]");
         std::process::exit(2);
     };
     let packed = std::env::args().any(|a| a == "--packed");
@@ -33,9 +33,14 @@ fn main() {
         seconds * 1e3,
         mb / seconds
     );
+    println!("format      {:?}", graph.format);
     println!("segments    {}", graph.stats.segments);
     println!("links       {}", graph.stats.links);
     println!("components  {}", graph.stats.components);
+    println!("length      {}", graph.stats.total_length);
+    println!("n50         {}", graph.stats.n50);
+    println!("paths       {}", graph.paths.count(PathKind::Path));
+    println!("walks       {}", graph.paths.count(PathKind::Walk));
     println!("warnings    {}", graph.warnings.total);
     println!(
         "per segment {:.1} bytes (names {:.1} more)",
@@ -43,4 +48,9 @@ fn main() {
         memory.name_bytes as f64 / graph.segments.len() as f64
     );
     println!("sequence    {:.1} MB", memory.sequence_bytes as f64 / 1e6);
+    if std::env::args().any(|a| a == "--warnings") {
+        for w in graph.warnings.list.iter().take(20) {
+            println!("  line {}: {}", w.line, w.message);
+        }
+    }
 }

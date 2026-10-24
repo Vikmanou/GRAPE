@@ -160,3 +160,15 @@ decision, reason, alternatives considered.
 - **Reason**: without the DLL the fuzz binary exits with
   STATUS_DLL_NOT_FOUND, and `-s none` fails to link on MSVC (unresolved
   `__start/__stop___sancov_pcs`).
+
+## 2026-10-24: Real sample graphs are downloaded, not committed
+
+- **Decision**: `samples/manifest.json` maps file names to pinned source URLs,
+  and `npm run samples` downloads them. Only the manifest and a README with
+  descriptions and licenses are committed.
+- **Reason**: the files carry mixed licenses (MIT, CC-BY-4.0, GPL-3.0, one
+  with none stated), and the large ones run to gigabytes. Downloading from the
+  source avoids redistributing them. Owner asked for a minimal manifest: URLs
+  only.
+- **Alternatives**: commit the permissively licensed small files; record a
+  hash and expected counts per file.

@@ -1,0 +1,35 @@
+{
+  "small": {
+    "sars-cov-2-6-lineages.gfa": "https://raw.githubusercontent.com/cornell-brg/panomap/08becb2ea3f5280eaa6fe83a861571713952bea5/examples/covid/covid-pangenome.gfa",
+    "human-mito-minigraph.gfa": "https://raw.githubusercontent.com/lh3/minigraph/2f569ebe3071fcb242f1bf0eabbb917941b47239/test/MT.gfa",
+    "human-mito-4-haplotypes.gfa": "https://raw.githubusercontent.com/pangenome/pggb/4225c6ce010553ef353c5ea13805e38c2016b503/data/chrM.pan.4.gfa",
+    "brca2-cactus.gfa": "https://raw.githubusercontent.com/vgteam/vg/5fb9d90196b1497f80f8f8e9b55d1360f894d446/test/graphs/cactus-BRCA2.gfa",
+    "hla-drb1-12-haplotypes.gfa": "https://raw.githubusercontent.com/pangenome/odgi/fb43f0817d8f3b81ce854f111d6daed8c4c8cbf4/test/DRB1-3123.gfa",
+    "c4-complement-90-haplotypes.gfa": "https://raw.githubusercontent.com/pangenome/odgi/fb43f0817d8f3b81ce854f111d6daed8c4c8cbf4/test/chr6.C4.gfa",
+    "lpa-13-haplotypes.gfa": "https://raw.githubusercontent.com/pangenome/odgi/fb43f0817d8f3b81ce854f111d6daed8c4c8cbf4/test/LPA.gfa",
+    "bacterial-spades.gfa": "https://raw.githubusercontent.com/rrwick/Unicycler/1429301eb24df9162f3c9386e8522f942594ae42/test/test_assembly_graph.gfa",
+    "bacterial-spades.fastg": "https://raw.githubusercontent.com/rrwick/Unicycler/1429301eb24df9162f3c9386e8522f942594ae42/test/test_assembly_graph.fastg",
+    "mhc-57-haplotypes.gfa.gz": "https://zenodo.org/records/23217792/files/MHC-57.gfa.gz",
+    "human-100-genes-walks.gfa.gz": "https://zenodo.org/records/23217792/files/human100p10-v1.1-a1.gfa.gz",
+    "chloroplast-acacia-flye1.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/flye1-assembly.gfa",
+    "chloroplast-acacia-flye2.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/flye2-assembly.gfa",
+    "chloroplast-acacia-miniasm.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/miniasm.gfa",
+    "chloroplast-acacia-raven.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/raven.gfa",
+    "chloroplast-acacia-spades.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/spades_graph.gfa",
+    "chloroplast-acacia-unicycler.gfa": "https://zenodo.org/records/5722622/files/gfas-plastome.zip#gfas-plastome/unicycler.gfa",
+    "mitochondrion-acacia-flye1.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/flye1-assembly.gfa",
+    "mitochondrion-acacia-flye2.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/flye2-assembly.gfa",
+    "mitochondrion-acacia-miniasm.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/miniasm.gfa",
+    "mitochondrion-acacia-raven.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/raven.gfa",
+    "mitochondrion-acacia-spades.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/spades_graph.gfa",
+    "mitochondrion-acacia-unicycler.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/unicycler.gfa"
+  },
+  "large": {
+    "myxococcus-10-assemblies.gfa.gz": "https://zenodo.org/records/23217792/files/m_xanthus_10_assemblies.unitigs_blunt.gfa.gz",
+    "potato-hifiasm-unitigs-noseq.gfa": "https://zenodo.org/records/17599056/files/spud_altus_hifiasm.r_utg.noseq.gfa"
+  },
+  "huge": {
+    "human-pangenome-hprc-minigraph.gfa.gz": "https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph/hprc-v1.0-minigraph-grch38.gfa.gz",
+    "sheep-gut-metagenome-flye.gfa": "https://zenodo.org/records/6545142/files/sheepgut_flye_big_2.8_graph.gfa"
+  }
+}
