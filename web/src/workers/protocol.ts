@@ -43,6 +43,16 @@ export interface ParseWarnings {
   messages: string[];
 }
 
+/** The arrays the layout needs, moved from the parse worker to the layout worker. */
+export interface Topology {
+  lengths: Uint32Array;
+  /** Component rank per segment. */
+  components: Uint32Array;
+  linkFrom: Uint32Array;
+  linkTo: Uint32Array;
+  linkBits: Uint8Array;
+}
+
 export interface ParseResult {
   format: 'gfa' | 'fastg';
   version: string | undefined;
@@ -51,6 +61,24 @@ export interface ParseResult {
   /** By rank, largest total length first. */
   components: { segments: Uint32Array; lengths: Float64Array };
   warnings: ParseWarnings;
+  topology: Topology;
   memory: { bytesPerSegment: number; nameBytes: number; sequenceBytes: number; sequencesDropped: boolean };
   parseMs: number;
 }
+
+export type LayoutRequest = { type: 'layout'; id: number; topology: Topology; seed: number };
+
+/** What the renderer draws, fixed for one layout run. */
+export interface Geometry {
+  points: number;
+  /** `first point, segment` per ribbon piece. */
+  pieces: Uint32Array;
+  /** `end a, inner a, end b, inner b` per link. */
+  links: Uint32Array;
+}
+
+export type LayoutResponse =
+  | { type: 'geometry'; id: number; geometry: Geometry; totalIterations: number }
+  /** `x, y` per point. */
+  | { type: 'positions'; id: number; positions: Float32Array; iteration: number; done: boolean }
+  | { type: 'error'; id: number; message: string };

@@ -53,12 +53,17 @@ async function parse(id: number, file: File): Promise<void> {
     parser.free();
   }
   const result = describe(current, compression, performance.now() - start);
-  const { components, warnings } = result;
+  const { components, warnings, topology } = result;
   post({ type: 'parsed', id, result }, [
     components.segments.buffer,
     components.lengths.buffer,
     warnings.lines.buffer,
     warnings.severities.buffer,
+    topology.lengths.buffer,
+    topology.components.buffer,
+    topology.linkFrom.buffer,
+    topology.linkTo.buffer,
+    topology.linkBits.buffer,
   ]);
 }
 
@@ -96,6 +101,13 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
       lines: loaded.warningLines(),
       severities: loaded.warningSeverities(),
       messages: loaded.warningMessages(),
+    },
+    topology: {
+      lengths: loaded.segmentLengths(),
+      components: loaded.segmentComponents(),
+      linkFrom: loaded.linkFrom(),
+      linkTo: loaded.linkTo(),
+      linkBits: loaded.linkBits(),
     },
     memory: {
       bytesPerSegment: s.bytesPerSegment,

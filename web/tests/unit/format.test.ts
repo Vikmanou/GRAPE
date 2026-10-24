@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../../src/ui/format';
+import { formatBases, formatBytes, formatCount, formatDepth, formatPercent, formatSeconds } from '../../src/ui/format';
 
 describe('format', () => {
   it('scales bases', () => {
@@ -8,6 +8,11 @@ describe('format', () => {
     expect(formatBases(4_641_652)).toBe('4.6 Mb');
     expect(formatBases(123_456_789)).toBe('123 Mb');
     expect(formatBases(3.2e9)).toBe('3.2 Gb');
+  });
+
+  it('shows milliseconds below a second', () => {
+    expect(formatSeconds(340.4)).toBe('340 ms');
+    expect(formatSeconds(1234)).toBe('1.2 s');
   });
 
   it('scales bytes in binary units', () => {

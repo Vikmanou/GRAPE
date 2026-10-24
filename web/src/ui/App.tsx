@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
+import { useLayout } from '../state/layout';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
@@ -22,6 +23,7 @@ export function App() {
     [open],
   );
   const dragging = useFileDrop(openFile);
+  const layout = useLayout(load.state === 'loaded' ? load.result.topology : undefined, undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +63,7 @@ export function App() {
         backend={backend}
         core={core}
         load={load}
+        layout={layout}
         onCancel={cancel}
         onToggleWarnings={() => {
           setShowWarnings((shown) => !shown);

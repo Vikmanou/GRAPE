@@ -31,3 +31,8 @@ export function formatPercent(fraction: number): string {
 export function formatDepth(depth: number): string {
   return Number.isFinite(depth) ? `${depth.toFixed(1)}×` : DASH;
 }
+
+export function formatSeconds(ms: number): string {
+  if (!Number.isFinite(ms)) return DASH;
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
+}
