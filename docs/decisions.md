@@ -207,3 +207,15 @@ decision, reason, alternatives considered.
 - **Decision**: `.cargo/config.toml` builds the WASM core with `simd128`.
 - **Reason**: every browser GRAPE supports has WASM SIMD (Chrome 91, Firefox
   89, Safari 16.4), and the parser's byte scanning uses it.
+
+## 2026-10-24: Dense-graph parse speed accepted as a known limit
+
+- **Decision**: the spec's ≥100 MB/s parse target is met on sequence-heavy
+  graphs (about 430 MB/s on the 200k synthetic graph) but not on the densest
+  real sample, *M. xanthus* (595k short segments), which parses at about
+  55 MB/s in WASM. The owner accepted this for milestone 1.
+- **Reason**: on that graph the time goes to name and link lookups, not
+  byte scanning; the remaining ideas trade memory or complexity for an
+  uncertain gain, and the absolute time (about 2 s) is acceptable.
+- **Alternatives**: sort-based link deduplication at the end of parsing;
+  resolving names in batches. Revisit if a real graph parses too slowly.

@@ -12,6 +12,10 @@ parsing, layout and analysis run on your machine.
 GFA 1.0 and 1.1 (S, L, P, W, C and H records) and SPAdes-style FASTG, plain,
 gzipped or bgzipped. GFA 2.0 is not supported.
 
+Parsing runs at a few hundred MB/s on graphs with long sequences, but graphs
+made of many short segments are slower: about 55 MB/s on the densest sample
+(*M. xanthus*, 595k segments, about 2 s).
+
 ## Supported browsers
 
 WebGPU is required until the WebGL2 fallback lands (milestone 8). Desktop
