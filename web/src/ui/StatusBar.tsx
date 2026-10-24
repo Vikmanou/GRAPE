@@ -1,13 +1,13 @@
 import type { Backend } from '../engine/detect';
-
-export type CoreStatus =
-  | { state: 'loading' }
-  | { state: 'ready'; version: string; roundTripMs: number }
-  | { state: 'error'; message: string };
+import type { CoreStatus, LoadState } from '../state/load';
+import { formatCount, formatPercent } from './format';
 
 interface Props {
   backend: Backend | 'detecting';
   core: CoreStatus;
+  load: LoadState;
+  onCancel: () => void;
+  onToggleWarnings: () => void;
 }
 
 const rendererLabel: Record<Props['backend'], string> = {
@@ -28,9 +28,27 @@ function coreLabel(core: CoreStatus): string {
   }
 }
 
-export function StatusBar({ backend, core }: Props) {
+export function StatusBar({ backend, core, load, onCancel, onToggleWarnings }: Props) {
+  const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   return (
     <footer className="status-bar" data-testid="status-bar">
+      {load.state === 'parsing' && (
+        <span data-testid="status-task">
+          Parsing {formatPercent(load.fraction)}{' '}
+          <button type="button" className="link" onClick={onCancel}>
+            Cancel
+          </button>
+        </span>
+      )}
+      {load.state === 'loaded' && (
+        <span data-testid="status-segments">{formatCount(load.result.stats.segments)} segments</span>
+      )}
+      {warnings && warnings.total > 0 && (
+        <button type="button" className="link warn" data-testid="status-warnings" onClick={onToggleWarnings}>
+          {formatCount(warnings.total)} {warnings.total === 1 ? 'warning' : 'warnings'}
+        </button>
+      )}
+      <span className="spacer" />
       <span data-testid="status-renderer" data-renderer={backend}>
         {rendererLabel[backend]}
       </span>

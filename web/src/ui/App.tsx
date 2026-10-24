@@ -1,15 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
-import { Engine } from '../engine/Engine';
-import { onSystemThemeChange, systemTheme } from '../state/theme';
-import { ParseClient, WorkerTerminatedError } from '../workers/ParseClient';
-import { StatusBar, type CoreStatus } from './StatusBar';
+import { useLoader } from '../state/load';
+import { EmptyState } from './EmptyState';
+import { EngineHost } from './EngineHost';
+import { Overview } from './Overview';
+import { StatusBar } from './StatusBar';
+import { TopBar } from './TopBar';
 import { Unsupported } from './Unsupported';
+import { Warnings } from './Warnings';
 
 export function App() {
   const [backend, setBackend] = useState<Backend | 'detecting'>('detecting');
   const [engineError, setEngineError] = useState<string>();
-  const [core, setCore] = useState<CoreStatus>({ state: 'loading' });
+  const [showWarnings, setShowWarnings] = useState(false);
+  const { core, load, open, cancel } = useLoader();
+  const openFile = useCallback(
+    (file: File) => {
+      setShowWarnings(false);
+      open(file);
+    },
+    [open],
+  );
+  const dragging = useFileDrop(openFile);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,79 +33,69 @@ export function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const client = new ParseClient();
-    client.ping().then(
-      (result) => {
-        setCore({ state: 'ready', version: result.coreVersion, roundTripMs: result.roundTripMs });
-      },
-      (error: unknown) => {
-        // Termination on unmount rejects the ping; that is not a failure.
-        if (error instanceof WorkerTerminatedError) return;
-        setCore({ state: 'error', message: error instanceof Error ? error.message : String(error) });
-      },
-    );
-    return () => {
-      client.terminate();
-    };
-  }, []);
-
   const unsupported = backend === 'none' || engineError !== undefined;
+  const file = load.state === 'idle' ? undefined : load.file;
 
   return (
     <main className="app">
       {backend === 'webgpu' && !engineError && <EngineHost onError={setEngineError} />}
-      {unsupported ? (
-        <Unsupported detail={engineError} />
-      ) : (
-        <p className="empty-note">Files are processed on your computer and never uploaded.</p>
+      <TopBar file={file} onOpen={openFile} />
+      {unsupported && <Unsupported detail={engineError} />}
+      {!unsupported && (load.state === 'idle' || load.state === 'parsing') && <EmptyState dragging={dragging} />}
+      {load.state === 'failed' && (
+        <div className="load-error" role="alert" data-testid="load-error">
+          <strong>Could not open {load.file.name}</strong>
+          <p>{load.message}</p>
+        </div>
       )}
-      <StatusBar backend={backend} core={core} />
+      {load.state === 'loaded' && <Overview result={load.result} />}
+      {load.state === 'loaded' && showWarnings && (
+        <Warnings
+          warnings={load.result.warnings}
+          onClose={() => {
+            setShowWarnings(false);
+          }}
+        />
+      )}
+      <StatusBar
+        backend={backend}
+        core={core}
+        load={load}
+        onCancel={cancel}
+        onToggleWarnings={() => {
+          setShowWarnings((shown) => !shown);
+        }}
+      />
     </main>
   );
 }
 
-interface EngineHostProps {
-  onError: (message: string) => void;
-}
-
-/** Mounts an empty host element; the engine creates and owns the canvas. */
-function EngineHost({ onError }: EngineHostProps) {
-  const hostRef = useRef<HTMLDivElement>(null);
-
+/** Accepts a file dropped anywhere on the page; returns whether one is being dragged. */
+function useFileDrop(onDrop: (file: File) => void): boolean {
+  const [dragging, setDragging] = useState(false);
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    let engine: Engine | undefined;
-    let cancelled = false;
-    let unsubscribeTheme: (() => void) | undefined;
-
-    Engine.create(host).then(
-      (created) => {
-        if (cancelled) {
-          created.destroy();
-          return;
-        }
-        engine = created;
-        engine.on((event) => {
-          if (event.type === 'device-lost') onError(`GPU device lost: ${event.message}`);
-        });
-        engine.send({ type: 'set-theme', theme: systemTheme() });
-        unsubscribeTheme = onSystemThemeChange((theme) => {
-          engine?.send({ type: 'set-theme', theme });
-        });
-      },
-      (error: unknown) => {
-        if (!cancelled) onError(error instanceof Error ? error.message : String(error));
-      },
-    );
-
-    return () => {
-      cancelled = true;
-      unsubscribeTheme?.();
-      engine?.destroy();
+    const over = (event: DragEvent) => {
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      setDragging(true);
     };
-  }, [onError]);
-
-  return <div ref={hostRef} className="engine-host" data-testid="engine-host" />;
+    const leave = (event: DragEvent) => {
+      if (event.relatedTarget === null) setDragging(false);
+    };
+    const drop = (event: DragEvent) => {
+      event.preventDefault();
+      setDragging(false);
+      const file = event.dataTransfer?.files[0];
+      if (file) onDrop(file);
+    };
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    return () => {
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('drop', drop);
+    };
+  }, [onDrop]);
+  return dragging;
 }
