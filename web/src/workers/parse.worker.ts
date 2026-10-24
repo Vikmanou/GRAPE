@@ -3,7 +3,7 @@
 import init, { coreVersion, type Loaded, Parser } from '../wasm/pkg/gfa_wasm';
 import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { ParseRequest, ParseResponse, ParseResult } from './protocol';
-import { isGzip, readFile } from './readFile';
+import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 100;
 
@@ -20,13 +20,13 @@ async function parse(id: number, file: File): Promise<void> {
   current?.free();
   current = undefined;
   const start = performance.now();
-  const gzip = await isGzip(file);
-  const parser = new Parser(gzip);
+  const compression = await detectCompression(file);
+  const parser = new Parser(compression !== 'none');
   let lastProgress = 0;
   try {
     await readFile(
       file,
-      gzip,
+      compression,
       (chunk) => {
         parser.push(chunk);
       },
@@ -41,7 +41,7 @@ async function parse(id: number, file: File): Promise<void> {
   } finally {
     parser.free();
   }
-  const result = describe(current, gzip, performance.now() - start);
+  const result = describe(current, compression, performance.now() - start);
   const { components, warnings } = result;
   post({ type: 'parsed', id, result }, [
     components.segments.buffer,
@@ -51,13 +51,13 @@ async function parse(id: number, file: File): Promise<void> {
   ]);
 }
 
-function describe(loaded: Loaded, gzip: boolean, parseMs: number): ParseResult {
+function describe(loaded: Loaded, compression: Compression, parseMs: number): ParseResult {
   const s = loaded.summary();
   const format = loaded.format() === 'fastg' ? 'fastg' : 'gfa';
   const result: ParseResult = {
     format,
     version: loaded.version(),
-    gzip,
+    compression,
     stats: {
       segments: s.segments,
       undefined: s.undefined,

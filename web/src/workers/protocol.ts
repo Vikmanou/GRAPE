@@ -1,5 +1,7 @@
 // Every request carries an id that its responses echo.
 
+import type { Compression } from './readFile';
+
 export type ParseRequest = { type: 'ping'; id: number } | { type: 'parse'; id: number; file: File };
 
 export type ParseResponse =
@@ -44,7 +46,7 @@ export interface ParseWarnings {
 export interface ParseResult {
   format: 'gfa' | 'fastg';
   version: string | undefined;
-  gzip: boolean;
+  compression: Compression;
   stats: GraphStats;
   /** By rank, largest total length first. */
   components: { segments: Uint32Array; lengths: Float64Array };
