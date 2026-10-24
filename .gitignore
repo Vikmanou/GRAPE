@@ -16,3 +16,9 @@ Thumbs.db
 
 # Personal Claude Code overrides
 .claude/settings.local.json
+
+# Fuzzing
+/fuzz/target/
+/fuzz/corpus/
+/fuzz/artifacts/
+/fuzz/coverage/

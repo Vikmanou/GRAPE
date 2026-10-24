@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/gfa-core", "crates/gfa-gen", "crates/gfa-wasm"]
+exclude = ["fuzz"]
 resolver = "3"
 
 [workspace.package]
