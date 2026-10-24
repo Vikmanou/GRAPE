@@ -30,24 +30,28 @@ function lockedBindgenVersion() {
   return match[1];
 }
 
-// A CLI/crate mismatch otherwise fails deep inside wasm-bindgen with a schema
-// error that does not name the fix.
-function checkBindgenCli() {
-  const wanted = lockedBindgenVersion();
-  const installHint = `install it with: cargo install wasm-bindgen-cli --version ${wanted} --locked`;
+function installedBindgenVersion() {
   const result = spawnSync('wasm-bindgen', ['--version'], { encoding: 'utf8' });
-  if (result.error) {
-    console.error(`wasm-bindgen CLI not found; ${installHint}`);
-    process.exit(1);
-  }
-  const found = /(\d+\.\d+\.\d+)/.exec(result.stdout)?.[1];
-  if (found !== wanted) {
-    console.error(`wasm-bindgen CLI is ${found ?? 'unknown'}, Cargo.lock wants ${wanted}; ${installHint}`);
-    process.exit(1);
-  }
+  if (result.error) return undefined;
+  return /(\d+\.\d+\.\d+)/.exec(result.stdout)?.[1];
 }
 
-checkBindgenCli();
+// The CLI must match the crate in Cargo.lock exactly, or wasm-bindgen fails
+// with a schema error that does not name the fix. Installing the right one
+// here means nobody has to know the version. `--locked` builds the CLI with
+// its own pinned dependencies so the one-time install can't break on a newer
+// transitive release.
+function ensureBindgenCli() {
+  const wanted = lockedBindgenVersion();
+  const found = installedBindgenVersion();
+  if (found === wanted) return;
+  console.log(
+    `wasm-bindgen CLI is ${found ?? 'not installed'}, Cargo.lock wants ${wanted}; installing (one time, about a minute)`,
+  );
+  run('cargo', ['install', 'wasm-bindgen-cli', '--version', wanted, '--locked']);
+}
+
+ensureBindgenCli();
 
 run('cargo', [
   'build',

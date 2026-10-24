@@ -79,7 +79,8 @@ view state and a fingerprint, never sequences.
 - `pnpm check` is the gate and is exactly what CI runs.
 - Headless Chromium has no WebGPU adapter: headless Playwright covers the
   fallback path only. Use `--headed` for the WebGPU path.
-- `wasm-bindgen-cli` must match `Cargo.lock` exactly; the build checks.
+- `wasm-bindgen-cli` must match `Cargo.lock` exactly; the WASM build installs
+  the right version itself when it is missing or different.
 - The pinned toolchain lives in `rust-toolchain.toml`. If rustup reports a
   component "not applicable", the toolchain install was interrupted:
   `rustup toolchain uninstall <ver>` then install again.

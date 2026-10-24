@@ -14,13 +14,8 @@ Chrome and Edge are the primary targets.
 
 ## Development
 
-Prerequisites: Rust (the toolchain pinned in `rust-toolchain.toml` installs
-itself), Node 22+, pnpm, and `wasm-bindgen-cli` at the exact version in
-`Cargo.lock` (the build prints the install command if it is missing or wrong):
-
-```sh
-cargo install wasm-bindgen-cli --version 0.2.129 --locked
-```
+Prerequisites: Rust, Node 22+ and pnpm. The pinned Rust toolchain and the
+matching `wasm-bindgen-cli` install themselves on the first build.
 
 From the repo root:
 
