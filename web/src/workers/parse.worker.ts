@@ -5,7 +5,9 @@ import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { ParseRequest, ParseResponse, ParseResult } from './protocol';
 import { type Compression, detectCompression, readFile } from './readFile';
 
-const PROGRESS_INTERVAL_MS = 100;
+const PROGRESS_INTERVAL_MS = 50;
+/** Pieces small enough that progress can be posted between them. */
+const PIECE_BYTES = 1 << 20;
 
 const ready = init({ module_or_path: wasmUrl });
 
@@ -23,18 +25,27 @@ async function parse(id: number, file: File): Promise<void> {
   const compression = await detectCompression(file);
   const parser = new Parser(compression !== 'none');
   let lastProgress = 0;
+  let bytesRead = 0;
+  const report = (read: number) => {
+    const now = performance.now();
+    if (now - lastProgress < PROGRESS_INTERVAL_MS) return;
+    lastProgress = now;
+    post({ type: 'progress', id, bytesRead: read, totalBytes: file.size });
+  };
   try {
     await readFile(
       file,
       compression,
       (chunk) => {
-        parser.push(chunk);
+        for (let at = 0; at < chunk.length; at += PIECE_BYTES) {
+          parser.push(chunk.subarray(at, at + PIECE_BYTES));
+          // Plain files map chunk bytes to file bytes one to one.
+          report(compression === 'none' ? bytesRead + Math.min(at + PIECE_BYTES, chunk.length) : bytesRead);
+        }
       },
-      (bytesRead) => {
-        const now = performance.now();
-        if (now - lastProgress < PROGRESS_INTERVAL_MS) return;
-        lastProgress = now;
-        post({ type: 'progress', id, bytesRead, totalBytes: file.size });
+      (read) => {
+        bytesRead = read;
+        report(read);
       },
     );
     current = parser.finish();

@@ -60,6 +60,8 @@ export async function readFile(
 
 async function readGzip(file: Blob, sink: (chunk: Uint8Array) => void, onProgress: (n: number) => void) {
   let compressedRead = 0;
+  let inflated = 0;
+  let shown = 0;
   const counter = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
       compressedRead += chunk.byteLength;
@@ -77,8 +79,13 @@ async function readGzip(file: Blob, sink: (chunk: Uint8Array) => void, onProgres
     });
     if (done) break;
     sink(value);
-    onProgress(compressedRead);
+    // The compressed count jumps only when the decompressor pulls more input,
+    // so progress advances by each output chunk at the ratio seen so far.
+    inflated += value.byteLength;
+    shown = Math.min(compressedRead, shown + (value.byteLength * compressedRead) / inflated);
+    onProgress(Math.round(shown));
   }
+  onProgress(compressedRead);
 }
 
 // Chrome's DecompressionStream stops with an error after the first gzip
