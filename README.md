@@ -25,11 +25,11 @@ npm install
 npm run dev                       # build the WASM core, start Vite
 npm run check                     # full gate: what CI runs
 npm run check:quick               # Rust + TS checks and unit tests only
-node scripts/check.mjs --headed   # full gate, Playwright on the real GPU
+npm run check:headed              # full gate, browser tests on the real GPU
 ```
 
 Headless Chromium has no WebGPU adapter, so a plain `npm run check` exercises
-the fallback path only; `--headed` covers WebGPU.
+the fallback path only; `check:headed` covers WebGPU.
 
 ## Layout
 
@@ -41,7 +41,7 @@ web/src/workers/    parse worker and its message protocol
 web/src/ui/         React panels
 web/src/state/      view state
 web/tests/          Vitest (unit/) and Playwright (e2e/)
-scripts/check.mjs   the quality gate
+scripts/            quality gate, WASM build, bundle size report
 docs/decisions.md   design decision log
 ```
 

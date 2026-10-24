@@ -27,9 +27,11 @@ decision, reason, alternatives considered.
 ## 2026-10-23: cargo + wasm-bindgen-cli instead of wasm-pack
 
 - **Decision**: build with `cargo build --target wasm32-unknown-unknown` then
-  `wasm-bindgen --target web`, driven by `web/scripts/build-wasm.mjs`.
-- **Reason**: fewer moving parts and wasm-pack is barely maintained. The
-  `wasm-bindgen` crate is pinned with `=` so it always matches the CLI.
+  `wasm-bindgen --target web`, driven by `scripts/build-wasm.mjs`, which also
+  installs the CLI version locked in `Cargo.lock` when it is missing.
+- **Reason**: fewer moving parts and wasm-pack is barely maintained. The CLI
+  must match the crate exactly; installing it from the lockfile means nobody
+  has to know the version.
 - **Alternatives**: wasm-pack; a Vite WASM plugin (not needed, the `.wasm` is
   loaded through a `?url` import).
 
@@ -65,7 +67,7 @@ decision, reason, alternatives considered.
 
 - **Decision**: the Playwright smoke test passes on WebGPU, the WebGL2 notice
   or the unsupported message, as long as the WASM core loads and there are no
-  page errors. WebGPU is verified locally with `node scripts/check.mjs --headed`.
+  page errors. WebGPU is verified locally with `npm run check:headed`.
 - **Reason**: headless Chromium on CI and on Windows returns no WebGPU adapter.
 
 ## 2026-10-23: Root npm workspace and one gate script

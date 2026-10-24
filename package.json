@@ -10,10 +10,10 @@
     "web"
   ],
   "scripts": {
+    "dev": "node scripts/build-wasm.mjs --dev && npm run dev -w web",
+    "build": "node scripts/build-wasm.mjs && npm run build -w web",
     "check": "node scripts/check.mjs",
     "check:quick": "node scripts/check.mjs --quick",
-    "dev": "npm run dev -w web",
-    "build": "npm run build -w web",
-    "e2e": "npm run e2e -w web"
+    "check:headed": "node scripts/check.mjs --headed"
   }
 }

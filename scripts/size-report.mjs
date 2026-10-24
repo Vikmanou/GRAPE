@@ -1,13 +1,13 @@
 // Prints a markdown table of built asset sizes (raw and gzip). In GitHub
 // Actions it also appends the table to the job summary.
-// Usage: node scripts/size-report.mjs (after `vite build`)
+// Usage: node scripts/size-report.mjs (after the site is built)
 
 import { appendFileSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-const distDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+const distDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'web', 'dist');
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -22,7 +22,7 @@ let files;
 try {
   files = walk(distDir);
 } catch {
-  console.error(`no build output at ${distDir}; run vite build first`);
+  console.error(`no build output at ${distDir}; run npm run build first`);
   process.exit(1);
 }
 

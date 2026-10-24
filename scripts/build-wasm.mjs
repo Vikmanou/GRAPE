@@ -1,5 +1,6 @@
-// Builds crates/gfa-wasm to wasm32 and runs wasm-bindgen into src/wasm/pkg.
-// Written in Node rather than shell so it runs the same on Windows and CI.
+// Builds crates/gfa-wasm to wasm32 and runs wasm-bindgen into
+// web/src/wasm/pkg. Written in Node rather than shell so it runs the same on
+// Windows and CI.
 // Usage: node scripts/build-wasm.mjs [--dev]
 
 import { spawnSync } from 'node:child_process';
@@ -7,8 +8,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const webDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = resolve(webDir, '..');
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const webDir = join(repoRoot, 'web');
 const dev = process.argv.includes('--dev');
 const profile = dev ? 'debug' : 'release';
 

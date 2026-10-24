@@ -24,7 +24,7 @@ Run it with `/milestone <n> <path to spec pdf>`, or follow it by hand:
 3. **Build** in small commits in a logical order. Each commit builds and
    passes `npm run check:quick`.
 4. **Verify**: `npm run check` green; anything GPU-related checked with
-   `node scripts/check.mjs --headed` or a screenshot from a headed browser;
+   `npm run check:headed` or a screenshot from a headed browser;
    performance targets measured, not assumed.
 5. **Stop** with a demo note: what works, how to try it, measured numbers
    against the spec's targets, known gaps, and anything decided along the way.
@@ -78,7 +78,7 @@ view state and a fingerprint, never sequences.
 - Development is on Windows (PowerShell); CI runs Linux and Windows.
 - `npm run check` is the gate and is exactly what CI runs.
 - Headless Chromium has no WebGPU adapter: headless Playwright covers the
-  fallback path only. Use `--headed` for the WebGPU path.
+  fallback path only. Use `npm run check:headed` for the WebGPU path.
 - `wasm-bindgen-cli` must match `Cargo.lock` exactly; the WASM build installs
   the right version itself when it is missing or different.
 - The pinned toolchain lives in `rust-toolchain.toml`. If rustup reports a

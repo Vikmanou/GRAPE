@@ -56,7 +56,7 @@ Then stop and wait for approval. Do not write code in this phase.
 ## Phase 4: Verify
 
 1. `npm run check` (the full gate) must pass.
-2. For anything rendered: run `node scripts/check.mjs --headed`, and take a
+2. For anything rendered: run `npm run check:headed`, and take a
    headed screenshot with a throwaway Playwright spec in the scratchpad
    (copied into `web/tests/e2e/` only while it runs, then deleted). Look at it.
 3. For every performance target the milestone touches: measure it on this
