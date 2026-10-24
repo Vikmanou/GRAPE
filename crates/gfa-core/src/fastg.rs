@@ -71,14 +71,16 @@ impl Fastg {
             parts,
         }) = edge_name(this)
         else {
-            let message = format!(
-                "FASTG header is not EDGE_<n>_length_<l>_cov_<c>: '{}'",
-                show(this)
-            );
+            let message = || {
+                format!(
+                    "FASTG header is not EDGE_<n>_length_<l>_cov_<c>: '{}'",
+                    show(this)
+                )
+            };
             return b.warn(no, WarningKind::Malformed, message);
         };
         let Some(cov) = parts.get(5).and_then(|c| fields::number(c)) else {
-            let message = format!("FASTG header has no readable cov field: '{}'", show(this));
+            let message = || format!("FASTG header has no readable cov field: '{}'", show(this));
             return b.warn(no, WarningKind::Malformed, message);
         };
 
@@ -95,10 +97,12 @@ impl Fastg {
             (true, true) => false,
             (false, true) if from_reverse_record => true,
             (false, true) => {
-                let message = format!(
-                    "Segment '{}' is defined again; the first definition is kept",
-                    show(name)
-                );
+                let message = || {
+                    format!(
+                        "Segment '{}' is defined again; the first definition is kept",
+                        show(name)
+                    )
+                };
                 b.warn(no, WarningKind::DuplicateSegment, message);
                 false
             }
@@ -125,7 +129,7 @@ impl Fastg {
                 ..
             }) = edge_name(token)
             else {
-                let message = format!("FASTG neighbour is not an EDGE name: '{}'", show(token));
+                let message = || format!("FASTG neighbour is not an EDGE name: '{}'", show(token));
                 b.warn(no, WarningKind::Malformed, message);
                 continue;
             };

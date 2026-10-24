@@ -1,6 +1,32 @@
 //! Grammar from the GFA 1 spec:
 //! <https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md>
 
+pub(crate) fn tabs(line: &[u8]) -> Tabs<'_> {
+    Tabs { rest: Some(line) }
+}
+
+pub(crate) struct Tabs<'a> {
+    rest: Option<&'a [u8]>,
+}
+
+impl<'a> Iterator for Tabs<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        let rest = self.rest?;
+        match memchr::memchr(b'\t', rest) {
+            Some(i) => {
+                self.rest = Some(&rest[i + 1..]);
+                Some(&rest[..i])
+            }
+            None => {
+                self.rest = None;
+                Some(rest)
+            }
+        }
+    }
+}
+
 /// Returns `true` for reverse.
 pub(crate) fn orientation(field: &[u8]) -> Option<bool> {
     match field {

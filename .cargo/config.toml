@@ -1,0 +1,4 @@
+# WASM SIMD lets memchr scan for newlines and tabs 16 bytes at a time.
+# Supported by every browser GRAPE targets (Chrome 91, Firefox 89, Safari 16.4).
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]

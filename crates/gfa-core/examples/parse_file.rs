@@ -23,15 +23,18 @@ fn main() {
     for chunk in bytes.chunks(4 << 20) {
         parser.push(chunk);
     }
+    let streamed = start.elapsed().as_secs_f64();
     let graph = parser.finish().unwrap_or_else(|e| panic!("{e}"));
     let seconds = start.elapsed().as_secs_f64();
     let mb = bytes.len() as f64 / 1e6;
     let memory = graph.memory();
     println!("file        {mb:.1} MB");
     println!(
-        "parse       {:.0} ms, {:.0} MB/s",
+        "parse       {:.0} ms, {:.0} MB/s (streaming {:.0} ms, finishing {:.0} ms)",
         seconds * 1e3,
-        mb / seconds
+        mb / seconds,
+        streamed * 1e3,
+        (seconds - streamed) * 1e3
     );
     println!("format      {:?}", graph.format);
     println!("segments    {}", graph.stats.segments);

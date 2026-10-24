@@ -42,7 +42,7 @@ pub struct Warnings {
 }
 
 impl Warnings {
-    pub(crate) fn push(&mut self, line: u64, kind: WarningKind, message: String) {
+    pub(crate) fn push(&mut self, line: u64, kind: WarningKind, message: impl FnOnce() -> String) {
         let severity = match kind {
             WarningKind::UndefinedSegment => Severity::Error,
             _ => Severity::Warning,
@@ -53,7 +53,7 @@ impl Warnings {
                 line,
                 severity,
                 kind,
-                message,
+                message: message(),
             });
         }
     }
@@ -109,7 +109,7 @@ mod tests {
     fn stores_up_to_the_cap() {
         let mut w = Warnings::default();
         for i in 0..(MAX_STORED as u64 + 5) {
-            w.push(i, WarningKind::Malformed, String::new());
+            w.push(i, WarningKind::Malformed, String::new);
         }
         assert_eq!(w.list.len(), MAX_STORED);
         assert_eq!(w.total, MAX_STORED as u64 + 5);
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn undefined_segments_are_errors() {
         let mut w = Warnings::default();
-        w.push(1, WarningKind::UndefinedSegment, String::new());
+        w.push(1, WarningKind::UndefinedSegment, String::new);
         assert_eq!(w.list[0].severity, Severity::Error);
     }
 

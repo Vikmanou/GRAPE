@@ -42,8 +42,8 @@ pub fn snapshot(g: &Graph) -> String {
     for i in 0..l.len() {
         writeln!(
             s,
-            "L {} {} {:x} {}",
-            l.from[i], l.to[i], l.bits[i], l.overlap[i]
+            "L {} {} {:x} {} {}",
+            l.from[i], l.to[i], l.bits[i], l.overlap_from[i], l.overlap_to[i]
         )
         .unwrap();
     }

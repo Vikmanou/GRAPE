@@ -134,26 +134,20 @@ pub(crate) struct BaseCount {
 
 impl BaseCount {
     pub(crate) fn add(&mut self, seq: &[u8]) {
-        // Independent lanes so consecutive bytes do not wait on one counter;
-        // this loop sees every base in the file.
-        let mut acgt = [0u64; 4];
-        let mut gc = [0u64; 4];
-        let (chunks, rest) = seq.as_chunks::<4>();
-        for c in chunks {
-            for lane in 0..4 {
-                let code = CODE[c[lane] as usize];
-                acgt[lane] += u64::from(code < 4);
-                gc[lane] += u64::from(code == 1 || code == 2);
+        // Branch-free compares on blocks small enough for u8 lanes, so LLVM
+        // vectorizes this loop (SSE natively, simd128 in WASM); it sees every
+        // base in the file. `| 0x20` lowercases letters and only letters.
+        for block in seq.chunks(255) {
+            let (mut gc, mut at) = (0u8, 0u8);
+            for &b in block {
+                let l = b | 0x20;
+                gc += u8::from(l == b'c') + u8::from(l == b'g');
+                at += u8::from(l == b'a') + u8::from(l == b't');
             }
-        }
-        for &b in rest {
-            let code = CODE[b as usize];
-            acgt[0] += u64::from(code < 4);
-            gc[0] += u64::from(code == 1 || code == 2);
+            self.gc += u64::from(gc);
+            self.acgt += u64::from(gc) + u64::from(at);
         }
         self.len += seq.len() as u64;
-        self.acgt += acgt.iter().sum::<u64>();
-        self.gc += gc.iter().sum::<u64>();
     }
 
     pub(crate) fn gc_fraction(&self) -> f32 {

@@ -90,7 +90,8 @@ impl Graph {
         l.from.shrink_to_fit();
         l.to.shrink_to_fit();
         l.bits.shrink_to_fit();
-        l.overlap.shrink_to_fit();
+        l.overlap_from.shrink_to_fit();
+        l.overlap_to.shrink_to_fit();
         self.paths.steps.shrink_to_fit();
         if let Some(p) = &mut self.packed {
             p.bits.shrink_to_fit();
@@ -101,7 +102,7 @@ impl Graph {
     pub fn memory(&self) -> MemoryReport {
         let fixed = self.segments.heap_bytes()
             + self.names.arena.offset_bytes()
-            + self.names.table_bytes()
+            + self.names.index_bytes()
             + self.adjacency.offsets.capacity() * 4;
         MemoryReport {
             per_segment: fixed as f64 / self.segments.len().max(1) as f64,

@@ -141,13 +141,19 @@ fn mirror_links_are_deduplicated() {
             link("1", '+', "3", '+')
         ]
     );
-    assert_eq!(g.links.overlap, [5, 5, 5]);
-    assert_eq!(g.counts.duplicate_links, 1);
+    // Line 8 is the mirror of line 7 with its own overlap (per strand);
+    // line 9 has an insertion, so its sides differ.
+    assert_eq!(g.links.overlap_from, [5, 5, 5]);
+    assert_eq!(g.links.overlap_to, [5, 4, 6]);
+    assert_eq!(
+        (g.counts.duplicate_links, g.counts.per_strand_overlaps),
+        (1, 1)
+    );
     assert_eq!(
         warnings(&g),
         [
-            (8, WarningKind::OverlapConflict),
-            (9, WarningKind::ComplexOverlap)
+            (9, WarningKind::ComplexOverlap),
+            (10, WarningKind::OverlapConflict)
         ]
     );
 }

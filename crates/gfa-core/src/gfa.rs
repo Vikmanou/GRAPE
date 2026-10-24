@@ -11,7 +11,7 @@ use crate::warnings::{FatalError, WarningKind, show};
 
 /// `offset` is the file offset of the line's first byte.
 pub(crate) fn line(b: &mut Builder, line: &[u8], offset: u64, no: u64) {
-    let mut fields = line.split(|&c| c == b'\t');
+    let mut fields = fields::tabs(line);
     let kind = fields.next().unwrap_or_default();
     match kind {
         b"" => {}
@@ -28,15 +28,13 @@ pub(crate) fn line(b: &mut Builder, line: &[u8], offset: u64, no: u64) {
 }
 
 fn malformed(b: &mut Builder, no: u64, what: &str) {
-    b.warn(no, WarningKind::Malformed, what.to_owned());
+    b.warn(no, WarningKind::Malformed, || what.to_owned());
 }
 
 fn malformed_tag(b: &mut Builder, no: u64, what: &str, field: &[u8]) {
-    b.warn(
-        no,
-        WarningKind::MalformedTag,
-        format!("{what}: '{}'", show(field)),
-    );
+    b.warn(no, WarningKind::MalformedTag, || {
+        format!("{what}: '{}'", show(field))
+    });
 }
 
 fn header<'a>(b: &mut Builder, fields: impl Iterator<Item = &'a [u8]>, no: u64) {
@@ -111,14 +109,12 @@ fn segment<'a>(
 
     let length = if seq == b"*" {
         tags.ln.unwrap_or_else(|| {
-            b.warn(
-                no,
-                WarningKind::MissingLength,
+            b.warn(no, WarningKind::MissingLength, || {
                 format!(
                     "Segment '{}' has no sequence and no LN tag; its length is 0",
                     show(name)
-                ),
-            );
+                )
+            });
             0
         })
     } else {
@@ -127,15 +123,13 @@ fn segment<'a>(
         if let Some(ln) = tags.ln
             && ln != count.len
         {
-            b.warn(
-                no,
-                WarningKind::LengthMismatch,
+            b.warn(no, WarningKind::LengthMismatch, || {
                 format!(
                     "Segment '{}' has LN:i:{ln} but a sequence of {} bases",
                     show(name),
                     count.len
-                ),
-            );
+                )
+            });
         }
         b.segments.gc[i] = count.gc_fraction();
         b.segments.flags[i] |= seg_flags::HAS_SEQ;
@@ -156,12 +150,10 @@ fn segment<'a>(
 }
 
 pub(crate) fn sequences_dropped(b: &mut Builder, no: u64) {
-    b.warn(
-        no,
-        WarningKind::SequencesDropped,
+    b.warn(no, WarningKind::SequencesDropped, || {
         "Sequences exceed the memory budget and were dropped; sequence search is disabled"
-            .to_owned(),
-    );
+            .to_owned()
+    });
 }
 
 /// Bandage's rule: DP, else KC, RC or FC divided by length.
@@ -177,14 +169,12 @@ fn depth(tags: &SegmentTags, length: u64) -> f32 {
 
 pub(crate) fn clamp_length(b: &mut Builder, length: u64, name: &[u8], no: u64) -> u32 {
     u32::try_from(length).unwrap_or_else(|_| {
-        b.warn(
-            no,
-            WarningKind::SegmentTooLong,
+        b.warn(no, WarningKind::SegmentTooLong, || {
             format!(
                 "Segment '{}' is longer than 4 Gb; its length is capped",
                 show(name)
-            ),
-        );
+            )
+        });
         u32::MAX
     })
 }

@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 hashbrown.workspace = true
+memchr.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

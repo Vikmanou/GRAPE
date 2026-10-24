@@ -19,6 +19,8 @@ wasm-bindgen = "=0.2.129"
 # HashMap cannot do without copying every key.
 hashbrown = { version = "=0.17.1", default-features = false, features = ["default-hasher", "inline-more"] }
 proptest = "=1.12.0"
+# Newline and tab scanning; uses SIMD natively and with wasm simd128.
+memchr = "=2.8.3"
 
 [profile.release]
 opt-level = 3

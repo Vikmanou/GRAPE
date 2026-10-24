@@ -70,7 +70,7 @@ impl Parser {
             }
         }
         let mut start = 0;
-        while let Some(nl) = chunk[start..].iter().position(|&b| b == b'\n') {
+        while let Some(nl) = memchr::memchr(b'\n', &chunk[start..]) {
             let end = start + nl;
             if self.carry.is_empty() {
                 self.line(&chunk[start..end], self.offset + start as u64);
