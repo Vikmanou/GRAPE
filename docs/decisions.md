@@ -87,3 +87,76 @@ decision, reason, alternatives considered.
   shared store and strictness, and pnpm is an extra global tool to install
   (Node 25+ dropped corepack, the built-in way to enable it). Owner's choice.
 - **Alternatives**: pnpm as the spec says; yarn.
+
+## 2026-10-24: FASTG in v1, from milestone 1
+
+- **Decision**: read SPAdes-style FASTG (`>EDGE_<n>_length_<l>_cov_<c>[']:...;`)
+  next to GFA. Names are the edge number, depth is `cov`, and a reverse
+  record defines a segment only when no forward record exists. Overlaps are
+  left unknown; inferring them waits for chain merging (milestone 5).
+- **Reason**: owner's choice; SPAdes writes it and Bandage reads it, and it
+  maps onto the same store with little code.
+- **Alternatives**: later version; v1 in milestone 5.
+
+## 2026-10-24: GFA 2.0 is rejected with a message
+
+- **Decision**: `VN:Z:2.x` or any `E`/`F`/`G`/`O`/`U` record stops the load
+  with "GFA 2.0 is not supported".
+- **Reason**: few assemblers emit GFA 2, and loading only its GFA 1 lines
+  would show a silently wrong graph.
+- **Alternatives**: parse an S/E/O/U subset; warn and keep GFA 1 lines.
+
+## 2026-10-24: hashbrown for the name and link tables
+
+- **Decision**: `hashbrown::HashTable<u32>` maps names (and canonical links)
+  to ids, hashing through the arenas so no key is copied.
+- **Reason**: keeps the store under the 64 bytes per segment target
+  (measured 44.8 B on a 200k graph); std `HashMap` has no such API.
+- **Alternatives**: std `HashMap<Box<[u8]>, u32>` (a second copy of every
+  name); sorted name index built after parsing (no lookups while streaming).
+
+## 2026-10-24: Memory target excludes name text
+
+- **Decision**: the "< 64 bytes per segment excluding sequence" target is
+  measured over the fixed per-segment structures (segment arrays, name
+  offsets, name hash table, adjacency offsets). Name text is reported
+  separately.
+- **Reason**: names are file content of any length (SPAdes names run to 30+
+  bytes), so no fixed budget can include them.
+
+## 2026-10-24: Link overlaps keep one side
+
+- **Decision**: a link is stored once in canonical form with the overlap
+  length on its From side. CIGARs with indels or clipping set a flag and get
+  one summary warning.
+- **Reason**: the GFA 1 spec makes From the reference and To the query, so
+  the two sides differ only for non-`M` CIGARs, which assemblers rarely
+  write. Exact trimming matters first for chain merging.
+
+## 2026-10-24: Undefined depth is NaN, not 1
+
+- **Decision**: segments without DP/KC/RC/FC tags have depth NaN and are
+  left out of the length-weighted mean.
+- **Reason**: the spec says NaN; Bandage uses 1.0, which would skew the mean.
+  Tag priority (DP, then KC/RC/FC divided by length, tag names
+  case-insensitive) follows Bandage's `buildDeBruijnGraphFromGfa`.
+
+## 2026-10-24: bgzip read block by block
+
+- **Decision**: gzip files whose header carries a BGZF `BC` field are split at
+  block boundaries (no decompression needed to find them) and each block goes
+  through its own `DecompressionStream`, eight at a time. Other multi-member
+  gzip files fail with a message to decompress first.
+- **Reason**: Chrome's `DecompressionStream('gzip')` stops after the first
+  member with "Junk found after end of compressed data" (Node's does not),
+  and bgzip output is multi-member by design. Owner's choice.
+- **Alternatives**: inflate in Rust with flate2/miniz_oxide (a dependency and
+  slower than the native path); single-member gzip only.
+
+## 2026-10-24: Fuzzing on Windows uses MSVC AddressSanitizer
+
+- **Decision**: `npm run fuzz` installs nightly and cargo-fuzz, finds MSVC's
+  `clang_rt.asan_dynamic-x86_64.dll` with vswhere and puts it on PATH.
+- **Reason**: without the DLL the fuzz binary exits with
+  STATUS_DLL_NOT_FOUND, and `-s none` fails to link on MSVC (unresolved
+  `__start/__stop___sancov_pcs`).
