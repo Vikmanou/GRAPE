@@ -23,8 +23,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Expects the WASM module to be built already (`pnpm wasm`).
-    command: `pnpm exec vite --port ${port} --strictPort`,
+    // Expects the WASM module to be built already (`npm run wasm`).
+    command: `npx vite --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
   },

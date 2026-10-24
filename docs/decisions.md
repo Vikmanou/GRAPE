@@ -65,20 +65,23 @@ decision, reason, alternatives considered.
 
 - **Decision**: the Playwright smoke test passes on WebGPU, the WebGL2 notice
   or the unsupported message, as long as the WASM core loads and there are no
-  page errors. WebGPU is verified locally with `pnpm e2e --headed`.
+  page errors. WebGPU is verified locally with `node scripts/check.mjs --headed`.
 - **Reason**: headless Chromium on CI and on Windows returns no WebGPU adapter.
 
-## 2026-10-23: pnpm installed with npm
+## 2026-10-23: Root npm workspace and one gate script
 
-- **Decision**: install pnpm with `npm i -g pnpm`; CI uses `pnpm/action-setup`.
-- **Reason**: Node 25+ no longer bundles corepack.
-
-## 2026-10-23: Root pnpm workspace and one gate script
-
-- **Decision**: the repo root is a pnpm workspace (`web` is its only package)
+- **Decision**: the repo root is an npm workspace (`web` is its only package)
   with one lockfile, and `scripts/check.mjs` is the single quality gate, run
   locally and by CI on Linux and Windows.
 - **Reason**: everything runs from the root, and CI cannot drift from local
   runs because it runs the same script.
 - **Alternatives**: separate `check.sh` and `check.ps1`; listing every step
   in the CI YAML.
+
+## 2026-10-24: npm instead of pnpm (departs from the spec)
+
+- **Decision**: use npm, which ships with Node, instead of the spec's pnpm.
+- **Reason**: a solo repo with one JavaScript package gets little from pnpm's
+  shared store and strictness, and pnpm is an extra global tool to install
+  (Node 25+ dropped corepack, the built-in way to enable it). Owner's choice.
+- **Alternatives**: pnpm as the spec says; yarn.

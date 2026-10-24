@@ -14,20 +14,22 @@ Chrome and Edge are the primary targets.
 
 ## Development
 
-Prerequisites: Rust, Node 22+ and pnpm. The pinned Rust toolchain and the
-matching `wasm-bindgen-cli` install themselves on the first build.
+Prerequisites: Rust and Node 22+ (npm comes with it). The pinned Rust
+toolchain and the matching `wasm-bindgen-cli` install themselves on the
+first build.
 
 From the repo root:
 
 ```sh
-pnpm install
-pnpm dev                          # build the WASM core, start Vite
-pnpm check                        # full gate: what CI runs
-pnpm check:quick                  # Rust + TS checks and unit tests only
+npm install
+npx playwright install chromium   # once, for the browser tests
+npm run dev                       # build the WASM core, start Vite
+npm run check                     # full gate: what CI runs
+npm run check:quick               # Rust + TS checks and unit tests only
 node scripts/check.mjs --headed   # full gate, Playwright on the real GPU
 ```
 
-Headless Chromium has no WebGPU adapter, so a plain `pnpm check` exercises
+Headless Chromium has no WebGPU adapter, so a plain `npm run check` exercises
 the fallback path only; `--headed` covers WebGPU.
 
 ## Layout

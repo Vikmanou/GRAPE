@@ -18,7 +18,7 @@ Follow the working agreement in `CLAUDE.md`. This is the procedure.
    performance targets, risks). Use the `pages` parameter; the PDF is long.
 2. Read `docs/decisions.md`, `git log --oneline -20`, and the code the
    milestone will touch.
-3. Run `pnpm check:quick` so the plan starts from a known-green tree. If it is
+3. Run `npm run check:quick` so the plan starts from a known-green tree. If it is
    red, report that first.
 
 ## Phase 2: Plan, then stop
@@ -44,7 +44,7 @@ Then stop and wait for approval. Do not write code in this phase.
 
 - Work on `main` in the order of the approved commit sequence. If the order
   needs to change, say so in one line and continue.
-- Before each commit: `pnpm check:quick` green. Stage only the files that
+- Before each commit: `npm run check:quick` green. Stage only the files that
   belong to that commit.
 - Commit with `git commit -m "<one sentence no punctuation>"`. No
   co-author trailer. Never push.
@@ -55,7 +55,7 @@ Then stop and wait for approval. Do not write code in this phase.
 
 ## Phase 4: Verify
 
-1. `pnpm check` (the full gate) must pass.
+1. `npm run check` (the full gate) must pass.
 2. For anything rendered: run `node scripts/check.mjs --headed`, and take a
    headed screenshot with a throwaway Playwright spec in the scratchpad
    (copied into `web/tests/e2e/` only while it runs, then deleted). Look at it.

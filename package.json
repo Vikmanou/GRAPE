@@ -3,15 +3,17 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@12.15.0",
   "engines": {
     "node": ">=22"
   },
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
     "check": "node scripts/check.mjs",
     "check:quick": "node scripts/check.mjs --quick",
-    "dev": "pnpm --filter grape-web dev",
-    "build": "pnpm --filter grape-web build",
-    "e2e": "pnpm --filter grape-web e2e"
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "e2e": "npm run e2e -w web"
   }
 }

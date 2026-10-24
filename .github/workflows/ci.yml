@@ -33,16 +33,15 @@ jobs:
         with:
           tool: wasm-bindgen-cli@0.2.129
 
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter grape-web exec playwright install --with-deps chromium
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
 
-      # The same gate contributors run locally.
-      - run: pnpm check
+      # The same gate that runs locally.
+      - run: npm run check
 
       - uses: actions/upload-artifact@v4
         if: failure()

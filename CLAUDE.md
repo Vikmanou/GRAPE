@@ -22,8 +22,8 @@ Run it with `/milestone <n> <path to spec pdf>`, or follow it by hand:
    the spec leaves open. Ask the questions that affect file formats, the
    share-link format or the public API. Wait for approval before code.
 3. **Build** in small commits in a logical order. Each commit builds and
-   passes `pnpm check:quick`.
-4. **Verify**: `pnpm check` green; anything GPU-related checked with
+   passes `npm run check:quick`.
+4. **Verify**: `npm run check` green; anything GPU-related checked with
    `node scripts/check.mjs --headed` or a screenshot from a headed browser;
    performance targets measured, not assumed.
 5. **Stop** with a demo note: what works, how to try it, measured numbers
@@ -76,7 +76,7 @@ view state and a fingerprint, never sequences.
 ## Environment notes
 
 - Development is on Windows (PowerShell); CI runs Linux and Windows.
-- `pnpm check` is the gate and is exactly what CI runs.
+- `npm run check` is the gate and is exactly what CI runs.
 - Headless Chromium has no WebGPU adapter: headless Playwright covers the
   fallback path only. Use `--headed` for the WebGPU path.
 - `wasm-bindgen-cli` must match `Cargo.lock` exactly; the WASM build installs

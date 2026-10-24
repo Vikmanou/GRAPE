@@ -10,8 +10,9 @@
   "scripts": {
     "wasm": "node scripts/build-wasm.mjs",
     "wasm:dev": "node scripts/build-wasm.mjs --dev",
-    "dev": "pnpm wasm:dev && vite",
-    "build": "pnpm wasm && pnpm typecheck && vite build",
+    "dev": "npm run wasm:dev && vite",
+    "build": "npm run wasm && npm run typecheck && vite build",
+    "build:site": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

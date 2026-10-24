@@ -15,7 +15,10 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const quick = process.argv.includes('--quick');
 const headed = process.argv.includes('--headed');
 
-const web = (script, ...args) => ['pnpm', ['--filter', 'grape-web', script, ...args]];
+const web = (script, ...args) => [
+  'npm',
+  ['run', script, '--workspace', 'web', ...(args.length > 0 ? ['--', ...args] : [])],
+];
 
 const steps = [
   ['rustfmt', 'cargo', ['fmt', '--all', '--check']],
@@ -28,7 +31,7 @@ const steps = [
   ...(quick
     ? []
     : [
-        ['vite build', ...web('exec', 'vite', 'build')],
+        ['vite build', ...web('build:site')],
         ['bundle size', ...web('size')],
         ['playwright', ...web('e2e', ...(headed ? ['--headed'] : []))],
       ]),
@@ -38,11 +41,11 @@ const results = [];
 for (const [name, cmd, args] of steps) {
   console.log(`\n=== ${name}: ${cmd} ${args.join(' ')}`);
   const start = performance.now();
-  // pnpm is a .cmd shim on Windows, which spawn can only start through a shell.
+  // npm is a .cmd shim on Windows, which spawn can only start through a shell.
   const result = spawnSync(cmd, args, {
     cwd: root,
     stdio: 'inherit',
-    shell: process.platform === 'win32' && cmd === 'pnpm',
+    shell: process.platform === 'win32' && cmd === 'npm',
   });
   const seconds = ((performance.now() - start) / 1000).toFixed(1);
   const ok = result.status === 0;

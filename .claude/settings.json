@@ -3,8 +3,10 @@
     "allow": [
       "Bash(cargo *)",
       "PowerShell(cargo *)",
-      "Bash(pnpm *)",
-      "PowerShell(pnpm *)",
+      "Bash(npm *)",
+      "PowerShell(npm *)",
+      "Bash(npx playwright *)",
+      "PowerShell(npx playwright *)",
       "Bash(node scripts/check.mjs *)",
       "PowerShell(node scripts/check.mjs *)",
       "Bash(git status *)",
