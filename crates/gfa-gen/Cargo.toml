@@ -1,0 +1,11 @@
+[package]
+name = "gfa-gen"
+description = "Synthetic GFA graphs for GRAPE tests and benchmarks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dev-dependencies]
+gfa-core.workspace = true

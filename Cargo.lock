@@ -162,6 +162,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "gfa-gen"
+version = "0.1.0"
+dependencies = [
+ "gfa-core",
+]
+
+[[package]]
 name = "gfa-wasm"
 version = "0.1.0"
 dependencies = [
