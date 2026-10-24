@@ -1,16 +1,12 @@
-# Rust
+# Build output
 /target/
-
-# Web
 node_modules/
 /web/dist/
 /web/src/wasm/pkg/
+
+# Test output
 /web/test-results/
 /web/playwright-report/
-*.tsbuildinfo
-
-# Large real test graphs fetched by scripts/fetch-testdata.sh
-/testdata/large/
 
 # OS and editors
 .DS_Store
