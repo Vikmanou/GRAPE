@@ -9,6 +9,7 @@ mod fastg;
 mod fields;
 mod gfa;
 mod graph;
+pub mod layout;
 mod names;
 mod parser;
 mod paths;
