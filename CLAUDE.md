@@ -56,7 +56,10 @@ saying so.
   Worker messages are discriminated unions in `protocol.ts`; big data crosses
   as transferable typed arrays.
 - **Files** under about 400 lines; split into modules before they grow.
-- **Comments** explain why, not what, and describe the code as it is now.
+- **Comments**: rare. Code should read clearly without them; write one
+  only when something is not obvious from the code itself (a non-obvious
+  reason, a format rule, a source citation). No doc comments that restate a
+  name.
 - **Dependencies**: none without a reason stated in the plan; prefer the
   platform (`DecompressionStream`, raw WebGPU, `node:` built-ins). Pin exact
   versions.
