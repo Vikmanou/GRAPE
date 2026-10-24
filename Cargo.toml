@@ -14,6 +14,10 @@ gfa-core = { path = "crates/gfa-core" }
 # Exact pin: the WASM build installs the CLI version locked here, so bumping
 # it costs a one-time CLI rebuild and should be deliberate.
 wasm-bindgen = "=0.2.129"
+# Name and link tables store u32 ids and hash through the arenas, which std
+# HashMap cannot do without copying every key.
+hashbrown = { version = "=0.17.1", default-features = false, features = ["default-hasher", "inline-more"] }
+proptest = "=1.12.0"
 
 [profile.release]
 opt-level = 3

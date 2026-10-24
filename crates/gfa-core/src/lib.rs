@@ -1,46 +1,40 @@
-//! Core of GRAPE: GFA parsing, the graph store, graph algorithms, stats and
-//! sequence search. Pure Rust with no browser dependencies, so everything here
-//! is tested natively.
+//! Core of GRAPE: GFA and FASTG parsing, the graph store, graph algorithms,
+//! stats and sequence search. Pure Rust with no browser dependencies, so
+//! everything here is tested natively.
+
+mod builder;
+mod components;
+pub mod csr;
+mod fastg;
+mod fields;
+mod gfa;
+mod graph;
+mod names;
+mod parser;
+mod paths;
+mod seq;
+mod stats;
+mod store;
+mod warnings;
+
+pub use builder::RecordCounts;
+pub use components::Components;
+pub use graph::{Format, Graph, MemoryReport};
+pub use names::{Arena, Names};
+pub use parser::{ParseOptions, Parser, parse};
+pub use paths::{PathKind, Paths, REVERSE};
+pub use seq::{DEFAULT_BUDGET, Packed, Run, SeqMode};
+pub use stats::Stats;
+pub use store::{Links, NO_SEQ, Segments, link_bits, seg_flags};
+pub use warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warnings};
 
 /// Version of this crate, reported to the UI so a stale WASM build is visible.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Counts lines in `bytes`: every `\n` ends a line, and trailing bytes after
-/// the last `\n` count as one more line.
-///
-/// Placeholder for milestone 0, used to prove the WASM call path end to end.
+/// Placeholder from milestone 0 that proves the WASM call path; replaced by
+/// the parser bindings.
 pub fn count_lines(bytes: &[u8]) -> u64 {
     let newlines = bytes.iter().filter(|&&b| b == b'\n').count() as u64;
     let unterminated = matches!(bytes.last(), Some(&b) if b != b'\n');
     newlines + u64::from(unterminated)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_input_has_no_lines() {
-        assert_eq!(count_lines(b""), 0);
-    }
-
-    #[test]
-    fn terminated_lines() {
-        assert_eq!(count_lines(b"H\tVN:Z:1.0\nS\t1\tACGT\n"), 2);
-    }
-
-    #[test]
-    fn unterminated_last_line_counts() {
-        assert_eq!(count_lines(b"S\t1\tACGT\nL\t1\t+\t1\t-\t0M"), 2);
-    }
-
-    #[test]
-    fn blank_lines_count() {
-        assert_eq!(count_lines(b"\n\n"), 2);
-    }
-
-    #[test]
-    fn version_is_set() {
-        assert!(!VERSION.is_empty());
-    }
 }

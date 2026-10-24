@@ -7,3 +7,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+hashbrown.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
