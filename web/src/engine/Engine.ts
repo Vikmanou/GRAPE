@@ -1,7 +1,9 @@
 import type { Geometry, Hierarchy } from '../workers/protocol';
 import { boundsOf, type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './camera';
 import { browserEnv, requestAdapter } from './detect';
+import { FrameCounter, type FrameStats } from './frames';
 import { attachInput } from './input';
+import { PassTiming } from './layout/gpu';
 import { createKernels, type Kernels } from './layout/kernels';
 import { type LayoutProgress, LayoutRunner } from './layout/runner';
 import { palettes, randomColors, type Theme } from './palette';
@@ -27,7 +29,7 @@ export type EngineEvent =
   /** `x0, y0, x1, y1` per component as the GPU layout runs, a few times a second. */
   | { type: 'layout-measured'; boxes: Float32Array<ArrayBuffer>; progress: LayoutProgress }
   /** Sent after each second of continuous drawing, such as a pan or zoom. */
-  | { type: 'frame-stats'; fps: number; cpuMs: number };
+  | ({ type: 'frame-stats' } & FrameStats);
 
 type Listener = (event: EngineEvent) => void;
 
@@ -41,14 +43,20 @@ const FIT_MARGIN = 24;
  * pixels from the upload origin, keeping shader maths within f32 precision.
  */
 const REBASE_PIXELS = 1e5;
-const STATS_INTERVAL_MS = 1000;
+/**
+ * While the layout runs, the graph is redrawn at most this often, and less
+ * often when a draw is slow, so drawing takes at most a sixth of the GPU.
+ * Moving the view still redraws every frame.
+ */
+const LAYOUT_REDRAW_MS = 100;
+const LAYOUT_DRAW_SHARE = 6;
+/** The view counts as moving for this long after the last pan or zoom. */
+const INTERACTION_MS = 250;
 
 /** Links fade out as ribbons shrink from 3 to 1 pixel wide. */
 function linkFade(ribbonPixels: number): number {
   return Math.min(1, Math.max(0, (ribbonPixels - 1) / 2));
 }
-/** Frames further apart than this are not part of continuous drawing. */
-const CONTINUOUS_GAP_MS = 50;
 
 /**
  * Owns the canvas, the GPU device and the frame loop. The UI never touches
@@ -70,7 +78,15 @@ export class Engine {
   /** Keeps the graph framed while the layout settles, until the user moves the view. */
   private autoFit = true;
   private insets: Insets = NO_INSETS;
-  private stats = { last: 0, time: 0, frames: 0, cpuMs: 0 };
+  private readonly frames = new FrameCounter();
+  private lastDraw = -Infinity;
+  /** GPU time of recent draws, where the adapter reports it. */
+  private drawMs = 0;
+  private lastInteraction = -Infinity;
+  /** Something other than layout progress changed since the last draw. */
+  private dirty = true;
+  /** Layout positions moved since they were last presented. */
+  private stale = false;
 
   private constructor(
     host: HTMLElement,
@@ -128,6 +144,7 @@ export class Engine {
     // The defaults (128 MB bindings) are below what large graphs need and
     // below what most adapters offer.
     const device = await adapter.requestDevice({
+      requiredFeatures: adapter.features.has('timestamp-query') ? ['timestamp-query'] : [],
       requiredLimits: {
         maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
         maxBufferSize: adapter.limits.maxBufferSize,
@@ -157,6 +174,7 @@ export class Engine {
         this.theme = command.theme;
         break;
       case 'set-graph':
+        this.runner.stop();
         this.renderer.setGeometry(command.geometry, randomColors(command.geometry.segments, command.seed));
         this.positions = undefined;
         this.bounds = undefined;
@@ -179,7 +197,10 @@ export class Engine {
         this.runner.setOffsets(command.offsets);
         this.bounds = this.runner.bounds();
         if (this.autoFit) this.fitView();
-        break;
+        // Waits for the next layout redraw, like any other layout progress.
+        this.stale = true;
+        this.scheduleFrame();
+        return;
       case 'fit':
         this.autoFit = true;
         this.fitView();
@@ -219,6 +240,7 @@ export class Engine {
   }
 
   private moveCamera(camera: Camera): void {
+    this.lastInteraction = performance.now();
     this.autoFit = false;
     this.camera = camera;
     this.requestFrame();
@@ -272,6 +294,11 @@ export class Engine {
 
   /** Frames are rendered on demand, never in a free-running loop. */
   private requestFrame(): void {
+    this.dirty = true;
+    this.scheduleFrame();
+  }
+
+  private scheduleFrame(): void {
     if (this.frameRequested || this.destroyed) return;
     this.frameRequested = true;
     requestAnimationFrame((now) => {
@@ -280,15 +307,36 @@ export class Engine {
     });
   }
 
+  /**
+   * Runs the layout's batch every frame, but redraws a settling layout only
+   * as `LAYOUT_REDRAW_MS` and `LAYOUT_DRAW_SHARE` allow.
+   */
   private render(now: number): void {
+    const interactive = now - this.lastInteraction < INTERACTION_MS;
+    this.stale = this.runner.tick(now, interactive) || this.stale;
+    const busy = this.runner.busy;
+    const redraw = Math.max(LAYOUT_REDRAW_MS, this.drawMs * LAYOUT_DRAW_SHARE);
+    if (this.dirty || (this.stale && (!busy || now - this.lastDraw >= redraw))) this.draw(now);
+    if (busy) this.scheduleFrame();
+  }
+
+  private draw(now: number): void {
     const started = performance.now();
+    this.dirty = false;
+    this.lastDraw = now;
     const c = this.camera;
-    const moved = this.runner.tick(now);
-    if (moved || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) this.upload();
+    if (this.stale || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) {
+      this.stale = false;
+      this.upload();
+    }
     const palette = palettes[this.theme];
     const [r, g, b, a] = palette.background;
     const encoder = this.device.createCommandEncoder({ label: 'frame' });
+    // Draws are timed only for the layout's redraw budget.
+    const timed = this.runner.busy && this.device.features.has('timestamp-query');
+    const timing = timed ? new PassTiming(this.device) : undefined;
     const pass = encoder.beginRenderPass({
+      ...(timing && { timestampWrites: timing.writes }),
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),
@@ -310,26 +358,12 @@ export class Engine {
       linkColor: palette.link,
     });
     pass.end();
+    timing?.resolve(encoder);
     this.device.queue.submit([encoder.finish()]);
-    this.recordFrame(now, performance.now() - started);
-    if (this.runner.busy) this.requestFrame();
-  }
-
-  private recordFrame(now: number, cpuMs: number): void {
-    const s = this.stats;
-    const gap = now - s.last;
-    s.last = now;
-    // Only back-to-back frames measure the frame rate; a frame drawn for an
-    // occasional layout update does not.
-    if (gap > CONTINUOUS_GAP_MS) return;
-    s.time += gap;
-    s.frames++;
-    s.cpuMs += cpuMs;
-    if (s.time >= STATS_INTERVAL_MS) {
-      this.emit({ type: 'frame-stats', fps: (s.frames * 1000) / s.time, cpuMs: s.cpuMs / s.frames });
-      s.time = 0;
-      s.frames = 0;
-      s.cpuMs = 0;
-    }
+    void timing?.ms().then((ms) => {
+      this.drawMs = this.drawMs * 0.7 + ms * 0.3;
+    });
+    const stats = this.frames.record(now, performance.now() - started, this.drawMs);
+    if (stats) this.emit({ type: 'frame-stats', ...stats });
   }
 }

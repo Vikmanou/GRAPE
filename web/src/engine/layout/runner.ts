@@ -1,11 +1,17 @@
 import type { Hierarchy } from '../../workers/protocol';
 import type { Bounds } from '../camera';
+import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
 import type { Kernels } from './kernels';
 
-/** Frames slower than this mean the batch is too big; faster ones that it can grow. */
-const SLOW_FRAME_MS = 22;
-const FAST_FRAME_MS = 18;
+/**
+ * GPU time a batch aims for, smaller while the user moves the view. Above a
+ * frame, so the two queued batches keep the GPU busy between frames.
+ */
+const BATCH_MS = 20;
+const INTERACTIVE_BATCH_MS = 4;
+/** Two batches queued keep the GPU busy while the next one is encoded. */
+const MAX_IN_FLIGHT = 2;
 /** Encoding an iteration costs the main thread about 50 µs. */
 const MAX_BATCH = 128;
 const MEASURE_INTERVAL_MS = 250;
@@ -25,18 +31,19 @@ export interface RunnerEvents {
 }
 
 /**
- * Drives a `GpuLayout` from the frame loop: a batch of iterations per frame
- * with at most one batch in flight, so the queue never backs up. The batch
- * grows while frames keep their pace and shrinks when they slow.
+ * Drives a `GpuLayout` from the frame loop: a batch of iterations per frame,
+ * with at most two in flight so the queue never backs up. Each batch is sized
+ * from the GPU time of the last one: timestamps where the adapter has them,
+ * otherwise the time until the queue reports it done, which runs long.
  */
 export class LayoutRunner {
   private layout: GpuLayout | undefined;
   private paused = false;
-  private inFlight = false;
+  private inFlight = 0;
   private measuring = false;
+  /** Iterations per batch; fractional so it can grow from 1 in small steps. */
   private batch = 1;
   private lastMeasure = -Infinity;
-  private lastTick = -Infinity;
   private batchLevel = -1;
   private batchNodes = 1;
   private reportedDone = false;
@@ -57,7 +64,7 @@ export class LayoutRunner {
 
   /** Whether the frame loop should keep going for the layout's sake. */
   get busy(): boolean {
-    return this.layout !== undefined && (!this.reportedDone || this.measuring || this.inFlight);
+    return this.layout !== undefined && (!this.reportedDone || this.measuring || this.inFlight > 0);
   }
 
   get bytes(): number {
@@ -106,22 +113,31 @@ export class LayoutRunner {
     return b;
   }
 
-  /** Runs this frame's batch. Returns whether positions moved since the last present. */
-  tick(now: number): boolean {
+  /** Runs this frame's batch. Returns whether positions moved since the last call. */
+  tick(now: number, interactive: boolean): boolean {
     const layout = this.layout;
     if (!layout) return false;
-    const interval = now - this.lastTick;
-    this.lastTick = now;
-    if (!this.paused && !this.inFlight && !layout.done) {
-      this.resize(layout.currentLevel, layout.levelNodes, interval);
-      this.moved ||= layout.run(this.batch) > 0;
-      this.inFlight = true;
-      void this.device.queue.onSubmittedWorkDone().then(() => {
-        this.inFlight = false;
+    if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) {
+      this.enterLevel(layout.currentLevel, layout.levelNodes);
+      const level = layout.currentLevel;
+      const timing = this.device.features.has('timestamp-query') ? new PassTiming(this.device) : undefined;
+      const submitted = performance.now();
+      this.moved ||= layout.run(Math.round(this.batch), timing) > 0;
+      this.inFlight++;
+      const measured = timing
+        ? timing.ms()
+        : this.device.queue.onSubmittedWorkDone().then(() => performance.now() - submitted);
+      void measured.then((ms) => {
+        this.inFlight--;
+        if (this.layout !== layout || layout.currentLevel !== level) return;
+        const factor = Math.min(2, Math.max(0.5, (interactive ? INTERACTIVE_BATCH_MS : BATCH_MS) / Math.max(ms, 0.05)));
+        this.batch = Math.min(MAX_BATCH, Math.max(1, this.batch * factor));
       });
     }
-    const finished = layout.done && !this.inFlight && !this.reportedDone;
-    if (!this.measuring && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) this.measure(layout, now);
+    const finished = layout.done && this.inFlight === 0;
+    if (!this.measuring && !this.reportedDone && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) {
+      this.measure(layout, now);
+    }
     const moved = this.moved;
     this.moved = false;
     return moved;
@@ -144,16 +160,11 @@ export class LayoutRunner {
   }
 
   /** A new level keeps the batch, scaled by how many more nodes each iteration moves. */
-  private resize(level: number, nodes: number, interval: number): void {
-    if (level !== this.batchLevel) {
-      this.batch = Math.max(1, Math.floor((this.batch * this.batchNodes) / Math.max(nodes, 1)));
-      this.batchLevel = level;
-      this.batchNodes = nodes;
-    } else if (interval < FAST_FRAME_MS) {
-      this.batch = Math.min(MAX_BATCH, Math.ceil(this.batch * 1.25));
-    } else if (interval > SLOW_FRAME_MS) {
-      this.batch = Math.max(1, Math.floor(this.batch * 0.7));
-    }
+  private enterLevel(level: number, nodes: number): void {
+    if (level === this.batchLevel) return;
+    this.batch = Math.max(1, (this.batch * this.batchNodes) / Math.max(nodes, 1));
+    this.batchLevel = level;
+    this.batchNodes = nodes;
   }
 
   private measure(layout: GpuLayout, now: number): void {

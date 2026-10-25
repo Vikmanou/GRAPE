@@ -61,7 +61,14 @@ export function StatusBar({ backend, core, load, layout, fps, onCancel, onToggle
         <span data-testid="status-segments">{formatCount(load.result.stats.segments)} segments</span>
       )}
       {layoutText && (
-        <span data-testid="status-layout" data-state={layout.state}>
+        <span
+          data-testid="status-layout"
+          data-state={layout.state}
+          data-ms={layout.state === 'done' ? Math.round(layout.ms) : undefined}
+          data-usable-ms={
+            layout.state === 'done' && layout.usableMs !== undefined ? Math.round(layout.usableMs) : undefined
+          }
+        >
           {layoutText}
         </span>
       )}
