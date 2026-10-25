@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { ParseResult } from '../workers/protocol';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from './format';
 
@@ -7,9 +8,11 @@ const compressionLabel = { none: '', gzip: ', gzipped', bgzf: ', bgzipped' } as 
 
 interface Props {
   result: ParseResult;
+  /** Shown under the file format, above the stats. */
+  children?: ReactNode;
 }
 
-export function Overview({ result }: Props) {
+export function Overview({ result, children }: Props) {
   const { stats, components } = result;
   const rows: [string, string, string][] = [
     ['segments', 'Segments', formatCount(stats.segments)],
@@ -43,6 +46,7 @@ export function Overview({ result }: Props) {
       {result.memory.sequencesDropped && (
         <p className="notice">Sequences exceeded the memory budget and were dropped.</p>
       )}
+      {children}
       <dl className="stats">
         {rows.map(([id, label, value]) => (
           <div key={id}>

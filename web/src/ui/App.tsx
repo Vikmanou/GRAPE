@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
 import type { Engine } from '../engine/Engine';
 import { DEFAULT_OPTIONS, useLayout } from '../state/layout';
+import type { LayoutOptions } from '../workers/protocol';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
+import { LayoutControls } from './LayoutControls';
 import { usePanelInsets } from './insets';
 import { Overview } from './Overview';
 import { StatusBar } from './StatusBar';
@@ -38,11 +40,13 @@ export function App() {
   const resetFps = useCallback(() => {
     setFps(undefined);
   }, []);
+  const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_OPTIONS);
+  const gpuLayout = backend === 'webgpu';
   const layout = useLayout(
     load.state === 'loaded' ? load.result.topology : undefined,
     engine,
-    backend === 'webgpu',
-    DEFAULT_OPTIONS,
+    gpuLayout,
+    layoutOptions,
     resetFps,
   );
   usePanelInsets(engine, load.state);
@@ -72,7 +76,18 @@ export function App() {
           <p>{load.message}</p>
         </div>
       )}
-      {load.state === 'loaded' && <Overview result={load.result} />}
+      {load.state === 'loaded' && (
+        <Overview result={load.result}>
+          <LayoutControls
+            options={layoutOptions}
+            status={layout.status}
+            paused={layout.paused}
+            canPause={gpuLayout}
+            onOptions={setLayoutOptions}
+            onPause={layout.setPaused}
+          />
+        </Overview>
+      )}
       {load.state === 'loaded' && showWarnings && (
         <Warnings
           warnings={load.result.warnings}
@@ -85,7 +100,8 @@ export function App() {
         backend={backend}
         core={core}
         load={load}
-        layout={layout}
+        layout={layout.status}
+        paused={layout.paused}
         fps={fps}
         onCancel={cancel}
         onToggleWarnings={() => {

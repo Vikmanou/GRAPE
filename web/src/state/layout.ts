@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Engine } from '../engine/Engine';
 import { LayoutClient } from '../workers/LayoutClient';
 import type { LayoutOptions, Topology } from '../workers/protocol';
@@ -24,6 +24,13 @@ export type LayoutStatus =
   | { state: 'done'; total: number; ms: number; usableMs?: number | undefined }
   | { state: 'failed'; message: string };
 
+export interface LayoutRun {
+  status: LayoutStatus;
+  paused: boolean;
+  /** Pauses or resumes the GPU layout; the CPU layout cannot pause. */
+  setPaused: (paused: boolean) => void;
+}
+
 /**
  * Lays out `topology`: on the GPU through `engine` when `gpu` is set,
  * otherwise in the layout worker. The worker always builds the geometry and,
@@ -35,9 +42,10 @@ export function useLayout(
   gpu: boolean,
   options: LayoutOptions,
   onGeometry: () => void,
-): LayoutStatus {
+): LayoutRun {
   // Tagged with its run, so a stale run reads as idle without an effect resetting it.
   const [run, setRun] = useState<{ topology?: Topology; key?: string; status: LayoutStatus }>({ status: IDLE });
+  const [pausedRun, setPausedRun] = useState<{ topology: Topology; key: string }>();
   const onGeometryRef = useRef(onGeometry);
   useEffect(() => {
     onGeometryRef.current = onGeometry;
@@ -108,5 +116,15 @@ export function useLayout(
     };
   }, [topology, engine, gpu, seed, quality, key]);
 
-  return run.topology === topology && run.key === key ? run.status : IDLE;
+  const current = run.topology === topology && run.key === key;
+  const paused = pausedRun !== undefined && pausedRun.topology === topology && pausedRun.key === key;
+  const setPaused = useCallback(
+    (pause: boolean) => {
+      if (!engine || !topology) return;
+      engine.send({ type: 'pause-layout', paused: pause });
+      setPausedRun(pause ? { topology, key } : undefined);
+    },
+    [engine, topology, key],
+  );
+  return { status: current ? run.status : IDLE, paused, setPaused };
 }

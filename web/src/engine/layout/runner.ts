@@ -64,7 +64,8 @@ export class LayoutRunner {
 
   /** Whether the frame loop should keep going for the layout's sake. */
   get busy(): boolean {
-    return this.layout !== undefined && (!this.reportedDone || this.measuring || this.inFlight > 0);
+    if (!this.layout) return false;
+    return this.measuring || this.inFlight > 0 || (!this.reportedDone && !this.paused);
   }
 
   get bytes(): number {
@@ -74,6 +75,7 @@ export class LayoutRunner {
   start(hierarchy: Hierarchy, seed: number): void {
     this.stop();
     this.layout = new GpuLayout(this.device, this.kernels, hierarchy, seed);
+    this.paused = false;
     this.batch = 1;
     this.batchLevel = -1;
     this.lastMeasure = -Infinity;

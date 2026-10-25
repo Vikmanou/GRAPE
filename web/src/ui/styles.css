@@ -332,3 +332,31 @@ button.warn {
   font-family: ui-monospace, monospace;
   font-size: 0.85rem;
 }
+
+.layout-controls .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.layout-controls input.seed {
+  width: 7.5em;
+}
+
+.layout-controls input,
+.layout-controls select {
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  border-color: var(--border);
+}

@@ -18,6 +18,7 @@ export type EngineCommand =
   | { type: 'start-layout'; hierarchy: Hierarchy; seed: number }
   /** `dx, dy` per component, packing the boxes of the last `layout-measured`. */
   | { type: 'set-offsets'; offsets: Float32Array }
+  | { type: 'pause-layout'; paused: boolean }
   | { type: 'fit' }
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets };
@@ -201,6 +202,9 @@ export class Engine {
         this.stale = true;
         this.scheduleFrame();
         return;
+      case 'pause-layout':
+        this.runner.setPaused(command.paused);
+        break;
       case 'fit':
         this.autoFit = true;
         this.fitView();
