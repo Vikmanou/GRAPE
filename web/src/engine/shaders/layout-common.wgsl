@@ -30,8 +30,11 @@ fn mix32(x: u32) -> u32 {
   return h;
 }
 
+// Each coordinate goes through the mixer on its own: folding them together
+// first (`x * k ^ y`) maps (1, 1) and (-1, -1) to the same value.
 fn cell_hash(component: u32, cell: vec2i) -> u32 {
-  return mix32((component * 0x9e3779b1u) ^ mix32((bitcast<u32>(cell.x) * 0x85ebca77u) ^ bitcast<u32>(cell.y)));
+  let h = mix32(component + 0x9e3779b9u);
+  return mix32(mix32(h ^ bitcast<u32>(cell.x)) ^ bitcast<u32>(cell.y));
 }
 
 fn cell_of(p: vec2f, size: f32) -> vec2i {

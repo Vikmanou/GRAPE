@@ -81,18 +81,24 @@ const binning: Check = async (device, kernels) => {
     const coarse = new Int32Array(await readBuffer(device, grid.coarse));
 
     const expected = new Map<number, number[]>();
-    const cells = new Map<number, { count: number; x: number; y: number; cx: number; cy: number }>();
+    const cells = new Map<string, { count: number; x: number; y: number; key: number; start: number }>();
     for (let i = 0; i < count; i++) {
       const [x, y, c] = [positions[i * 2] ?? 0, positions[i * 2 + 1] ?? 0, nodes[i * 4] ?? 0];
       const bucket = (cellHash(c, Math.floor(x / cell), Math.floor(y / cell)) & (sizes.fine - 1)) >>> 0;
       expected.set(bucket, [...(expected.get(bucket) ?? []), i]);
       const [cx, cy] = [Math.floor(x / coarseCell), Math.floor(y / coarseCell)];
-      const key = coarseKey(c, cx, cy);
-      const sum = cells.get(key) ?? { count: 0, x: 0, y: 0, cx, cy };
+      const name = `${c},${cx},${cy}`;
+      const sum = cells.get(name) ?? {
+        count: 0,
+        x: 0,
+        y: 0,
+        key: coarseKey(c, cx, cy) | 0,
+        start: (cellHash(c, cx, cy) & (sizes.coarse - 1)) >>> 0,
+      };
       sum.count++;
       sum.x += Math.trunc(((x - cx * coarseCell) / coarseCell) * 1024);
       sum.y += Math.trunc(((y - cy * coarseCell) / coarseCell) * 1024);
-      cells.set(key, sum);
+      cells.set(name, sum);
     }
     assert(starts[sizes.fine] === count, `total ${starts[sizes.fine]}`);
     for (let b = 0; b < sizes.fine; b++) {
@@ -100,18 +106,17 @@ const binning: Check = async (device, kernels) => {
       const want = expected.get(b) ?? [];
       assert(members.join() === want.join(), `bucket ${b}: ${members.join()} vs ${want.join()}`);
     }
-    let found = 0;
-    for (let s = 0; s < sizes.coarse; s++) {
-      const key = (coarse[s * 4] ?? 0) >>> 0;
-      if (key === 0) continue;
-      const want = cells.get(key);
-      assert(want !== undefined, `slot ${s} holds unknown key ${key}`);
-      const got = { count: coarse[s * 4 + 1] ?? 0, x: coarse[s * 4 + 2] ?? 0, y: coarse[s * 4 + 3] ?? 0 };
-      assert(got.count === want.count, `cell ${want.cx},${want.cy}: count ${got.count} vs ${want.count}`);
-      assert(Math.abs(got.x - want.x) <= want.count && Math.abs(got.y - want.y) <= want.count, `cell sums`);
-      found++;
+    let occupied = 0;
+    for (let s = 0; s < sizes.coarse; s++) if (coarse[s * 4] !== 0) occupied++;
+    assert(occupied === cells.size, `${occupied} coarse slots used for ${cells.size} cells`);
+    for (const [name, want] of cells) {
+      let slot = want.start;
+      while (coarse[slot * 4] !== want.key && coarse[slot * 4] !== 0) slot = (slot + 1) & (sizes.coarse - 1);
+      assert(coarse[slot * 4] === want.key, `cell ${name} not found`);
+      const got = { count: coarse[slot * 4 + 1] ?? 0, x: coarse[slot * 4 + 2] ?? 0, y: coarse[slot * 4 + 3] ?? 0 };
+      assert(got.count === want.count, `cell ${name}: count ${got.count} vs ${want.count}`);
+      assert(Math.abs(got.x - want.x) <= want.count && Math.abs(got.y - want.y) <= want.count, `cell ${name} sums`);
     }
-    assert(found === cells.size, `${found} coarse cells, expected ${cells.size}`);
   } finally {
     buffers.destroy();
   }

@@ -11,7 +11,8 @@ export function mix32(x: number): number {
 }
 
 export function cellHash(component: number, x: number, y: number): number {
-  return mix32(Math.imul(component, 0x9e3779b1) ^ mix32(Math.imul(x >>> 0, 0x85ebca77) ^ (y >>> 0)));
+  const h = mix32(component + 0x9e3779b9);
+  return mix32(mix32(h ^ (x >>> 0)) ^ (y >>> 0));
 }
 
 export function coarseKey(component: number, x: number, y: number): number {
