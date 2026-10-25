@@ -1,15 +1,21 @@
-import type { Geometry } from '../workers/protocol';
+import type { Geometry, Hierarchy } from '../workers/protocol';
 import { boundsOf, type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './camera';
 import { browserEnv, requestAdapter } from './detect';
 import { attachInput } from './input';
+import { createKernels, type Kernels } from './layout/kernels';
+import { type LayoutProgress, LayoutRunner } from './layout/runner';
 import { palettes, randomColors, type Theme } from './palette';
 import { Renderer } from './renderer';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
   | { type: 'set-graph'; geometry: Geometry; seed: number }
-  /** `x, y` per point, in layout units. */
+  /** `x, y` per point, in layout units, from a layout run elsewhere. */
   | { type: 'set-positions'; positions: Float32Array }
+  /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */
+  | { type: 'start-layout'; hierarchy: Hierarchy; seed: number }
+  /** `dx, dy` per component, packing the boxes of the last `layout-measured`. */
+  | { type: 'set-offsets'; offsets: Float32Array }
   | { type: 'fit' }
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets };
@@ -18,6 +24,8 @@ export type EngineEvent =
   | { type: 'resize'; width: number; height: number }
   | { type: 'device-lost'; message: string }
   | { type: 'error'; message: string }
+  /** `x0, y0, x1, y1` per component as the GPU layout runs, a few times a second. */
+  | { type: 'layout-measured'; boxes: Float32Array<ArrayBuffer>; progress: LayoutProgress }
   /** Sent after each second of continuous drawing, such as a pan or zoom. */
   | { type: 'frame-stats'; fps: number; cpuMs: number };
 
@@ -54,6 +62,7 @@ export class Engine {
   private readonly resizeObserver: ResizeObserver;
   private readonly detachInput: () => void;
   private readonly renderer: Renderer;
+  private readonly runner: LayoutRunner;
   private camera: Camera = { x: 0, y: 0, zoom: 1 };
   private positions: Float32Array | undefined;
   private bounds: Bounds | undefined;
@@ -69,8 +78,14 @@ export class Engine {
     private readonly device: GPUDevice,
     private readonly context: GPUCanvasContext,
     format: GPUTextureFormat,
+    kernels: Kernels,
   ) {
     this.renderer = new Renderer(device, format);
+    this.runner = new LayoutRunner(device, kernels, {
+      measured: (boxes, progress) => {
+        this.emit({ type: 'layout-measured', boxes, progress });
+      },
+    });
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) this.resize(entry);
     });
@@ -118,6 +133,10 @@ export class Engine {
         maxBufferSize: adapter.limits.maxBufferSize,
       },
     });
+    const kernels = await createKernels(device).catch((error: unknown) => {
+      device.destroy();
+      throw error;
+    });
     const canvas = document.createElement('canvas');
     canvas.className = 'engine-canvas';
     canvas.dataset.testid = 'engine-canvas';
@@ -129,7 +148,7 @@ export class Engine {
     const format = navigator.gpu.getPreferredCanvasFormat();
     context.configure({ device, format, alphaMode: 'opaque' });
     host.appendChild(canvas);
-    return new Engine(host, canvas, device, context, format);
+    return new Engine(host, canvas, device, context, format, kernels);
   }
 
   send(command: EngineCommand): void {
@@ -144,10 +163,22 @@ export class Engine {
         this.autoFit = true;
         break;
       case 'set-positions':
+        this.runner.stop();
         this.positions = command.positions;
         this.bounds = boundsOf(command.positions);
         if (this.autoFit) this.fitView();
         this.upload();
+        break;
+      case 'start-layout':
+        this.positions = undefined;
+        this.bounds = undefined;
+        this.autoFit = true;
+        this.runner.start(command.hierarchy, command.seed);
+        break;
+      case 'set-offsets':
+        this.runner.setOffsets(command.offsets);
+        this.bounds = this.runner.bounds();
+        if (this.autoFit) this.fitView();
         break;
       case 'fit':
         this.autoFit = true;
@@ -172,6 +203,7 @@ export class Engine {
     this.resizeObserver.disconnect();
     this.detachInput();
     this.listeners.clear();
+    this.runner.destroy();
     this.renderer.destroy();
     this.context.unconfigure();
     this.device.destroy();
@@ -205,10 +237,16 @@ export class Engine {
   }
 
   private upload(): void {
-    const positions = this.positions;
-    if (!positions) return;
     const ox = Math.round(this.camera.x);
     const oy = Math.round(this.camera.y);
+    const target = this.renderer.positionBuffer;
+    if (this.runner.active && target) {
+      this.origin = { x: ox, y: oy };
+      this.runner.present(target, this.origin);
+      return;
+    }
+    const positions = this.positions;
+    if (!positions) return;
     const relative = new Float32Array(positions.length);
     for (let i = 0; i < positions.length; i += 2) {
       relative[i] = (positions[i] ?? 0) - ox;
@@ -245,7 +283,8 @@ export class Engine {
   private render(now: number): void {
     const started = performance.now();
     const c = this.camera;
-    if (Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) this.upload();
+    const moved = this.runner.tick(now);
+    if (moved || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) this.upload();
     const palette = palettes[this.theme];
     const [r, g, b, a] = palette.background;
     const encoder = this.device.createCommandEncoder({ label: 'frame' });
@@ -273,6 +312,7 @@ export class Engine {
     pass.end();
     this.device.queue.submit([encoder.finish()]);
     this.recordFrame(now, performance.now() - started);
+    if (this.runner.busy) this.requestFrame();
   }
 
   private recordFrame(now: number, cpuMs: number): void {

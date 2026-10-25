@@ -22,6 +22,7 @@ export type LevelInput = Pick<HierarchyLevel, 'nodes' | 'edges' | 'heat' | 'repu
 export class GpuLevel {
   readonly count: number;
   readonly nodes: GPUBuffer;
+  readonly edges: GPUBuffer;
   readonly params: GPUBuffer;
   readonly cell: number;
   private readonly buffers: Buffers;
@@ -58,7 +59,7 @@ export class GpuLevel {
       }),
     );
     this.nodes = b.upload('nodes', input.nodes);
-    const edges = b.upload('edges', input.edges);
+    this.edges = b.upload('edges', input.edges);
     const heat = b.upload('heat', input.heat);
     const force = b.storage('force', this.count * 8);
     this.positions = [b.storage('positions a', this.count * 8), b.storage('positions b', this.count * 8)];
@@ -80,7 +81,7 @@ export class GpuLevel {
         0: this.params,
         1: p,
         2: this.nodes,
-        3: edges,
+        3: this.edges,
         7: force,
         8: this.positions[1 - k] ?? p,
         9: heat,

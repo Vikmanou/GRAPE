@@ -1,44 +1,57 @@
 import forces from '../shaders/forces.wgsl?raw';
-import common from '../shaders/layout-common.wgsl?raw';
 import grid from '../shaders/grid.wgsl?raw';
+import common from '../shaders/layout-common.wgsl?raw';
+import present from '../shaders/present.wgsl?raw';
+import prolong from '../shaders/prolong.wgsl?raw';
 import scan from '../shaders/scan.wgsl?raw';
 
-export interface Kernels {
-  scanBlocks: GPUComputePipeline;
-  addSums: GPUComputePipeline;
-  bin: GPUComputePipeline;
-  scatter: GPUComputePipeline;
-  sortBuckets: GPUComputePipeline;
-  repel: GPUComputePipeline;
-  pullAndMove: GPUComputePipeline;
-  advance: GPUComputePipeline;
-}
+const SOURCES = {
+  scan,
+  grid: common + grid,
+  forces: common + forces,
+  prolong: common + prolong,
+  present: common + present,
+};
+
+const ENTRY_POINTS = {
+  scanBlocks: ['scan', 'scan_blocks'],
+  addSums: ['scan', 'add_sums'],
+  bin: ['grid', 'bin'],
+  scatter: ['grid', 'scatter'],
+  sortBuckets: ['grid', 'sort_buckets'],
+  repel: ['forces', 'repel'],
+  pullAndMove: ['forces', 'pull_and_move'],
+  advance: ['forces', 'advance'],
+  pullChildren: ['prolong', 'pull_children'],
+  placeChildren: ['prolong', 'place_children'],
+  findAncestors: ['present', 'find_ancestors'],
+  present: ['present', 'present'],
+  bound: ['present', 'bound'],
+} as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
+
+export type Kernels = Record<keyof typeof ENTRY_POINTS, GPUComputePipeline>;
 
 /** Compiled once per device, off the main thread where the browser can. */
 export async function createKernels(device: GPUDevice): Promise<Kernels> {
-  const modules = {
-    scan: device.createShaderModule({ label: 'scan', code: scan }),
-    grid: device.createShaderModule({ label: 'grid', code: common + grid }),
-    forces: device.createShaderModule({ label: 'forces', code: common + forces }),
-  };
-  await Promise.all(Object.values(modules).map(checkCompiled));
-  const pipeline = (module: keyof typeof modules, entryPoint: string) =>
-    device.createComputePipelineAsync({
-      label: entryPoint,
-      layout: 'auto',
-      compute: { module: modules[module], entryPoint },
-    });
-  const [scanBlocks, addSums, bin, scatter, sortBuckets, repel, pullAndMove, advance] = await Promise.all([
-    pipeline('scan', 'scan_blocks'),
-    pipeline('scan', 'add_sums'),
-    pipeline('grid', 'bin'),
-    pipeline('grid', 'scatter'),
-    pipeline('grid', 'sort_buckets'),
-    pipeline('forces', 'repel'),
-    pipeline('forces', 'pull_and_move'),
-    pipeline('forces', 'advance'),
-  ]);
-  return { scanBlocks, addSums, bin, scatter, sortBuckets, repel, pullAndMove, advance };
+  const modules = new Map(
+    Object.entries(SOURCES).map(([label, code]) => [label, device.createShaderModule({ label, code })]),
+  );
+  await Promise.all([...modules.values()].map(checkCompiled));
+  const names = Object.keys(ENTRY_POINTS) as (keyof Kernels)[];
+  const pipelines = await Promise.all(
+    names.map((name) => {
+      const [source, entryPoint] = ENTRY_POINTS[name];
+      const module = modules.get(source);
+      if (!module) throw new Error(`no shader ${source}`);
+      return device.createComputePipelineAsync({ label: entryPoint, layout: 'auto', compute: { module, entryPoint } });
+    }),
+  );
+  const kernels: Partial<Kernels> = {};
+  names.forEach((name, i) => {
+    const pipeline = pipelines[i];
+    if (pipeline) kernels[name] = pipeline;
+  });
+  return kernels as Kernels;
 }
 
 async function checkCompiled(module: GPUShaderModule): Promise<void> {

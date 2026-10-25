@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
 import type { Engine } from '../engine/Engine';
-import { DEFAULT_OPTIONS, type LayoutSink, useLayout } from '../state/layout';
+import { DEFAULT_OPTIONS, useLayout } from '../state/layout';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
@@ -35,20 +35,16 @@ export function App() {
       }),
     [engine],
   );
-  const sink = useMemo<LayoutSink | undefined>(
-    () =>
-      engine && {
-        geometry: (geometry) => {
-          setFps(undefined);
-          engine.send({ type: 'set-graph', geometry, seed: DEFAULT_OPTIONS.seed });
-        },
-        positions: (positions) => {
-          engine.send({ type: 'set-positions', positions });
-        },
-      },
-    [engine],
+  const resetFps = useCallback(() => {
+    setFps(undefined);
+  }, []);
+  const layout = useLayout(
+    load.state === 'loaded' ? load.result.topology : undefined,
+    engine,
+    backend === 'webgpu',
+    DEFAULT_OPTIONS,
+    resetFps,
   );
-  const layout = useLayout(load.state === 'loaded' ? load.result.topology : undefined, sink);
   usePanelInsets(engine, load.state);
 
   useEffect(() => {

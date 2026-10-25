@@ -86,6 +86,11 @@ export class Renderer {
     });
   }
 
+  /** Where `x, y` per point, relative to the view's origin, are read from. */
+  get positionBuffer(): GPUBuffer | undefined {
+    return this.positions;
+  }
+
   /** `x, y` per point, relative to the same origin as the view's centre. */
   setPositions(positions: Float32Array<ArrayBuffer>): void {
     if (this.positions && positions.byteLength <= this.positions.size) {
