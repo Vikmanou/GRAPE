@@ -10,9 +10,9 @@ interface Round {
 }
 
 /**
- * In-place exclusive prefix sum over the first `length` u32s of a buffer.
- * Each round scans blocks and leaves block totals for the next round; the
- * totals are then added back from the top round down.
+ * In-place exclusive prefix sum over the first `length` u32s of a buffer,
+ * also written to `mirror`. Each round scans blocks and leaves block totals
+ * for the next round; the totals are then added back from the top round down.
  */
 export class Scan {
   private readonly rounds: Round[] = [];
@@ -22,14 +22,19 @@ export class Scan {
     buffers: Buffers,
     data: GPUBuffer,
     length: number,
+    mirror: GPUBuffer,
   ) {
+    const unused = buffers.storage('scan mirror unused', 4);
+    const single = length <= BLOCK;
     let current = data;
     let n = length;
     for (;;) {
       const blocks = Math.ceil(n / BLOCK);
       const sums = buffers.storage('scan sums', blocks * 4);
-      const size = buffers.uniform('scan length', new Uint32Array([n, 0, 0, 0]).buffer);
-      const entries = { 0: current, 1: sums, 2: size };
+      const first = current === data;
+      const finalPass = first ? (single ? 1 : 2) : 0;
+      const size = buffers.uniform('scan length', new Uint32Array([n, finalPass, 0, 0]).buffer);
+      const entries = { 0: current, 1: sums, 2: size, 3: first ? mirror : unused };
       this.rounds.push({
         blocks,
         scan: bind(buffers.device, kernels.scanBlocks, entries),

@@ -11,6 +11,32 @@
 @group(0) @binding(5) var<storage, read_write> sorted: array<u32>;
 // `counts` after the prefix sum.
 @group(0) @binding(6) var<storage, read> starts: array<u32>;
+// x bits, y bits, component, node per node, in bucket order
+@group(0) @binding(7) var<storage, read_write> packed: array<vec4u>;
+// iteration within the level, then total displacement
+@group(0) @binding(8) var<storage, read_write> state: array<u32>;
+@group(0) @binding(9) var<storage, read_write> energy: array<u32>;
+
+// Starts an iteration: empties both hashes, clears the energy and advances
+// the iteration, which a new level sets to u32::MAX so its first is 0. A
+// grid-stride loop covers tables larger than one dispatch can reach.
+@compute @workgroup_size(WORKGROUP)
+fn begin(@builtin(global_invocation_id) id: vec3u, @builtin(num_workgroups) groups: vec3u) {
+  if (id.x == 0u) {
+    state[0] += 1u;
+    energy[0] = 0u;
+  }
+  let buckets = params.fine_mask + 2u;
+  let words = (params.coarse_mask + 1u) * 4u;
+  for (var i = id.x; i < max(buckets, words); i += groups.x * WORKGROUP) {
+    if (i < buckets) {
+      atomicStore(&counts[i], 0u);
+    }
+    if (i < words) {
+      atomicStore(&coarse[i], 0);
+    }
+  }
+}
 
 fn coarse_key(component: u32, cell: vec2i) -> u32 {
   return mix32(cell_hash(component, cell) ^ 0x68e31da4u) | 1u;
@@ -58,7 +84,8 @@ fn scatter(@builtin(global_invocation_id) id: vec3u) {
 }
 
 // Scatter order depends on thread timing; sorting each bucket by node makes
-// later float sums run in a fixed order.
+// later float sums run in a fixed order. Each bucket then copies what
+// repulsion reads about its nodes next to each other.
 @compute @workgroup_size(WORKGROUP)
 fn sort_buckets(@builtin(global_invocation_id) id: vec3u) {
   let bucket = id.x;
@@ -75,5 +102,9 @@ fn sort_buckets(@builtin(global_invocation_id) id: vec3u) {
       j--;
     }
     sorted[j] = v;
+  }
+  for (var k = begin; k < end; k++) {
+    let i = sorted[k];
+    packed[k] = vec4u(bitcast<vec2u>(positions[i]), nodes[i].x, i);
   }
 }

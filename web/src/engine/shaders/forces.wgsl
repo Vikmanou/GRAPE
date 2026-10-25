@@ -3,7 +3,7 @@
 //
 // Repulsion is `k^2 / d` split in two by distance: exact pairs from the 3x3
 // fine cells around a node, fading out from half a cell to a cell, and
-// coarse cell centroids from a 5x5 block around it, fading in over the same
+// coarse cell centroids from a 3x3 block around it, fading in over the same
 // range. Each pair is counted once in total, whichever side it falls on.
 
 @group(0) @binding(0) var<uniform> params: Params;
@@ -12,7 +12,6 @@
 // neighbour, rest bits, weight bits per spring end
 @group(0) @binding(3) var<storage, read> edges: array<u32>;
 @group(0) @binding(4) var<storage, read> coarse: array<i32>;
-@group(0) @binding(5) var<storage, read> sorted: array<u32>;
 @group(0) @binding(6) var<storage, read> starts: array<u32>;
 @group(0) @binding(7) var<storage, read_write> force: array<vec2f>;
 @group(0) @binding(8) var<storage, read_write> moved: array<vec2f>;
@@ -21,8 +20,10 @@
 @group(0) @binding(10) var<storage, read_write> state: array<u32>;
 // total displacement in sixteenths
 @group(0) @binding(11) var<storage, read_write> energy: atomic<u32>;
+// x bits, y bits, component, node per node, in bucket order
+@group(0) @binding(12) var<storage, read> packed: array<vec4u>;
 
-const FAR_REACH = 2;
+const FAR_REACH = 1;
 const COLD = 0.4;
 const MIN_APART = 1e-2;
 
@@ -58,16 +59,18 @@ fn coarse_slot(component: u32, cell: vec2i) -> i32 {
 
 @compute @workgroup_size(WORKGROUP)
 fn repel(@builtin(global_invocation_id) id: vec3u) {
-  let i = id.x;
-  if (i >= params.count) {
+  // Threads take nodes in bucket order, so neighbouring threads read the same cells.
+  if (id.x >= params.count) {
     return;
   }
-  let component = nodes[i].x;
+  let me = packed[id.x];
+  let i = me.w;
+  let component = me.z;
   if (heat[component] == 0.0) {
     force[i] = vec2f(0.0);
     return;
   }
-  let p = positions[i];
+  let p = bitcast<vec2f>(me.xy);
   var f = vec2f(0.0);
 
   let home = cell_of(p, params.cell);
@@ -76,12 +79,12 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
       let cell = home + vec2i(dx, dy);
       let bucket = cell_hash(component, cell) & params.fine_mask;
       for (var k = starts[bucket]; k < starts[bucket + 1u]; k++) {
-        let j = sorted[k];
-        let q = positions[j];
-        if (j == i || nodes[j].x != component || any(cell_of(q, params.cell) != cell)) {
+        let other = packed[k];
+        let q = bitcast<vec2f>(other.xy);
+        if (other.w == i || other.z != component || any(cell_of(q, params.cell) != cell)) {
           continue;
         }
-        let d = apart(p - q, i, j);
+        let d = apart(p - q, i, other.w);
         let d2 = dot(d, d);
         f += d / d2 * (1.0 - far_weight(sqrt(d2)));
       }
@@ -158,9 +161,4 @@ fn pull_and_move(@builtin(global_invocation_id) id: vec3u, @builtin(local_invoca
   if (t == 0u) {
     atomicAdd(&energy, atomicLoad(&group_energy));
   }
-}
-
-@compute @workgroup_size(1)
-fn advance() {
-  state[0] += 1u;
 }

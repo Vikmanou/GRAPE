@@ -16,12 +16,12 @@ const SOURCES = {
 const ENTRY_POINTS = {
   scanBlocks: ['scan', 'scan_blocks'],
   addSums: ['scan', 'add_sums'],
+  begin: ['grid', 'begin'],
   bin: ['grid', 'bin'],
   scatter: ['grid', 'scatter'],
   sortBuckets: ['grid', 'sort_buckets'],
   repel: ['forces', 'repel'],
   pullAndMove: ['forces', 'pull_and_move'],
-  advance: ['forces', 'advance'],
   pullChildren: ['prolong', 'pull_children'],
   placeChildren: ['prolong', 'place_children'],
   findAncestors: ['present', 'find_ancestors'],

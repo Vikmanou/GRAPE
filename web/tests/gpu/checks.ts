@@ -1,4 +1,4 @@
-import { Buffers, readBuffer } from '../../src/engine/layout/gpu';
+import { Buffers, Passes, readBuffer } from '../../src/engine/layout/gpu';
 import { Grid, gridSizes } from '../../src/engine/layout/grid';
 import type { Kernels } from '../../src/engine/layout/kernels';
 import { encodeParams } from '../../src/engine/layout/params';
@@ -12,13 +12,17 @@ async function scanOnce(device: GPUDevice, kernels: Kernels, input: Uint32Array<
   const buffers = new Buffers(device);
   try {
     const data = buffers.upload('scan input', input);
-    const scan = new Scan(kernels, buffers, data, input.length);
+    const mirror = buffers.storage('scan mirror', input.byteLength);
+    const scan = new Scan(kernels, buffers, data, input.length, mirror);
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginComputePass();
     scan.encode(pass);
     pass.end();
     device.queue.submit([encoder.finish()]);
-    return new Uint32Array(await readBuffer(device, data), 0, input.length);
+    const output = new Uint32Array(await readBuffer(device, data), 0, input.length);
+    const mirrored = new Uint32Array(await readBuffer(device, mirror), 0, input.length);
+    assert(output.join() === mirrored.join(), `length ${input.length}: the mirror differs`);
+    return output;
   } finally {
     buffers.destroy();
   }
@@ -73,9 +77,12 @@ const binning: Check = async (device, kernels) => {
       [buffers.upload('positions', positions)],
       buffers.upload('nodes', nodes),
       count,
+      { state: buffers.storage('state', 4), energy: buffers.storage('energy', 4) },
     );
     const encoder = device.createCommandEncoder();
-    grid.encode(encoder, 0);
+    const passes = new Passes(encoder);
+    grid.encode(passes, 0);
+    passes.end();
     device.queue.submit([encoder.finish()]);
     const starts = new Uint32Array(await readBuffer(device, grid.starts));
     const sorted = new Uint32Array(await readBuffer(device, grid.sorted), 0, count);

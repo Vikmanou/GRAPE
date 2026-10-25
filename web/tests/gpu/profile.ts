@@ -1,13 +1,14 @@
 // Times each pass of a force iteration with GPU timestamps on a lattice of
 // `count` nodes: open /tests/gpu/index.html?profile=400000.
 
-import { Buffers } from '../../src/engine/layout/gpu';
+import { Buffers, Passes } from '../../src/engine/layout/gpu';
 import type { Kernels } from '../../src/engine/layout/kernels';
 import { GpuLevel } from '../../src/engine/layout/level';
 import { random } from './reference';
 
 const ITERATIONS = 10;
-const LABELS = ['bin', 'scan', 'scatter', 'sort', 'repel', 'move'];
+/** Timed passes per iteration, an upper bound for the query set. */
+const SECTIONS = 9;
 
 export async function profile(device: GPUDevice, kernels: Kernels, count: number): Promise<Record<string, string>> {
   const side = Math.ceil(Math.sqrt(count));
@@ -50,7 +51,7 @@ export async function profile(device: GPUDevice, kernels: Kernels, count: number
     { state, energy },
     1,
   );
-  const querySet = device.createQuerySet({ type: 'timestamp', count: LABELS.length * 2 * ITERATIONS });
+  const querySet = device.createQuerySet({ type: 'timestamp', count: SECTIONS * 2 * ITERATIONS });
   const resolved = device.createBuffer({
     size: querySet.count * 8,
     usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
@@ -62,16 +63,21 @@ export async function profile(device: GPUDevice, kernels: Kernels, count: number
   try {
     level.write(positions);
     const warm = device.createCommandEncoder();
-    level.encode(warm, 3);
+    const warmPasses = new Passes(warm);
+    level.encode(warmPasses, 3);
+    warmPasses.end();
     device.queue.submit([warm.finish()]);
     await device.queue.onSubmittedWorkDone();
     const encoder = device.createCommandEncoder();
-    let slot = 0;
-    level.encode(encoder, ITERATIONS, () => {
-      const at = slot;
-      slot += 2;
+    const labels: string[] = [];
+    const passes = new Passes(encoder, (label) => {
+      labels.push(label);
+      const at = labels.length * 2 - 2;
       return { querySet, beginningOfPassWriteIndex: at, endOfPassWriteIndex: at + 1 };
     });
+    level.encode(passes, ITERATIONS);
+    passes.end();
+    const slot = labels.length * 2;
     encoder.resolveQuerySet(querySet, 0, querySet.count, resolved, 0);
     encoder.copyBufferToBuffer(resolved, 0, read, 0, resolved.size);
     const started = performance.now();
@@ -81,7 +87,7 @@ export async function profile(device: GPUDevice, kernels: Kernels, count: number
     const times = new BigInt64Array(read.getMappedRange());
     const totals: Record<string, number> = {};
     for (let q = 0; q < slot; q += 2) {
-      const label = LABELS[(q / 2) % LABELS.length] ?? '?';
+      const label = labels[q / 2] ?? '?';
       totals[label] = (totals[label] ?? 0) + Number((times[q + 1] ?? 0n) - (times[q] ?? 0n)) / 1e6 / ITERATIONS;
     }
     const result: Record<string, string> = { nodes: String(count), wallPerIteration: (wall / ITERATIONS).toFixed(2) };

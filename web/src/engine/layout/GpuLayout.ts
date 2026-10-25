@@ -1,5 +1,5 @@
 import type { Hierarchy } from '../../workers/protocol';
-import { bind, Buffers, groups, readBuffer } from './gpu';
+import { bind, Buffers, groups, Passes, type PassTiming, readBuffer } from './gpu';
 import type { Kernels } from './kernels';
 import { GpuLevel } from './level';
 
@@ -112,12 +112,15 @@ export class GpuLayout {
   }
 
   /** Submits up to `n` iterations, stopping at the end of a level. Returns how many ran. */
-  run(n: number): number {
+  run(n: number, timing?: PassTiming): number {
     if (this.done) return 0;
     if (this.levelIteration >= this.budget(this.levelIndex)) this.descend();
     const k = Math.min(n, this.budget(this.levelIndex) - this.levelIteration);
     const encoder = this.device.createCommandEncoder({ label: 'layout iterations' });
-    this.level.encode(encoder, k);
+    const passes = new Passes(encoder, undefined, timing?.writes);
+    this.level.encode(passes, k);
+    passes.end();
+    timing?.resolve(encoder);
     this.device.queue.submit([encoder.finish()]);
     this.levelIteration += k;
     this.iterationCount += k;
@@ -206,7 +209,6 @@ export class GpuLayout {
     const parent = temporary.upload('parent', this.hierarchy.levels[index]?.parent ?? new Uint32Array());
     const children = temporary.upload('children', this.hierarchy.levels[index + 1]?.children ?? new Uint32Array());
     const pull = temporary.storage('pull', finer.count * 8);
-    this.device.queue.writeBuffer(this.state, 0, new Uint32Array([0]));
     this.device.queue.writeBuffer(this.walk, 0, new Uint32Array([this.pointCount, index]));
 
     const encoder = this.device.createCommandEncoder({ label: 'descend' });

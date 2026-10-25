@@ -3,7 +3,10 @@
 
 @group(0) @binding(0) var<storage, read_write> data: array<u32>;
 @group(0) @binding(1) var<storage, read_write> sums: array<u32>;
+// x: values to scan; y: 1 when `scan_blocks` gives the final values, 2 when
+// `add_sums` does, so that pass also writes them to `mirror`.
 @group(0) @binding(2) var<uniform> length: vec4u;
+@group(0) @binding(3) var<storage, read_write> mirror: array<u32>;
 
 const BLOCK = 512u;
 
@@ -48,6 +51,9 @@ fn scan_blocks(@builtin(local_invocation_index) t: u32, @builtin(workgroup_id) g
     let i = base + t * 2u + k;
     if (i < n) {
       data[i] = tree[t * 2u + k];
+      if (length.y == 1u) {
+        mirror[i] = tree[t * 2u + k];
+      }
     }
   }
 }
@@ -59,6 +65,9 @@ fn add_sums(@builtin(local_invocation_index) t: u32, @builtin(workgroup_id) grou
     let i = group.x * BLOCK + t * 2u + k;
     if (i < n) {
       data[i] += sums[group.x];
+      if (length.y == 2u) {
+        mirror[i] = data[i];
+      }
     }
   }
 }

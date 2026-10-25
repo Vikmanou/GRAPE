@@ -3,11 +3,6 @@ export const WORKGROUP = 256;
 /** Timestamp writes for a named pass, when profiling. */
 export type PassTimer = (label: string) => GPUComputePassTimestampWrites | undefined;
 
-export function beginPass(encoder: GPUCommandEncoder, label: string, timer?: PassTimer): GPUComputePassEncoder {
-  const timestampWrites = timer?.(label);
-  return encoder.beginComputePass(timestampWrites ? { label, timestampWrites } : { label });
-}
-
 export function groups(n: number, perGroup = WORKGROUP): number {
   return Math.ceil(n / perGroup);
 }
@@ -85,4 +80,75 @@ export async function readBuffer(device: GPUDevice, source: GPUBuffer, bytes = s
   const copy = staging.getMappedRange().slice(0);
   staging.destroy();
   return copy;
+}
+
+/** The most workgroups one dispatch dimension may have (WebGPU's default limit). */
+export const MAX_GROUPS = 65_535;
+
+/**
+ * Hands out compute passes: one pass shared by every section, or a timed
+ * pass per section when profiling.
+ */
+export class Passes {
+  private pass: GPUComputePassEncoder | undefined;
+
+  /** `timer` times each section; `whole` times the shared pass. */
+  constructor(
+    private readonly encoder: GPUCommandEncoder,
+    private readonly timer?: PassTimer,
+    private readonly whole?: GPUComputePassTimestampWrites,
+  ) {}
+
+  section(label: string): GPUComputePassEncoder {
+    if (this.timer) {
+      this.pass?.end();
+      const timestampWrites = this.timer(label);
+      this.pass = this.encoder.beginComputePass(timestampWrites ? { label, timestampWrites } : { label });
+    }
+    this.pass ??= this.encoder.beginComputePass(
+      this.whole ? { label: 'layout', timestampWrites: this.whole } : { label: 'layout' },
+    );
+    return this.pass;
+  }
+
+  end(): void {
+    this.pass?.end();
+    this.pass = undefined;
+  }
+}
+
+/** GPU time of one pass, from a pair of timestamps. */
+export class PassTiming {
+  private readonly querySet: GPUQuerySet;
+  private readonly resolved: GPUBuffer;
+  private readonly read: GPUBuffer;
+
+  constructor(device: GPUDevice) {
+    this.querySet = device.createQuerySet({ type: 'timestamp', count: 2 });
+    this.resolved = device.createBuffer({ size: 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+    this.read = device.createBuffer({ size: 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+  }
+
+  /** For a compute or a render pass, which take the same shape. */
+  get writes(): GPUComputePassTimestampWrites {
+    return { querySet: this.querySet, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 };
+  }
+
+  resolve(encoder: GPUCommandEncoder): void {
+    encoder.resolveQuerySet(this.querySet, 0, 2, this.resolved, 0);
+    encoder.copyBufferToBuffer(this.resolved, 0, this.read, 0, 16);
+  }
+
+  /** Resolves once the pass has run; frees the timing's GPU objects. */
+  async ms(): Promise<number> {
+    try {
+      await this.read.mapAsync(GPUMapMode.READ);
+      const [start = 0n, end = 0n] = new BigInt64Array(this.read.getMappedRange());
+      return Number(end - start) / 1e6;
+    } finally {
+      this.querySet.destroy();
+      this.resolved.destroy();
+      this.read.destroy();
+    }
+  }
 }

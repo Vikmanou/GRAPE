@@ -1,20 +1,14 @@
 import type { HierarchyLevel } from '../../workers/protocol';
-import { beginPass, bind, Buffers, groups, type PassTimer } from './gpu';
-import { Grid, gridSizes } from './grid';
+import { bind, Buffers, groups, type Passes } from './gpu';
+import { Grid, gridSizes, type IterationState } from './grid';
 import type { Kernels } from './kernels';
 import { encodeParams } from './params';
 
 /** Fine cells span this many mean rest lengths; coarse cells this many fine cells. */
 export const CELL_PER_REST = 2;
-export const COARSE_PER_CELL = 4;
-
-/** Buffers every level shares. */
-export interface Shared {
-  /** Iteration within the level. */
-  state: GPUBuffer;
-  /** Total displacement of the last iteration, in sixteenths. */
-  energy: GPUBuffer;
-}
+export const COARSE_PER_CELL = 6;
+/** Coarse cells read on each side of a node's own; `FAR_REACH` in forces.wgsl. */
+export const FAR_REACH = 1;
 
 export type LevelInput = Pick<HierarchyLevel, 'nodes' | 'edges' | 'heat' | 'repulsion' | 'meanRest' | 'iterations'>;
 
@@ -28,16 +22,16 @@ export class GpuLevel {
   private readonly buffers: Buffers;
   private readonly positions: [GPUBuffer, GPUBuffer];
   private readonly grid: Grid;
-  private readonly repelGroups: GPUBindGroup[];
+  private readonly repelGroup: GPUBindGroup;
   private readonly moveGroups: GPUBindGroup[];
-  private readonly advanceGroup: GPUBindGroup;
+
   private current = 0;
 
   constructor(
     private readonly kernels: Kernels,
     device: GPUDevice,
     input: LevelInput,
-    private readonly shared: Shared,
+    shared: IterationState,
     seed: number,
   ) {
     this.buffers = new Buffers(device);
@@ -63,19 +57,15 @@ export class GpuLevel {
     const heat = b.upload('heat', input.heat);
     const force = b.storage('force', this.count * 8);
     this.positions = [b.storage('positions a', this.count * 8), b.storage('positions b', this.count * 8)];
-    this.grid = new Grid(kernels, b, this.params, this.positions, this.nodes, this.count);
-    this.repelGroups = this.positions.map((p) =>
-      bind(device, kernels.repel, {
-        0: this.params,
-        1: p,
-        2: this.nodes,
-        4: this.grid.coarse,
-        5: this.grid.sorted,
-        6: this.grid.starts,
-        7: force,
-        9: heat,
-      }),
-    );
+    this.grid = new Grid(kernels, b, this.params, this.positions, this.nodes, this.count, shared);
+    this.repelGroup = bind(device, kernels.repel, {
+      0: this.params,
+      4: this.grid.coarse,
+      6: this.grid.starts,
+      7: force,
+      9: heat,
+      12: this.grid.packed,
+    });
     this.moveGroups = this.positions.map((p, k) =>
       bind(device, kernels.pullAndMove, {
         0: this.params,
@@ -89,7 +79,8 @@ export class GpuLevel {
         11: shared.energy,
       }),
     );
-    this.advanceGroup = bind(device, kernels.advance, { 10: shared.state });
+    // The first iteration's `begin` wraps this to 0.
+    device.queue.writeBuffer(shared.state, 0, new Uint32Array([0xffffffff]));
   }
 
   /** The buffer holding the latest positions, `x, y` per node. */
@@ -106,24 +97,18 @@ export class GpuLevel {
     return this.buffers.bytes;
   }
 
-  encode(encoder: GPUCommandEncoder, iterations: number, timer?: PassTimer): void {
+  encode(passes: Passes, iterations: number): void {
     const n = groups(this.count);
     for (let k = 0; k < iterations; k++) {
-      encoder.clearBuffer(this.shared.energy);
-      this.grid.encode(encoder, this.current, timer);
-      const repelling = beginPass(encoder, 'repel', timer);
+      this.grid.encode(passes, this.current);
+      const repelling = passes.section('repel');
       repelling.setPipeline(this.kernels.repel);
-      repelling.setBindGroup(0, this.repelGroups[this.current]);
+      repelling.setBindGroup(0, this.repelGroup);
       repelling.dispatchWorkgroups(n);
-      repelling.end();
-      const moving = beginPass(encoder, 'move', timer);
+      const moving = passes.section('move');
       moving.setPipeline(this.kernels.pullAndMove);
       moving.setBindGroup(0, this.moveGroups[this.current]);
       moving.dispatchWorkgroups(n);
-      moving.setPipeline(this.kernels.advance);
-      moving.setBindGroup(0, this.advanceGroup);
-      moving.dispatchWorkgroups(1);
-      moving.end();
       this.current = 1 - this.current;
     }
   }

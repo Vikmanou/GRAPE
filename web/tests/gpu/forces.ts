@@ -1,8 +1,8 @@
 // One force iteration on the GPU against the same maths in f64 on the CPU.
 
-import { Buffers, readBuffer } from '../../src/engine/layout/gpu';
+import { Buffers, Passes, readBuffer } from '../../src/engine/layout/gpu';
 import type { Kernels } from '../../src/engine/layout/kernels';
-import { COARSE_PER_CELL, GpuLevel, type LevelInput } from '../../src/engine/layout/level';
+import { COARSE_PER_CELL, FAR_REACH, GpuLevel, type LevelInput } from '../../src/engine/layout/level';
 import { assert, random } from './reference';
 
 const COLD = 0.4;
@@ -124,8 +124,8 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
       fy += (dy / d2) * w;
     }
     const own = coarseOf(i);
-    for (let oy = -2; oy <= 2; oy++) {
-      for (let ox = -2; ox <= 2; ox++) {
+    for (let oy = -FAR_REACH; oy <= FAR_REACH; oy++) {
+      for (let ox = -FAR_REACH; ox <= FAR_REACH; ox++) {
         const s = coarse.get(`${comp},${own.cx + ox},${own.cy + oy}`);
         if (!s) continue;
         let { count, x: sx, y: sy } = s;
@@ -175,11 +175,13 @@ export async function forceIteration(device: GPUDevice, kernels: Kernels): Promi
   try {
     level.write(g.positions);
     const encoder = device.createCommandEncoder();
-    level.encode(encoder, 1);
+    const passes = new Passes(encoder);
+    level.encode(passes, 1);
+    passes.end();
     device.queue.submit([encoder.finish()]);
     const gpu = new Float32Array(await readBuffer(device, level.latest), 0, g.positions.length);
     const iteration = new Uint32Array(await readBuffer(device, state))[0];
-    assert(iteration === 1, `state advanced to ${iteration}`);
+    assert(iteration === 0, `the first iteration counted as ${iteration}`);
     const cpu = cpuIteration(g, level.cell);
     let [error, moved] = [0, 0];
     for (let i = 0; i < gpu.length; i += 2) {
