@@ -22,11 +22,15 @@ export function browserEnv(): DetectEnv {
   };
 }
 
-/** Requests a high-performance adapter, or null if WebGPU is unavailable. */
+/** Requests a high-performance hardware adapter, or null if WebGPU is unavailable. */
 export async function requestAdapter(gpu: GPU | undefined): Promise<GPUAdapter | null> {
   if (!gpu) return null;
   try {
-    return await gpu.requestAdapter({ powerPreference: 'high-performance' });
+    const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' });
+    // Software adapters (SwiftShader in headless Chromium on Linux) lose the
+    // device right after creation and could not meet the frame targets anyway.
+    // https://www.w3.org/TR/webgpu/#dom-gpuadapterinfo-isfallbackadapter
+    return adapter?.info.isFallbackAdapter ? null : adapter;
   } catch {
     // Some browsers throw instead of resolving null; treat both the same.
     return null;

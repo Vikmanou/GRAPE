@@ -5,7 +5,8 @@ function fakeGpu(requestAdapter: () => Promise<GPUAdapter | null>): GPU {
   return { requestAdapter } as unknown as GPU;
 }
 
-const adapter = {} as GPUAdapter;
+const adapter = { info: { isFallbackAdapter: false } } as GPUAdapter;
+const softwareAdapter = { info: { isFallbackAdapter: true } } as GPUAdapter;
 
 function env(gpu: GPU | undefined, webgl2: boolean): DetectEnv {
   return { gpu, hasWebGL2: () => webgl2 };
@@ -23,6 +24,11 @@ describe('detectBackend', () => {
 
   it('falls back to WebGL2 when requestAdapter resolves null', async () => {
     const gpu = fakeGpu(() => Promise.resolve(null));
+    expect(await detectBackend(env(gpu, true))).toBe('webgl2');
+  });
+
+  it('falls back to WebGL2 when only a software adapter is available', async () => {
+    const gpu = fakeGpu(() => Promise.resolve(softwareAdapter));
     expect(await detectBackend(env(gpu, true))).toBe('webgl2');
   });
 

@@ -292,3 +292,17 @@ decision, reason, alternatives considered.
   Bandage 0.8.1's Linux build run under WSL with `QT_QPA_PLATFORM=offscreen`.
 - **Reason**: the Windows build's command line writes no image.
 - **Alternatives**: comparing against memory of Bandage's look.
+
+## 2026-10-25: Software WebGPU adapters count as no WebGPU
+
+- **Decision**: `requestAdapter` returns null for an adapter whose
+  `info.isFallbackAdapter` is true, so detection falls through to WebGL2 or the
+  unsupported message.
+- **Reason**: headless Chromium on Linux and WSL hands out a SwiftShader
+  adapter; its device was lost right after creation ("A valid external
+  Instance reference no longer exists") and the page said WebGPU while showing
+  the unsupported message. A CPU rasterizer could not meet the frame targets
+  anyway.
+- **Alternatives**: `--disable-features=Vulkan` or similar flags only in the
+  Playwright config (hides the problem from real users on software-only
+  machines); keep using the fallback adapter and handle the device loss.
