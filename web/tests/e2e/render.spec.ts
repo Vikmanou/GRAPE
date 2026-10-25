@@ -19,6 +19,8 @@ async function start(page: Page): Promise<string[]> {
   await page.setViewportSize({ width: 1000, height: 700 });
   await page.goto('/');
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  // Detection can finish after the core is ready, especially on a busy GPU.
+  await expect(page.getByTestId('status-renderer')).not.toHaveAttribute('data-renderer', 'detecting');
   const renderer = await page.getByTestId('status-renderer').getAttribute('data-renderer');
   test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
   return gpuErrors;

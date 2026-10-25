@@ -38,7 +38,8 @@ const steps = [
         // This is a no-op once the browser is present, so it runs every time
         // instead of being a setup step to remember.
         ['browser', 'npx', ['playwright', 'install', 'chromium']],
-        ['playwright', ...web('e2e', ...(headed ? ['--headed'] : []))],
+        // One worker when headed: GPU tests running side by side slow each other down.
+        ['playwright', ...web('e2e', ...(headed ? ['--headed', '--workers=1'] : []))],
       ]),
 ];
 
