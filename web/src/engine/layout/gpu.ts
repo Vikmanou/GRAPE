@@ -45,10 +45,6 @@ export class Buffers {
     return buffer;
   }
 
-  get bytes(): number {
-    return this.owned.reduce((sum, b) => sum + b.size, 0);
-  }
-
   destroy(): void {
     for (const buffer of this.owned) buffer.destroy();
     this.owned = [];

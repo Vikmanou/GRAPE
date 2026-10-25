@@ -93,10 +93,6 @@ export class GpuLevel {
     this.buffers.device.queue.writeBuffer(this.latest, 0, positions);
   }
 
-  get bytes(): number {
-    return this.buffers.bytes;
-  }
-
   encode(passes: Passes, iterations: number): void {
     const n = groups(this.count);
     for (let k = 0; k < iterations; k++) {

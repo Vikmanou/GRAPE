@@ -107,10 +107,6 @@ export class GpuLayout {
     return this.levelIndex === 0 && this.levelIteration >= this.budget(0);
   }
 
-  get bytes(): number {
-    return this.shared.bytes + this.level.bytes;
-  }
-
   /** Submits up to `n` iterations, stopping at the end of a level. Returns how many ran. */
   run(n: number, timing?: PassTiming): number {
     if (this.done) return 0;

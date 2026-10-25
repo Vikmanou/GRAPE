@@ -5,12 +5,11 @@ import { GpuLayout } from './GpuLayout';
 import type { Kernels } from './kernels';
 
 /**
- * GPU time a batch aims for, smaller while the user moves the view. Above a
- * frame, so the two queued batches keep the GPU busy between frames.
+ * GPU time a batch aims for, smaller while the user moves the view. Longer
+ * than a frame, so the GPU stays busy between frames with two batches queued.
  */
 const BATCH_MS = 20;
 const INTERACTIVE_BATCH_MS = 4;
-/** Two batches queued keep the GPU busy while the next one is encoded. */
 const MAX_IN_FLIGHT = 2;
 /** Encoding an iteration costs the main thread about 50 µs. */
 const MAX_BATCH = 128;
@@ -68,10 +67,6 @@ export class LayoutRunner {
     return this.measuring || this.inFlight > 0 || (!this.reportedDone && !this.paused);
   }
 
-  get bytes(): number {
-    return this.layout?.bytes ?? 0;
-  }
-
   start(hierarchy: Hierarchy, seed: number): void {
     this.stop();
     this.layout = new GpuLayout(this.device, this.kernels, hierarchy, seed);
@@ -119,23 +114,7 @@ export class LayoutRunner {
   tick(now: number, interactive: boolean): boolean {
     const layout = this.layout;
     if (!layout) return false;
-    if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) {
-      this.enterLevel(layout.currentLevel, layout.levelNodes);
-      const level = layout.currentLevel;
-      const timing = this.device.features.has('timestamp-query') ? new PassTiming(this.device) : undefined;
-      const submitted = performance.now();
-      this.moved ||= layout.run(Math.round(this.batch), timing) > 0;
-      this.inFlight++;
-      const measured = timing
-        ? timing.ms()
-        : this.device.queue.onSubmittedWorkDone().then(() => performance.now() - submitted);
-      void measured.then((ms) => {
-        this.inFlight--;
-        if (this.layout !== layout || layout.currentLevel !== level) return;
-        const factor = Math.min(2, Math.max(0.5, (interactive ? INTERACTIVE_BATCH_MS : BATCH_MS) / Math.max(ms, 0.05)));
-        this.batch = Math.min(MAX_BATCH, Math.max(1, this.batch * factor));
-      });
-    }
+    if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) this.runBatch(layout, interactive);
     const finished = layout.done && this.inFlight === 0;
     if (!this.measuring && !this.reportedDone && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) {
       this.measure(layout, now);
@@ -155,6 +134,10 @@ export class LayoutRunner {
     return layout?.readPositions(this.shift(layout, { x: 0, y: 0 }));
   }
 
+  destroy(): void {
+    this.stop();
+  }
+
   private shift(layout: GpuLayout, origin: { x: number; y: number }): Float32Array<ArrayBuffer> {
     const offsets = this.offsets;
     const shift = new Float32Array(layout.components * 2);
@@ -165,8 +148,31 @@ export class LayoutRunner {
     return shift;
   }
 
-  destroy(): void {
-    this.stop();
+  private runBatch(layout: GpuLayout, interactive: boolean): void {
+    this.enterLevel(layout.currentLevel, layout.levelNodes);
+    const level = layout.currentLevel;
+    const timing = this.device.features.has('timestamp-query') ? new PassTiming(this.device) : undefined;
+    const submitted = performance.now();
+    this.moved ||= layout.run(Math.round(this.batch), timing) > 0;
+    this.inFlight++;
+    const gpuMs = timing
+      ? timing.ms()
+      : this.device.queue.onSubmittedWorkDone().then(() => performance.now() - submitted);
+    gpuMs
+      .then((ms) => {
+        if (this.layout === layout && layout.currentLevel === level) this.resize(ms, interactive);
+      })
+      // A lost device rejects; the engine reports that.
+      .catch(() => undefined)
+      .finally(() => {
+        this.inFlight--;
+      });
+  }
+
+  private resize(ms: number, interactive: boolean): void {
+    const target = interactive ? INTERACTIVE_BATCH_MS : BATCH_MS;
+    const factor = Math.min(2, Math.max(0.5, target / Math.max(ms, 0.05)));
+    this.batch = Math.min(MAX_BATCH, Math.max(1, this.batch * factor));
   }
 
   /** A new level keeps the batch, scaled by how many more nodes each iteration moves. */
@@ -187,12 +193,17 @@ export class LayoutRunner {
       level: layout.currentLevel,
       levels: layout.levels,
     };
-    void layout.measure().then(({ boxes, energy }) => {
-      this.measuring = false;
-      if (this.layout !== layout) return;
-      this.boxes = boxes;
-      if (done) this.reportedDone = true;
-      this.events.measured(boxes.slice(), { ...progress, energy, done });
-    });
+    layout
+      .measure()
+      .then(({ boxes, energy }) => {
+        if (this.layout !== layout) return;
+        this.boxes = boxes;
+        if (done) this.reportedDone = true;
+        this.events.measured(boxes.slice(), { ...progress, energy, done });
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this.measuring = false;
+      });
   }
 }

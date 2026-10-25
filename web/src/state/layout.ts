@@ -122,7 +122,8 @@ export function useLayout(
     };
   }, [topology, engine, gpu, seed, quality, key]);
 
-  const current = run.topology === topology && run.key === key;
+  // A GPU layout whose engine went away, such as after losing the device, is over.
+  const current = run.topology === topology && run.key === key && (!gpu || engine !== undefined);
   const paused = pausedRun !== undefined && pausedRun.topology === topology && pausedRun.key === key;
   const setPaused = useCallback(
     (pause: boolean) => {
