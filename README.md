@@ -5,7 +5,8 @@ assembly graphs in GFA format. Drop a file on the page and see the graph laid
 out and rendered on the GPU. Nothing is installed and nothing is uploaded; all
 parsing, layout and analysis run on your machine.
 
-> Status: milestone 1. Opens a graph and shows its stats; no drawing yet.
+> Status: milestone 2. Opens a graph, shows its stats and draws it with a
+> CPU reference layout; the GPU layout arrives in milestone 3.
 
 ## Formats
 
@@ -15,6 +16,14 @@ gzipped or bgzipped. GFA 2.0 is not supported.
 Parsing runs at a few hundred MB/s on graphs with long sequences, but graphs
 made of many short segments are slower: about 55 MB/s on the densest sample
 (*M. xanthus*, 595k segments, about 2 s).
+
+## Drawing
+
+Segments are drawn as ribbons and links as curves, in Bandage's style. The
+layout runs in a worker: a multilevel force-directed layout with Barnes-Hut
+repulsion, components packed apart, and the picture updates while it
+settles. Drag to pan, scroll or pinch to zoom, arrow keys and +/- also work,
+and F fits the graph.
 
 ## Supported browsers
 
@@ -38,6 +47,12 @@ npm run bench:parse               # parse timing on a synthetic 200k-segment gra
 npm run samples                   # download real sample graphs into samples/
 ```
 
+Time the layout natively and draw it as SVG:
+
+```sh
+cargo run -p gfa-core --release --example layout_file -- samples/bacterial-spades.gfa --svg out.svg
+```
+
 Headless Chromium has no WebGPU adapter, so a plain `npm run check` exercises
 the fallback path only; `check:headed` covers WebGPU.
 
@@ -50,8 +65,8 @@ crates/gfa-gen/     synthetic graph generator for tests and benchmarks
 fuzz/               cargo-fuzz target for the parser
 testdata/           small handcrafted graphs
 samples/            real public graphs, downloaded on demand (see samples/README.md)
-web/src/engine/     WebGPU device and canvas (owns all GPU objects)
-web/src/workers/    parse worker and its message protocol
+web/src/engine/     WebGPU device, renderer, shaders, camera and input (owns all GPU objects)
+web/src/workers/    parse and layout workers and their message protocol
 web/src/ui/         React panels
 web/src/state/      view state
 web/tests/          Vitest (unit/) and Playwright (e2e/)

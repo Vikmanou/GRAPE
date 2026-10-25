@@ -246,3 +246,49 @@ decision, reason, alternatives considered.
   same scheme.
 - **Alternatives**: FMMM (Bandage's OGDF layout), stress majorization;
   both heavier to port to WGSL.
+
+## 2026-10-24: Layout runs in its own worker
+
+- **Decision**: the parse worker hands a compact topology (lengths,
+  component ranks, link ends and orientation bits) to the main thread, which
+  passes a copy to a separate layout worker running its own WASM instance.
+  The layout worker sends the render geometry once (ribbon pieces as point
+  and segment, links as end and inner point on each side), then positions
+  every 100 ms until the layout settles.
+- **Reason**: the parse worker stays free for later queries (info panel,
+  sequences), a new layout can be cancelled by ending its worker, and the
+  same worker is the WebGL2 fallback's layout in milestone 8. Computing link
+  geometry in Rust keeps per-link loops off the main thread.
+- **Alternatives**: running the layout in the parse worker (blocks it for
+  the whole layout); computing link geometry in TypeScript on the main
+  thread (a loop over up to 1.5M links).
+
+## 2026-10-24: Rendering choices for the first picture
+
+- **Decision**: ribbons are instanced capsules cut by a signed distance in
+  the fragment shader; links are cubic Beziers leaving each end along its
+  segment, 16 steps, drawn under the ribbons; ends that nearly meet open
+  into a loop. Widths follow Bandage (node width 5, edge width 1.5), never
+  thinner than one pixel. Links fade as ribbons shrink from 3 to 1 pixel
+  wide. Segment colours use Bandage's random-colour saturation and
+  lightness with hues stepped by the golden ratio from a seeded start.
+  Positions are uploaded relative to an origin at the camera and
+  re-uploaded once the camera is 10^5 pixels away. Fitting leaves out the
+  panels marked `data-inset`. The device asks for the adapter's largest
+  storage binding and buffer sizes. The status bar's frame rate counts only
+  back-to-back frames.
+- **Reason**: two draw calls whatever the graph size; Bandage's look; f32
+  precision on large layouts (spec, Camera); random hues put neighbouring
+  ids of small graphs close in colour; the default 128 MB binding limit is
+  below what million-segment graphs need; frames drawn for 10 Hz layout
+  updates are not a frame rate.
+- **Alternatives**: point sprites for sub-pixel segments and labels (both
+  milestone 4); per-segment colours computed in the shader (would have to be
+  duplicated in the WebGL2 renderer).
+
+## 2026-10-24: Bandage renders as the layout baseline
+
+- **Decision**: layouts were compared against `Bandage image` output from
+  Bandage 0.8.1's Linux build run under WSL with `QT_QPA_PLATFORM=offscreen`.
+- **Reason**: the Windows build's command line writes no image.
+- **Alternatives**: comparing against memory of Bandage's look.
