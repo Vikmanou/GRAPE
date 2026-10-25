@@ -28,8 +28,15 @@ describe('palette', () => {
     }
   });
 
-  it('spreads hues', () => {
-    const colors = new Set(randomColors(500, 3));
-    expect(colors.size).toBeGreaterThan(300);
+  it('spreads hues, even over a few segments', () => {
+    expect(new Set(randomColors(500, 3)).size).toBeGreaterThan(300);
+    const few = [...randomColors(3, 1)].map((c) => unpack(c));
+    for (let i = 0; i < few.length; i++) {
+      for (let j = 0; j < i; j++) {
+        const [a, b] = [few[i] ?? [], few[j] ?? []];
+        const distance = a.reduce((sum, v, k) => sum + Math.abs(v - (b[k] ?? 0)), 0);
+        expect(distance).toBeGreaterThan(60);
+      }
+    }
   });
 });

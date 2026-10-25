@@ -26,8 +26,10 @@ export const palettes: Record<Theme, Palette> = {
 // `randomColourPositiveLightness` in Bandage's program/settings.cpp).
 const SATURATION = 127 / 255;
 const LIGHTNESS = 150 / 255;
+/** Stepping hue by the golden ratio keeps any run of ids far apart in hue. */
+const GOLDEN = (Math.sqrt(5) - 1) / 2;
 
-/** murmur3's 32-bit finaliser: a well-mixed hash of the segment id. */
+/** murmur3's 32-bit finaliser, to turn the seed into a starting hue. */
 function mix(x: number): number {
   let h = x >>> 0;
   h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
@@ -51,9 +53,9 @@ export function hsl(h: number, s: number, l: number): [number, number, number] {
  */
 export function randomColors(segments: number, seed: number): Uint32Array {
   const out = new Uint32Array(segments);
-  const salt = mix(seed);
+  const start = mix(seed) / 2 ** 32;
   for (let i = 0; i < segments; i++) {
-    const [r, g, b] = hsl(mix(i ^ salt) / 2 ** 32, SATURATION, LIGHTNESS);
+    const [r, g, b] = hsl((start + i * GOLDEN) % 1, SATURATION, LIGHTNESS);
     out[i] = (Math.round(r * 255) | (Math.round(g * 255) << 8) | (Math.round(b * 255) << 16) | (255 << 24)) >>> 0;
   }
   return out;
