@@ -34,7 +34,7 @@ export function Overview({ result }: Props) {
   const shown = Math.min(components.segments.length, TOP_COMPONENTS);
 
   return (
-    <aside className="sidebar" aria-label="Overview">
+    <aside className="sidebar" aria-label="Overview" data-inset="left">
       <h2>Overview</h2>
       <p className="muted" data-testid="format" data-parse-ms={Math.round(result.parseMs)}>
         {format}

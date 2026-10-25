@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
-import { useLayout } from '../state/layout';
+import type { Engine } from '../engine/Engine';
+import { DEFAULT_SEED, type LayoutSink, useLayout } from '../state/layout';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
+import { usePanelInsets } from './insets';
 import { Overview } from './Overview';
 import { StatusBar } from './StatusBar';
 import { TopBar } from './TopBar';
@@ -23,7 +25,30 @@ export function App() {
     [open],
   );
   const dragging = useFileDrop(openFile);
-  const layout = useLayout(load.state === 'loaded' ? load.result.topology : undefined, undefined);
+  const [engine, setEngine] = useState<Engine>();
+  const [fps, setFps] = useState<number>();
+  useEffect(
+    () =>
+      engine?.on((event) => {
+        if (event.type === 'frame-stats') setFps(event.fps);
+        if (event.type === 'error') console.error(`GPU error: ${event.message}`);
+      }),
+    [engine],
+  );
+  const sink = useMemo<LayoutSink | undefined>(
+    () =>
+      engine && {
+        geometry: (geometry) => {
+          engine.send({ type: 'set-graph', geometry, seed: DEFAULT_SEED });
+        },
+        positions: (positions) => {
+          engine.send({ type: 'set-positions', positions });
+        },
+      },
+    [engine],
+  );
+  const layout = useLayout(load.state === 'loaded' ? load.result.topology : undefined, sink);
+  usePanelInsets(engine, load.state);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +65,7 @@ export function App() {
 
   return (
     <main className="app">
-      {backend === 'webgpu' && !engineError && <EngineHost onError={setEngineError} />}
+      {backend === 'webgpu' && !engineError && <EngineHost onError={setEngineError} onEngine={setEngine} />}
       <TopBar file={file} onOpen={openFile} />
       {unsupported && <Unsupported detail={engineError} />}
       {!unsupported && (load.state === 'idle' || load.state === 'parsing') && <EmptyState dragging={dragging} />}
@@ -64,6 +89,7 @@ export function App() {
         core={core}
         load={load}
         layout={layout}
+        fps={fps}
         onCancel={cancel}
         onToggleWarnings={() => {
           setShowWarnings((shown) => !shown);

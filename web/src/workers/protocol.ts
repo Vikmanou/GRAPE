@@ -70,6 +70,7 @@ export type LayoutRequest = { type: 'layout'; id: number; topology: Topology; se
 
 /** What the renderer draws, fixed for one layout run. */
 export interface Geometry {
+  segments: number;
   points: number;
   /** `first point, segment` per ribbon piece. */
   pieces: Uint32Array;

@@ -40,6 +40,17 @@ describe('camera', () => {
     expect(left).toBeCloseTo(50);
   });
 
+  it('fits into the area panels leave free', () => {
+    const insets = { top: 40, right: 0, bottom: 20, left: 300 };
+    const c = fit({ minX: 0, minY: 0, maxX: 100, maxY: 100 }, view, 10, insets);
+    const [x0, y0] = worldToScreen(c, view, 0, 0);
+    const [x1, y1] = worldToScreen(c, view, 100, 100);
+    // The free area is 480 by 520 pixels from (310, 50); width limits zoom.
+    expect(x0).toBeCloseTo(310);
+    expect(x1).toBeCloseTo(790);
+    expect((y0 + y1) / 2).toBeCloseTo(50 + 260);
+  });
+
   it('measures bounds', () => {
     expect(boundsOf(new Float32Array([1, 2, -3, 8, 5, 0]))).toEqual({ minX: -3, minY: 0, maxX: 5, maxY: 8 });
     expect(boundsOf(new Float32Array())).toBeUndefined();

@@ -8,6 +8,7 @@ interface Props {
   core: CoreStatus;
   load: LoadState;
   layout: LayoutStatus;
+  fps: number | undefined;
   onCancel: () => void;
   onToggleWarnings: () => void;
 }
@@ -43,11 +44,11 @@ function coreLabel(core: CoreStatus): string {
   }
 }
 
-export function StatusBar({ backend, core, load, layout, onCancel, onToggleWarnings }: Props) {
+export function StatusBar({ backend, core, load, layout, fps, onCancel, onToggleWarnings }: Props) {
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout);
   return (
-    <footer className="status-bar" data-testid="status-bar">
+    <footer className="status-bar" data-testid="status-bar" data-inset="bottom">
       {load.state === 'parsing' && (
         <span data-testid="status-task">
           Parsing {formatPercent(load.fraction)}{' '}
@@ -70,6 +71,7 @@ export function StatusBar({ backend, core, load, layout, onCancel, onToggleWarni
         </button>
       )}
       <span className="spacer" />
+      {fps !== undefined && <span data-testid="status-fps">{Math.round(fps)} fps</span>}
       <span data-testid="status-renderer" data-renderer={backend}>
         {rendererLabel[backend]}
       </span>

@@ -51,15 +51,34 @@ export function pan(c: Camera, dx: number, dy: number): Camera {
   return { x: c.x - dx / c.zoom, y: c.y - dy / c.zoom, zoom: c.zoom };
 }
 
-/** Frames `b` with `margin` pixels free on every side. */
-export function fit(b: Bounds, v: Viewport, margin: number): Camera {
+/** Pixels of the viewport covered by panels on each side. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+/** Frames `b` in the part of the viewport the insets leave free, `margin` pixels from its edges. */
+export function fit(b: Bounds, v: Viewport, margin: number, insets: Insets = NO_INSETS): Camera {
+  const free = {
+    left: insets.left + margin,
+    top: insets.top + margin,
+    width: Math.max(1, v.width - insets.left - insets.right - 2 * margin),
+    height: Math.max(1, v.height - insets.top - insets.bottom - 2 * margin),
+  };
   const w = Math.max(b.maxX - b.minX, 1e-9);
   const h = Math.max(b.maxY - b.minY, 1e-9);
-  const zoom = Math.min((v.width - 2 * margin) / w, (v.height - 2 * margin) / h);
+  const zoom = clampZoom(Math.min(free.width / w, free.height / h));
+  // Put the bounds' centre at the free area's centre.
+  const sx = free.left + free.width / 2;
+  const sy = free.top + free.height / 2;
   return {
-    x: (b.minX + b.maxX) / 2,
-    y: (b.minY + b.maxY) / 2,
-    zoom: clampZoom(Math.max(zoom, MIN_ZOOM)),
+    x: (b.minX + b.maxX) / 2 - (sx - v.width / 2) / zoom,
+    y: (b.minY + b.maxY) / 2 - (sy - v.height / 2) / zoom,
+    zoom,
   };
 }
 

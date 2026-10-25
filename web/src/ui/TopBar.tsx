@@ -12,7 +12,7 @@ interface Props {
 export function TopBar({ file, onOpen }: Props) {
   const input = useRef<HTMLInputElement>(null);
   return (
-    <header className="top-bar">
+    <header className="top-bar" data-inset="top">
       <span className="brand">GRAPE</span>
       {file && (
         <span className="file-name" data-testid="file-name" title={file.name}>
