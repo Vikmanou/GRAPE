@@ -43,6 +43,14 @@ non-GPU paths; `check:headed` runs the WebGPU tests.
 
 Design decisions are recorded in [docs/decisions.md](docs/decisions.md).
 
+## About AI
+
+I use AI coding tools a lot on this project, and I'd rather say so than hide
+it. Nothing lands without me reading the code myself, and every change passes
+the full test gate and is checked by hand on real assembly graphs in the
+browser before it's merged. If something is broken anyway, please open an
+issue.
+
 ## License
 
 [MIT](LICENSE)
