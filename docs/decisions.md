@@ -306,3 +306,14 @@ decision, reason, alternatives considered.
 - **Alternatives**: `--disable-features=Vulkan` or similar flags only in the
   Playwright config (hides the problem from real users on software-only
   machines); keep using the fallback adapter and handle the device loss.
+
+## 2026-10-25: Playwright enables Vulkan on Linux
+
+- **Decision**: on Linux, Playwright's Chromium starts with
+  `--enable-features=Vulkan` as well as `--enable-unsafe-webgpu`.
+- **Reason**: without it, headed Chromium on Linux offers only the
+  SwiftShader fallback adapter (Intel UHD 620 class GPU, Fedora 44), so
+  `check:headed` skipped every WebGPU test. With it the real Intel adapter
+  appears. Headless runs still get no hardware adapter.
+- **Alternatives**: a Linux-only headed config; documenting the flag for
+  manual runs only.

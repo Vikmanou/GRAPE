@@ -18,7 +18,10 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         // Headless WebGPU support varies by machine; tests accept either a
         // WebGPU canvas or a clean fallback message.
-        launchOptions: { args: ['--enable-unsafe-webgpu'] },
+        // Chrome on Linux exposes the real GPU to WebGPU only through Vulkan.
+        launchOptions: {
+          args: ['--enable-unsafe-webgpu', ...(process.platform === 'linux' ? ['--enable-features=Vulkan'] : [])],
+        },
       },
     },
   ],
