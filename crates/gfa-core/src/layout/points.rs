@@ -13,7 +13,6 @@ const MIN_NODE_LENGTH: f64 = 5.0;
 pub(crate) const NODE_SEGMENT_LENGTH: f32 = 20.0;
 pub(crate) const EDGE_LENGTH: f32 = 5.0;
 
-/// Drawn units per base: the whole graph gets 40 units per segment.
 pub fn drawn_per_base(segments: usize, total_length: u64) -> f64 {
     let target = (segments as f64 * MEAN_NODE_LENGTH).max(MIN_TOTAL_GRAPH_LENGTH);
     if total_length == 0 {
@@ -41,7 +40,6 @@ pub struct Chains {
     pub start: Vec<u32>,
     pub pieces: Vec<u8>,
     pub piece_length: Vec<f32>,
-    /// `component_start[c]..component_start[c + 1]` are component `c`'s points.
     pub component_start: Vec<u32>,
 }
 
@@ -58,8 +56,7 @@ impl Chains {
         self.start[segment as usize] + u32::from(self.pieces[segment as usize])
     }
 
-    /// The point next to an end point, inside the same segment, which gives
-    /// the direction the segment leaves that end in.
+    /// The neighbour of an end point inside its segment.
     pub fn inner(&self, segment: u32, end: u32) -> u32 {
         if end == self.first(segment) {
             end + 1
@@ -68,7 +65,7 @@ impl Chains {
         }
     }
 
-    /// `(first point, segment)` per polyline piece, for drawing ribbons.
+    /// `(first point, segment)` per polyline piece.
     pub fn pieces(&self) -> Vec<u32> {
         let total: usize = self.pieces.iter().map(|&p| usize::from(p)).sum();
         let mut out = Vec::with_capacity(total * 2);
@@ -117,9 +114,9 @@ impl Chains {
     }
 }
 
-/// Springs along each segment, then one per link between the joined ends.
+/// Springs along segments first, then one per link.
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct Springs {
+pub(crate) struct Springs {
     pub a: Vec<u32>,
     pub b: Vec<u32>,
     pub rest: Vec<f32>,
@@ -130,10 +127,6 @@ pub struct Springs {
 impl Springs {
     pub fn len(&self) -> usize {
         self.a.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.a.is_empty()
     }
 
     pub(crate) fn push(&mut self, a: u32, b: u32, rest: f32, weight: f32) {
@@ -180,9 +173,7 @@ pub fn link_points(t: &Topology, chains: &Chains, i: usize) -> (u32, u32) {
     (a, b)
 }
 
-/// Per link, its two end points each followed by its inner neighbour:
-/// `[end a, inner a, end b, inner b]`, for drawing links as curves that
-/// leave each end along the segment's direction.
+/// `[end a, inner a, end b, inner b]` per link.
 pub fn link_geometry(t: &Topology, chains: &Chains) -> Vec<u32> {
     let mut out = Vec::with_capacity(t.link_from.len() * 4);
     for i in 0..t.link_from.len() {

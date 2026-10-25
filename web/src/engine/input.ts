@@ -27,10 +27,7 @@ function typing(target: EventTarget | null): boolean {
   );
 }
 
-/**
- * Drag to pan, wheel or pinch to zoom toward the cursor, arrows and +/- on
- * the keyboard, F to fit. Returns a function that removes the listeners.
- */
+/** Returns a function that removes the listeners. */
 export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): () => void {
   const scale = () => canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
   const local = (event: MouseEvent): [number, number] => {

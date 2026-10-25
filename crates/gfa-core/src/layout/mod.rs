@@ -1,9 +1,5 @@
-//! CPU reference layout, multilevel as the spec describes: coarsen by
-//! heavy-edge matching, settle the coarsest level from a seeded random
-//! start, then split back level by level with fewer iterations each. Forces
-//! use Barnes-Hut repulsion inside each component; components are packed
-//! apart at the end. It is the correctness reference for the GPU layout and
-//! the layout of the WebGL2 fallback.
+//! CPU reference layout, multilevel as the spec describes. It is the
+//! correctness reference for the GPU layout and the WebGL2 fallback's layout.
 
 mod force;
 mod level;
@@ -14,33 +10,24 @@ mod quality;
 pub mod rng;
 mod topology;
 
-pub use pack::{Rect, rows, skyline};
-pub use points::{
-    Chains, Springs, drawn_length, drawn_per_base, link_geometry, link_points, pieces,
-};
-pub use quadtree::{QuadTree, brute_force};
+pub use points::{Chains, link_geometry, link_points};
 pub use quality::{Quality, measure};
 pub use topology::{Topology, TopologyError};
 
 use force::Forces;
 use level::{Level, NONE, Split};
 use pack::pack_components;
-use points::NODE_SEGMENT_LENGTH;
+use points::{NODE_SEGMENT_LENGTH, Springs};
 use rng::Rng;
 
-/// Room kept around each component for ribbon width.
-const MARGIN: f32 = 5.0;
-/// Coarsening stops once the largest component has this few nodes.
-const COARSEST: usize = 8;
-/// Final temperature, in drawn units.
+const RIBBON_MARGIN: f32 = 5.0;
+const COARSEST_NODES: usize = 8;
 const COLD: f32 = 0.4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutOptions {
     pub seed: u64,
-    /// Iterations on the coarsest level.
-    pub iterations: u32,
-    /// Iterations on each finer level.
+    pub coarsest_iterations: u32,
     pub refine_iterations: u32,
     pub max_pieces: u8,
 }
@@ -49,7 +36,7 @@ impl Default for LayoutOptions {
     fn default() -> Self {
         Self {
             seed: 1,
-            iterations: 500,
+            coarsest_iterations: 500,
             refine_iterations: 50,
             max_pieces: 50,
         }
@@ -59,21 +46,19 @@ impl Default for LayoutOptions {
 pub struct Layout {
     pub chains: Chains,
     options: LayoutOptions,
-    /// Level 0 is the full set of points; each next level is coarser.
+    /// Level 0 holds every point; each next level is coarser.
     levels: Vec<Level>,
     /// `splits[l]` turns level `l + 1` back into level `l`.
     splits: Vec<Split>,
     /// Springs before this one run along segments, the rest are links.
     first_link: usize,
-    /// Components that are one unlinked segment.
+    /// Components that are one unlinked segment, drawn straight.
     frozen: Vec<bool>,
     level: usize,
     level_iteration: u32,
     iteration: u32,
-    /// Positions on the current level.
     xs: Vec<f32>,
     ys: Vec<f32>,
-    /// Starting temperature per component on the current level.
     heat: Vec<f32>,
     forces: Forces,
 }
@@ -90,8 +75,6 @@ impl Layout {
             component[chains.component_start[c] as usize..chains.component_start[c + 1] as usize]
                 .fill(c as u32);
         }
-        // Springs along segments come first, then links. A component with
-        // no link is one straight segment and skips the force pass.
         let first_link: usize = chains.pieces.iter().map(|&p| usize::from(p)).sum();
         let mut frozen = vec![true; components];
         for &a in &springs.a[first_link..] {
@@ -107,7 +90,7 @@ impl Layout {
         }];
         let mut splits = Vec::new();
         let mut rng = Rng::new(options.seed);
-        while largest_active(&levels[levels.len() - 1], &frozen) > COARSEST {
+        while largest_active(&levels[levels.len() - 1], &frozen) > COARSEST_NODES {
             let Some((coarse, split)) = levels[levels.len() - 1].coarsen(&frozen, &mut rng) else {
                 break;
             };
@@ -163,15 +146,14 @@ impl Layout {
     /// gets twice the iterations of the one below, up to eight times.
     fn budget(&self, level: usize) -> u32 {
         if level == self.levels.len() - 1 {
-            self.options.iterations
+            self.options.coarsest_iterations
         } else {
             self.options.refine_iterations << level.min(3)
         }
     }
 
-    /// Single segments are laid straight on level 0 and carried up as the
-    /// mean of their children; everything else starts at random inside a
-    /// square sized to its component.
+    /// Frozen components start straight; the rest at random in a square
+    /// sized to the component.
     fn scatter(&mut self, rng: &mut Rng) {
         let c = &self.chains;
         let (mut xs, mut ys) = (vec![0.0f32; c.points()], vec![0.0f32; c.points()]);
@@ -232,9 +214,7 @@ impl Layout {
             .collect();
     }
 
-    /// Splits each node of the current level into its two children, set
-    /// either side of it in the direction their own neighbours lie, so a
-    /// chain unfolds without twisting.
+    /// Children go towards their own neighbours, so chains unfold untwisted.
     fn descend(&mut self) {
         // Seeded per level, so results never depend on how steps are batched.
         let mut rng = Rng::new(self.options.seed ^ (self.level as u64) << 40);
@@ -286,7 +266,7 @@ impl Layout {
         self.enter_level();
     }
 
-    /// Runs up to `n` iterations; returns whether the layout has finished.
+    /// Returns whether the layout has finished.
     pub fn step(&mut self, n: u32) -> bool {
         for _ in 0..n {
             if self.done() {
@@ -296,7 +276,6 @@ impl Layout {
                 self.descend();
             }
             let progress = self.level_iteration as f32 / self.level_budget().max(1) as f32;
-            // Geometric cooling from each component's heat down to `COLD`.
             let temperature: Vec<f32> = self
                 .heat
                 .iter()
@@ -320,8 +299,8 @@ impl Layout {
         self.done()
     }
 
-    /// Level 0 positions, components packed apart, as `x, y` pairs. While a
-    /// coarser level runs, each point takes its ancestor's position.
+    /// `x, y` per point. While a coarser level runs, points take their
+    /// ancestor's position.
     pub fn write_positions(&self, out: &mut Vec<f32>) {
         let n = self.chains.points();
         let mut node: Vec<u32> = (0..n as u32).collect();
@@ -342,7 +321,12 @@ impl Layout {
                 x1 = x1.max(x);
                 y1 = y1.max(y);
             }
-            boxes.push((x0 - MARGIN, y0 - MARGIN, x1 + MARGIN, y1 + MARGIN));
+            boxes.push((
+                x0 - RIBBON_MARGIN,
+                y0 - RIBBON_MARGIN,
+                x1 + RIBBON_MARGIN,
+                y1 + RIBBON_MARGIN,
+            ));
         }
         let offsets = pack_components(&boxes, &self.frozen);
         out.clear();

@@ -1,7 +1,5 @@
 //! Multilevel coarsening by heavy-edge matching (Walshaw, "A Multilevel
-//! Algorithm for Force-Directed Graph Drawing", 2000): each level merges
-//! pairs of joined nodes, so a coarse layout settles the global shape
-//! cheaply and finer levels only refine it.
+//! Algorithm for Force-Directed Graph Drawing", 2000).
 
 use super::points::Springs;
 use super::rng::Rng;
@@ -12,20 +10,17 @@ pub(crate) const NONE: u32 = u32::MAX;
 pub(crate) struct Level {
     /// Level 0 points each node stands for.
     pub mass: Vec<f32>,
-    /// Estimated extent of the points a node stands for.
     pub span: Vec<f32>,
     pub component: Vec<u32>,
     pub component_start: Vec<u32>,
     pub springs: Springs,
 }
 
-/// How a coarse node splits back into the finer level.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct Split {
-    /// Coarse node of each finer node.
     pub parent: Vec<u32>,
-    /// Per coarse node: its two finer nodes (the second may be `NONE`) and
-    /// the rest length that joined them.
+    /// Per coarse node: its finer nodes (the second may be `NONE`) and the
+    /// rest length between them.
     pub children: Vec<(u32, u32, f32)>,
 }
 
@@ -34,8 +29,7 @@ impl Level {
         self.mass.len()
     }
 
-    /// Merges matched pairs; nodes of `frozen` components are kept as they
-    /// are. Returns `None` once a level no longer shrinks enough to pay off.
+    /// `None` once a level no longer shrinks enough to pay off.
     pub fn coarsen(&self, frozen: &[bool], rng: &mut Rng) -> Option<(Level, Split)> {
         let n = self.len();
         let (offsets, edges) = self.adjacency();
@@ -96,8 +90,7 @@ impl Level {
             let id = split.children.len() as u32;
             split.parent[u] = id;
             let v = partner[u];
-            // Exact for a chain: the gap between the two centres plus half of
-            // each extent.
+            // Exact for chains.
             let (mass, span, rest) = if v == NONE {
                 (self.mass[u], self.span[u], 0.0)
             } else {
@@ -114,14 +107,14 @@ impl Level {
             coarse.span.push(span);
             coarse.component.push(self.component[u]);
         }
-        coarse.component_start = starts(&coarse.component, self.component_start.len() - 1);
+        coarse.component_start =
+            component_starts(&coarse.component, self.component_start.len() - 1);
         coarse.springs = self.coarse_springs(&split.parent, &coarse.span);
         Some((coarse, split))
     }
 
-    /// Springs between merged nodes, combined. The rest length grows by how
-    /// much each end's node outgrew the finer node it came from, which is
-    /// exact when a chain is merged pairwise.
+    /// Rest lengths grow by how much each end outgrew the finer node it came
+    /// from, which is exact for chains.
     fn coarse_springs(&self, parent: &[u32], span: &[f32]) -> Springs {
         let s = &self.springs;
         let mut joined: Vec<(u64, f32, f32)> = Vec::with_capacity(s.len());
@@ -151,7 +144,6 @@ impl Level {
         springs
     }
 
-    /// Spring ids per node, CSR style.
     fn adjacency(&self) -> (Vec<u32>, Vec<u32>) {
         let s = &self.springs;
         let mut offsets = vec![0u32; self.len() + 1];
@@ -174,9 +166,7 @@ impl Level {
     }
 }
 
-/// `starts[c]..starts[c + 1]` are component `c`'s nodes, given nodes sorted
-/// by component.
-pub(crate) fn starts(component: &[u32], components: usize) -> Vec<u32> {
+fn component_starts(component: &[u32], components: usize) -> Vec<u32> {
     let mut starts = vec![0u32; components + 1];
     for &c in component {
         starts[c as usize + 1] += 1;

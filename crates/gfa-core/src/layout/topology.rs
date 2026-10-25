@@ -1,5 +1,4 @@
-/// The graph as the layout sees it: plain arrays, so it can be built from a
-/// `Graph` or from arrays a worker received.
+/// Plain arrays, so a worker can build one from what it received.
 #[derive(Debug, Clone, Copy)]
 pub struct Topology<'a> {
     pub lengths: &'a [u32],

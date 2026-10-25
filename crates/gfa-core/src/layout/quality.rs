@@ -1,6 +1,4 @@
-//! The spec's layout quality metrics, used to compare the GPU layout with
-//! this reference: how evenly springs reach their rest lengths, and how many
-//! points of different segments sit on top of each other.
+//! The spec's layout quality metrics.
 
 use super::Layout;
 use hashbrown::HashMap;
@@ -13,7 +11,6 @@ const OVERLAP: f32 = 2.5;
 pub struct Quality {
     /// Coefficient of variation of spring length over rest length.
     pub edge_cv: f64,
-    /// Mean link length over its rest length.
     pub link_stretch: f64,
     pub overlaps: u64,
 }
@@ -43,8 +40,8 @@ pub fn measure(layout: &Layout, positions: &[f32]) -> Quality {
     }
 }
 
-/// Pairs found through a grid of `OVERLAP`-sized cells, checking each cell
-/// against itself and the neighbours after it so every pair is seen once.
+/// Each grid cell is checked against itself and the neighbours after it, so
+/// every pair is seen once.
 fn overlaps(layout: &Layout, positions: &[f32]) -> u64 {
     let c = &layout.chains;
     let points = c.points();

@@ -39,6 +39,7 @@ export function App() {
     () =>
       engine && {
         geometry: (geometry) => {
+          setFps(undefined);
           engine.send({ type: 'set-graph', geometry, seed: DEFAULT_SEED });
         },
         positions: (positions) => {

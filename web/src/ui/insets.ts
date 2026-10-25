@@ -1,11 +1,7 @@
 import { useEffect } from 'react';
 import type { Engine } from '../engine/Engine';
 
-/**
- * Tells the engine how much of the canvas the panels marked `data-inset`
- * cover, so fitting frames the graph in the space left over. `key` changes
- * whenever panels appear or disappear.
- */
+/** Panels marked `data-inset` are kept clear when fitting; `key` changes when panels come or go. */
 export function usePanelInsets(engine: Engine | undefined, key: string): void {
   useEffect(() => {
     const host = engine && document.querySelector<HTMLElement>('.app');

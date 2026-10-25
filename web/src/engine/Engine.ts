@@ -5,7 +5,6 @@ import { attachInput } from './input';
 import { palettes, randomColors, type Theme } from './palette';
 import { Renderer } from './renderer';
 
-/** Commands the UI sends to the engine. */
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
   | { type: 'set-graph'; geometry: Geometry; seed: number }
@@ -15,7 +14,6 @@ export type EngineCommand =
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets };
 
-/** Events the engine reports to the UI. */
 export type EngineEvent =
   | { type: 'resize'; width: number; height: number }
   | { type: 'device-lost'; message: string }
@@ -36,6 +34,11 @@ const FIT_MARGIN = 24;
  */
 const REBASE_PIXELS = 1e5;
 const STATS_INTERVAL_MS = 1000;
+
+/** Links fade out as ribbons shrink from 3 to 1 pixel wide. */
+function linkFade(ribbonPixels: number): number {
+  return Math.min(1, Math.max(0, (ribbonPixels - 1) / 2));
+}
 /** Frames further apart than this are not part of continuous drawing. */
 const CONTINUOUS_GAP_MS = 50;
 
@@ -61,7 +64,7 @@ export class Engine {
   private stats = { last: 0, time: 0, frames: 0, cpuMs: 0 };
 
   private constructor(
-    private readonly host: HTMLElement,
+    host: HTMLElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly device: GPUDevice,
     private readonly context: GPUCanvasContext,
@@ -201,7 +204,6 @@ export class Engine {
     });
   }
 
-  /** Sends positions relative to an origin at the camera, computed in f64. */
   private upload(): void {
     const positions = this.positions;
     if (!positions) return;
@@ -265,8 +267,7 @@ export class Engine {
       height: this.canvas.height,
       ribbonHalf: RIBBON_WIDTH / 2,
       linkHalf: LINK_WIDTH / 2,
-      // Links fade out as ribbons shrink from 3 to 1 pixel wide.
-      linkAlpha: Math.min(1, Math.max(0, (RIBBON_WIDTH * c.zoom - 1) / 2)),
+      linkAlpha: linkFade(RIBBON_WIDTH * c.zoom),
       linkColor: palette.link,
     });
     pass.end();

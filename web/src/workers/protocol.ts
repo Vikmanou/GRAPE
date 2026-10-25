@@ -43,7 +43,6 @@ export interface ParseWarnings {
   messages: string[];
 }
 
-/** The arrays the layout needs, moved from the parse worker to the layout worker. */
 export interface Topology {
   lengths: Uint32Array;
   /** Component rank per segment. */
@@ -68,7 +67,6 @@ export interface ParseResult {
 
 export type LayoutRequest = { type: 'layout'; id: number; topology: Topology; seed: number };
 
-/** What the renderer draws, fixed for one layout run. */
 export interface Geometry {
   segments: number;
   points: number;

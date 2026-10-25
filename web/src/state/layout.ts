@@ -13,16 +13,12 @@ export type LayoutStatus =
   | { state: 'done'; total: number; ms: number }
   | { state: 'failed'; message: string };
 
-/** Where layout output goes: the renderer, once it exists. */
 export interface LayoutSink {
   geometry(geometry: Geometry): void;
   positions(positions: Float32Array): void;
 }
 
-/**
- * Lays out each new topology in the layout worker and streams the result to
- * `sink`. A sink that arrives late gets the latest geometry and positions.
- */
+/** A sink that arrives late gets the latest geometry and positions. */
 export function useLayout(topology: Topology | undefined, sink: LayoutSink | undefined): LayoutStatus {
   // Tagged with its topology, so a stale run reads as idle without an effect resetting it.
   const [run, setRun] = useState<{ topology?: Topology; status: LayoutStatus }>({ status: IDLE });

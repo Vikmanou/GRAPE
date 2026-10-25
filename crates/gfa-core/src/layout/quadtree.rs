@@ -14,15 +14,13 @@ struct Node {
     mass: f32,
     /// First of four consecutive children, or 0 for a leaf.
     child: u32,
-    /// Head of the leaf's point list.
     point: u32,
 }
 
-/// Reused across iterations so building allocates nothing once warm.
 #[derive(Debug, Default)]
 pub struct QuadTree {
     nodes: Vec<Node>,
-    /// Next point in the same leaf, by local index.
+    /// Next point in the same leaf.
     next: Vec<u32>,
     stack: Vec<u32>,
 }
@@ -125,8 +123,7 @@ impl QuadTree {
         }
     }
 
-    /// Sum over all other points of `(p_i - p_j) / |p_i - p_j|^2`, the
-    /// direction and falloff of a `1/d` repulsion.
+    /// Sum over other points of `(p_i - p_j) / |p_i - p_j|^2`.
     pub fn repulsion(&mut self, i: u32, xs: &[f32], ys: &[f32], theta: f32) -> (f32, f32) {
         let (x, y) = (xs[i as usize], ys[i as usize]);
         let theta2 = theta * theta;
@@ -181,26 +178,25 @@ fn apart(dx: f32, dy: f32, i: u32, p: u32) -> (f32, f32) {
     (sign, sign * 0.5)
 }
 
-/// Exact `O(n^2)` sum, the reference the tree is tested against.
-pub fn brute_force(i: u32, xs: &[f32], ys: &[f32]) -> (f32, f32) {
-    let (x, y) = (xs[i as usize], ys[i as usize]);
-    let (mut fx, mut fy) = (0.0f32, 0.0f32);
-    for p in 0..xs.len() as u32 {
-        if p != i {
-            let (dx, dy) = apart(x - xs[p as usize], y - ys[p as usize], i, p);
-            let d2 = dx * dx + dy * dy;
-            fx += dx / d2;
-            fy += dy / d2;
-        }
-    }
-    (fx, fy)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::layout::rng::Rng;
     use proptest::prelude::*;
+
+    fn brute_force(i: u32, xs: &[f32], ys: &[f32]) -> (f32, f32) {
+        let (x, y) = (xs[i as usize], ys[i as usize]);
+        let (mut fx, mut fy) = (0.0f32, 0.0f32);
+        for p in 0..xs.len() as u32 {
+            if p != i {
+                let (dx, dy) = apart(x - xs[p as usize], y - ys[p as usize], i, p);
+                let d2 = dx * dx + dy * dy;
+                fx += dx / d2;
+                fy += dy / d2;
+            }
+        }
+        (fx, fy)
+    }
 
     #[test]
     fn coincident_points_share_a_leaf() {

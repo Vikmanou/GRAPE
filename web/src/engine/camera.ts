@@ -72,7 +72,6 @@ export function fit(b: Bounds, v: Viewport, margin: number, insets: Insets = NO_
   const w = Math.max(b.maxX - b.minX, 1e-9);
   const h = Math.max(b.maxY - b.minY, 1e-9);
   const zoom = clampZoom(Math.min(free.width / w, free.height / h));
-  // Put the bounds' centre at the free area's centre.
   const sx = free.left + free.width / 2;
   const sy = free.top + free.height / 2;
   return {

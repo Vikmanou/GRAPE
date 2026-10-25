@@ -1,22 +1,17 @@
-//! One force iteration on a level: Barnes-Hut repulsion inside each
-//! component, springs along edges, and a displacement cap (temperature).
-
 use super::level::Level;
 use super::quadtree::QuadTree;
 
 const THETA: f32 = 0.8;
-/// Strength of the `k^2 / d` repulsion, where `k` is the level's mean rest
-/// length. Repulsion ignores node mass: weighting it by mass lets heavy
-/// coarse nodes push apart regardless of their springs, which crosses edges
-/// that later levels cannot uncross.
+/// Scales `k^2 / d` repulsion, `k` being the level's mean rest length. It
+/// ignores node mass: mass-weighted repulsion crossed coarse edges that
+/// finer levels could not uncross.
 const REPULSION: f32 = 0.25;
 
 #[derive(Debug, Default)]
 pub(crate) struct Forces {
     fx: Vec<f32>,
     fy: Vec<f32>,
-    /// Step size per node: the inverse of its mass plus spring stiffness,
-    /// so a node never overshoots the rest length its springs pull towards.
+    /// Inverse of mass plus spring stiffness, so no node overshoots its springs.
     step: Vec<f32>,
     k2: f32,
     tree: QuadTree,
@@ -41,7 +36,7 @@ impl Forces {
         self.k2 = k * k * REPULSION;
     }
 
-    /// `temperature` caps each component's moves; zero skips the component.
+    /// A component whose temperature is zero is skipped.
     pub fn iterate(&mut self, level: &Level, temperature: &[f32], xs: &mut [f32], ys: &mut [f32]) {
         let starts = &level.component_start;
         for (c, &t) in temperature.iter().enumerate() {
@@ -63,9 +58,8 @@ impl Forces {
             let (a, b) = (s.a[e] as usize, s.b[e] as usize);
             let (dx, dy) = (xs[b] - xs[a], ys[b] - ys[a]);
             let d = dx.hypot(dy).max(1e-6);
-            // Hooke's law up to the rest length, growing with the square of
-            // the stretch beyond it (as Fruchterman-Reingold's d^2 / k), so
-            // repulsion summed over long chains cannot stretch links far.
+            // Quadratic beyond the rest length, like Fruchterman-Reingold's
+            // d^2 / k, so repulsion summed over long chains cannot overstretch links.
             let pull = s.weight[e] * (d - s.rest[e]) / d * (d / s.rest[e]).max(1.0);
             self.fx[a] += dx * pull;
             self.fy[a] += dy * pull;

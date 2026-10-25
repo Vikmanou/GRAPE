@@ -1,5 +1,5 @@
 //! Times the CPU reference layout on a file and can draw the result.
-//! `cargo run -p gfa-core --release --example layout_file -- <path> [--seed N] [--iterations N] [--svg out.svg]`
+//! `cargo run -p gfa-core --release --example layout_file -- <path> [--seed N] [--coarsest N] [--refine N] [--stop N] [--svg out.svg]`
 
 use gfa_core::layout::{Layout, LayoutOptions, link_points, measure};
 use gfa_core::{ParseOptions, parse};
@@ -15,7 +15,9 @@ fn arg(name: &str) -> Option<String> {
 
 fn main() {
     let Some(path) = std::env::args().nth(1) else {
-        eprintln!("usage: layout_file <path> [--seed N] [--iterations N] [--svg out.svg]");
+        eprintln!(
+            "usage: layout_file <path> [--seed N] [--coarsest N] [--refine N] [--stop N] [--svg out.svg]"
+        );
         std::process::exit(2);
     };
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -27,8 +29,8 @@ fn main() {
     if let Some(n) = arg("--refine") {
         options.refine_iterations = n.parse().expect("--refine takes a number");
     }
-    if let Some(n) = arg("--iterations") {
-        options.iterations = n.parse().expect("--iterations takes a number");
+    if let Some(n) = arg("--coarsest") {
+        options.coarsest_iterations = n.parse().expect("--coarsest takes a number");
     }
 
     let start = Instant::now();

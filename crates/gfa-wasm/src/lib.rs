@@ -140,7 +140,6 @@ impl Loaded {
         }
     }
 
-    /// Copies of the arrays the layout needs, handed to the layout worker.
     #[wasm_bindgen(js_name = segmentLengths)]
     pub fn segment_lengths(&self) -> Vec<u32> {
         self.graph.segments.length.clone()

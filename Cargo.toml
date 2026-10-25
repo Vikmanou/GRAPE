@@ -9,6 +9,7 @@ edition = "2024"
 license = "MIT"
 rust-version = "1.99"
 repository = "https://github.com/Vikmanou/GRAPE"
+publish = false
 
 [workspace.dependencies]
 gfa-core = { path = "crates/gfa-core" }

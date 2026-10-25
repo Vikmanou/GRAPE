@@ -19,7 +19,6 @@ export interface View {
   linkColor: Rgba;
 }
 
-/** Owns the graph's GPU buffers and pipelines; two instanced draws per frame. */
 export class Renderer {
   private readonly ribbon: GPURenderPipeline;
   private readonly link: GPURenderPipeline;
@@ -87,7 +86,7 @@ export class Renderer {
     });
   }
 
-  /** `x, y` per point, relative to the origin the view's centre is given in. */
+  /** `x, y` per point, relative to the same origin as the view's centre. */
   setPositions(positions: Float32Array<ArrayBuffer>): void {
     if (this.positions && positions.byteLength <= this.positions.size) {
       this.device.queue.writeBuffer(this.positions, 0, positions);

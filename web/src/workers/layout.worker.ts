@@ -1,5 +1,3 @@
-// Runs the CPU reference layout and streams positions while it settles.
-
 import init, { Layout } from '../wasm/pkg/gfa_wasm';
 import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { LayoutRequest, LayoutResponse } from './protocol';

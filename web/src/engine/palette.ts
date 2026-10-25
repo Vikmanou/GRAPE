@@ -47,10 +47,7 @@ export function hsl(h: number, s: number, l: number): [number, number, number] {
   return [channel(0), channel(8), channel(4)];
 }
 
-/**
- * One opaque colour per segment, packed as RGBA8 with red in the low byte
- * (what WGSL's `unpack4x8unorm` reads). The same seed gives the same colours.
- */
+/** RGBA8 with red in the low byte, as WGSL's `unpack4x8unorm` reads it. */
 export function randomColors(segments: number, seed: number): Uint32Array {
   const out = new Uint32Array(segments);
   const start = mix(seed) / 2 ** 32;

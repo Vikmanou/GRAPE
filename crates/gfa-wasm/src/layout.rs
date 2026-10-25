@@ -1,7 +1,6 @@
 use gfa_core::layout::{LayoutOptions, Topology, link_geometry};
 use wasm_bindgen::prelude::*;
 
-/// A layout run, stepped by the layout worker.
 #[wasm_bindgen]
 pub struct Layout {
     inner: gfa_core::layout::Layout,
@@ -41,7 +40,7 @@ impl Layout {
         })
     }
 
-    /// Runs up to `n` iterations; returns whether the layout has finished.
+    /// Returns whether the layout has finished.
     pub fn step(&mut self, n: u32) -> bool {
         self.inner.step(n)
     }

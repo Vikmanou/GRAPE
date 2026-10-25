@@ -1,6 +1,5 @@
 //! Skyline bottom-left packing (Jylänki, "A Thousand Ways to Pack the Bin",
-//! 2010): each rectangle goes where its top is lowest, then leftmost. The
-//! layout grows downward, as screens read.
+//! 2010), growing downward.
 
 /// Bandage's `componentSeparation` default.
 const COMPONENT_GAP: f32 = 50.0;
@@ -18,8 +17,8 @@ struct Span {
     w: f32,
 }
 
-/// Top-left corners for `rects`, already sorted largest first, packed into
-/// a strip `width` wide (widened to the widest rectangle).
+/// Top-left corners for `rects`, sorted largest first. The strip widens to
+/// the widest rectangle.
 pub fn skyline(rects: &[Rect], width: f32) -> Vec<(f32, f32)> {
     let width = rects.iter().map(|r| r.w).fold(width, f32::max);
     let mut sky = vec![Span {
@@ -38,8 +37,7 @@ pub fn skyline(rects: &[Rect], width: f32) -> Vec<(f32, f32)> {
         .collect()
 }
 
-/// The span to start at and the height there, scanning every start with a
-/// sliding window whose maximum is kept in a monotonic deque.
+/// Sliding-window maximum over the skyline, kept in a monotonic deque.
 fn lowest(sky: &[Span], w: f32, width: f32) -> (usize, f32) {
     let mut best = (0, f32::INFINITY);
     let mut window = std::collections::VecDeque::new();
@@ -82,7 +80,6 @@ fn place(sky: &mut Vec<Span>, i: usize, x: f32, top: f32, w: f32) {
         sky[j].w -= cut;
     }
     sky.splice(i..j, [Span { x, y: top, w }]);
-    // Neighbours at the same height become one span.
     let mut k = i.saturating_sub(1);
     while k + 1 < sky.len() && k <= i + 1 {
         if sky[k].y == sky[k + 1].y {
@@ -94,7 +91,6 @@ fn place(sky: &mut Vec<Span>, i: usize, x: f32, top: f32, w: f32) {
     }
 }
 
-/// Left to right in rows of `width`, each row as tall as its tallest item.
 pub fn rows(rects: &[Rect], width: f32, gap: f32, top: f32) -> Vec<(f32, f32)> {
     let (mut x, mut y, mut row) = (0.0f32, top, 0.0f32);
     rects
@@ -113,8 +109,7 @@ pub fn rows(rects: &[Rect], width: f32, gap: f32, top: f32) -> Vec<(f32, f32)> {
         .collect()
 }
 
-/// Multi-segment components are skyline-packed largest box first; single
-/// segments follow in rows underneath, in rank order.
+/// Frozen components go in rows under the skyline-packed rest.
 pub(crate) fn pack_components(boxes: &[(f32, f32, f32, f32)], frozen: &[bool]) -> Vec<(f32, f32)> {
     let size = |c: usize| {
         let (x0, y0, x1, y1) = boxes[c];

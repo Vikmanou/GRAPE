@@ -38,10 +38,8 @@ function installedBindgenVersion() {
 }
 
 // The CLI must match the crate in Cargo.lock exactly, or wasm-bindgen fails
-// with a schema error that does not name the fix. Installing the right one
-// here means nobody has to know the version. `--locked` builds the CLI with
-// its own pinned dependencies so the one-time install can't break on a newer
-// transitive release.
+// with a schema error that does not name the fix. `--locked` keeps the
+// one-time install from breaking on a newer transitive release.
 function ensureBindgenCli() {
   const wanted = lockedBindgenVersion();
   const found = installedBindgenVersion();
