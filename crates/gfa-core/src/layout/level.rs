@@ -1,7 +1,8 @@
 //! Multilevel coarsening by heavy-edge matching (Walshaw, "A Multilevel
 //! Algorithm for Force-Directed Graph Drawing", 2000).
 
-use super::points::Springs;
+use super::COLD;
+use super::points::{NODE_SEGMENT_LENGTH, Springs};
 use super::rng::Rng;
 
 pub(crate) const NONE: u32 = u32::MAX;
@@ -27,6 +28,47 @@ pub(crate) struct Split {
 impl Level {
     pub fn len(&self) -> usize {
         self.mass.len()
+    }
+
+    pub fn mean_rest(&self) -> f32 {
+        let s = &self.springs;
+        s.rest.iter().sum::<f32>() / s.len().max(1) as f32
+    }
+
+    /// Inverse of mass plus spring stiffness, so no node overshoots its springs.
+    pub fn step_sizes(&self) -> Vec<f32> {
+        let mut step = self.mass.clone();
+        let s = &self.springs;
+        for e in 0..s.len() {
+            step[s.a[e] as usize] += s.weight[e];
+            step[s.b[e] as usize] += s.weight[e];
+        }
+        for v in &mut step {
+            *v = 1.0 / *v;
+        }
+        step
+    }
+
+    /// Starting temperature per component, zero for frozen ones. Finer
+    /// levels start cooler: their shape is already set.
+    pub fn heat(&self, frozen: &[bool], coarsest: bool) -> Vec<f32> {
+        let mean_rest = self.mean_rest();
+        (0..frozen.len())
+            .map(|c| {
+                if frozen[c] {
+                    return 0.0;
+                }
+                let range = self.component_start[c] as usize..self.component_start[c + 1] as usize;
+                let mass: f32 = self.mass[range].iter().sum();
+                let hot = NODE_SEGMENT_LENGTH * mass.sqrt();
+                if coarsest {
+                    hot
+                } else {
+                    hot.min(mean_rest * 3.0)
+                }
+                .max(COLD)
+            })
+            .collect()
     }
 
     /// `None` once a level no longer shrinks enough to pay off.
@@ -144,7 +186,7 @@ impl Level {
         springs
     }
 
-    fn adjacency(&self) -> (Vec<u32>, Vec<u32>) {
+    pub(crate) fn adjacency(&self) -> (Vec<u32>, Vec<u32>) {
         let s = &self.springs;
         let mut offsets = vec![0u32; self.len() + 1];
         for e in 0..s.len() {

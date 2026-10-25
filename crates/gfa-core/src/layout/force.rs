@@ -7,11 +7,15 @@ const THETA: f32 = 0.8;
 /// finer levels could not uncross.
 const REPULSION: f32 = 0.25;
 
+pub(crate) fn repulsion(level: &Level) -> f32 {
+    let k = level.mean_rest();
+    k * k * REPULSION
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct Forces {
     fx: Vec<f32>,
     fy: Vec<f32>,
-    /// Inverse of mass plus spring stiffness, so no node overshoots its springs.
     step: Vec<f32>,
     k2: f32,
     tree: QuadTree,
@@ -22,18 +26,8 @@ impl Forces {
         let n = level.len();
         self.fx.resize(n, 0.0);
         self.fy.resize(n, 0.0);
-        self.step.clear();
-        self.step.extend_from_slice(&level.mass);
-        let s = &level.springs;
-        for e in 0..s.len() {
-            self.step[s.a[e] as usize] += s.weight[e];
-            self.step[s.b[e] as usize] += s.weight[e];
-        }
-        for v in &mut self.step {
-            *v = 1.0 / *v;
-        }
-        let k = s.rest.iter().sum::<f32>() / s.len().max(1) as f32;
-        self.k2 = k * k * REPULSION;
+        self.step = level.step_sizes();
+        self.k2 = repulsion(level);
     }
 
     /// A component whose temperature is zero is skipped.

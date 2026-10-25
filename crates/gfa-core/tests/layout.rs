@@ -190,3 +190,83 @@ fn bad_topology_is_an_error_not_a_panic() {
     let mut layout = Layout::new(empty, LayoutOptions::default()).unwrap();
     assert!(layout.step(10));
 }
+
+fn hierarchy(name: &str, seed: u64) -> gfa_core::layout::Hierarchy {
+    let graph = load(name);
+    let options = LayoutOptions {
+        seed,
+        ..LayoutOptions::default()
+    };
+    Layout::new(graph.topology(), options).unwrap().hierarchy()
+}
+
+#[test]
+fn hierarchy_edges_mirror_each_other() {
+    for name in TESTDATA {
+        let h = hierarchy(name, 1);
+        for level in &h.levels {
+            let n = level.len() as u32;
+            let mut ends = std::collections::HashMap::new();
+            for v in 0..n {
+                let node = &level.nodes[v as usize * 4..v as usize * 4 + 4];
+                assert!(f32::from_bits(node[1]) > 0.0, "{name}");
+                for e in node[2]..node[3] {
+                    let edge = &level.edges[e as usize * 3..e as usize * 3 + 3];
+                    assert!(edge[0] < n && edge[0] != v, "{name}");
+                    let key = (v.min(edge[0]), v.max(edge[0]), edge[1], edge[2]);
+                    *ends.entry(key).or_insert(0) += 1;
+                }
+            }
+            assert!(ends.values().all(|&count| count % 2 == 0), "{name}");
+            assert_eq!(
+                level.nodes.last().map(|&end| end as usize * 3),
+                Some(level.edges.len())
+            );
+        }
+    }
+}
+
+#[test]
+fn hierarchy_children_and_parents_agree() {
+    for name in TESTDATA {
+        let h = hierarchy(name, 1);
+        for l in 1..h.levels.len() {
+            let (finer, coarse) = (&h.levels[l - 1], &h.levels[l]);
+            assert_eq!(finer.parent.len(), finer.len(), "{name}");
+            let mut seen = vec![false; finer.len()];
+            for (p, child) in coarse.children.as_chunks::<3>().0.iter().enumerate() {
+                for &c in &child[..2] {
+                    if c == u32::MAX {
+                        continue;
+                    }
+                    assert_eq!(finer.parent[c as usize], p as u32, "{name}");
+                    assert!(!std::mem::replace(&mut seen[c as usize], true), "{name}");
+                }
+                assert_eq!(
+                    f32::from_bits(child[2]) == 0.0,
+                    child[1] == u32::MAX,
+                    "{name}"
+                );
+            }
+            assert!(seen.iter().all(|&s| s), "{name}");
+        }
+        let top = h.levels.last().unwrap();
+        assert!(top.parent.is_empty() && h.levels[0].children.is_empty());
+        assert_eq!(h.start.len(), top.len() * 2, "{name}");
+        assert!(h.start.iter().all(|v| v.is_finite()), "{name}");
+        for level in &h.levels {
+            for (c, &frozen) in h.frozen.iter().enumerate() {
+                assert_eq!(level.heat[c] == 0.0, frozen, "{name}");
+            }
+        }
+    }
+}
+
+#[test]
+fn hierarchy_follows_the_seed() {
+    assert_eq!(hierarchy("tangle.gfa", 3), hierarchy("tangle.gfa", 3));
+    assert_ne!(
+        hierarchy("tangle.gfa", 3).start,
+        hierarchy("tangle.gfa", 4).start
+    );
+}

@@ -2,6 +2,7 @@
 //! correctness reference for the GPU layout and the WebGL2 fallback's layout.
 
 mod force;
+mod hierarchy;
 mod level;
 mod pack;
 mod points;
@@ -15,14 +16,14 @@ pub use quality::{Quality, measure};
 pub use topology::{Topology, TopologyError};
 
 use force::Forces;
+pub use hierarchy::{Hierarchy, HierarchyLevel};
 use level::{Level, NONE, Split};
-use pack::pack_components;
+pub use pack::pack;
 use points::{NODE_SEGMENT_LENGTH, Springs};
 use rng::Rng;
 
-const RIBBON_MARGIN: f32 = 5.0;
 const COARSEST_NODES: usize = 8;
-const COLD: f32 = 0.4;
+pub(crate) const COLD: f32 = 0.4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutOptions {
@@ -61,6 +62,8 @@ pub struct Layout {
     ys: Vec<f32>,
     heat: Vec<f32>,
     forces: Forces,
+    /// `x, y` per coarsest node before the first step.
+    start: Vec<f32>,
 }
 
 impl Layout {
@@ -112,8 +115,15 @@ impl Layout {
             ys: Vec::new(),
             heat: Vec::new(),
             forces: Forces::default(),
+            start: Vec::new(),
         };
         layout.scatter(&mut rng);
+        layout.start = layout
+            .xs
+            .iter()
+            .zip(&layout.ys)
+            .flat_map(|(&x, &y)| [x, y])
+            .collect();
         layout.enter_level();
         Ok(layout)
     }
@@ -193,25 +203,7 @@ impl Layout {
     fn enter_level(&mut self) {
         let level = &self.levels[self.level];
         self.forces.prepare(level);
-        let coarsest = self.level == self.levels.len() - 1;
-        let mean_rest = level.springs.rest.iter().sum::<f32>() / level.springs.len().max(1) as f32;
-        self.heat = (0..self.frozen.len())
-            .map(|c| {
-                if self.frozen[c] {
-                    return 0.0;
-                }
-                let range =
-                    level.component_start[c] as usize..level.component_start[c + 1] as usize;
-                let mass: f32 = level.mass[range].iter().sum();
-                let hot = NODE_SEGMENT_LENGTH * mass.sqrt();
-                if coarsest {
-                    hot
-                } else {
-                    hot.min(mean_rest * 3.0)
-                }
-                .max(COLD)
-            })
-            .collect();
+        self.heat = level.heat(&self.frozen, self.level == self.levels.len() - 1);
     }
 
     /// Children go towards their own neighbours, so chains unfold untwisted.
@@ -310,9 +302,8 @@ impl Layout {
             }
         }
         let starts = &self.chains.component_start;
-        let components = self.frozen.len();
-        let mut boxes = Vec::with_capacity(components);
-        for c in 0..components {
+        let mut boxes = Vec::with_capacity(self.frozen.len() * 4);
+        for c in 0..self.frozen.len() {
             let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
             for &v in &node[starts[c] as usize..starts[c + 1] as usize] {
                 let (x, y) = (self.xs[v as usize], self.ys[v as usize]);
@@ -321,22 +312,16 @@ impl Layout {
                 x1 = x1.max(x);
                 y1 = y1.max(y);
             }
-            boxes.push((
-                x0 - RIBBON_MARGIN,
-                y0 - RIBBON_MARGIN,
-                x1 + RIBBON_MARGIN,
-                y1 + RIBBON_MARGIN,
-            ));
+            boxes.extend([x0, y0, x1, y1]);
         }
-        let offsets = pack_components(&boxes, &self.frozen);
+        let shift = pack(&boxes, &self.frozen);
         out.clear();
         out.reserve(n * 2);
-        for c in 0..components {
-            let (ox, oy) = offsets[c];
-            let (bx, by, _, _) = boxes[c];
+        for c in 0..self.frozen.len() {
+            let (dx, dy) = (shift[c * 2], shift[c * 2 + 1]);
             for &v in &node[starts[c] as usize..starts[c + 1] as usize] {
-                out.push(self.xs[v as usize] - bx + ox);
-                out.push(self.ys[v as usize] - by + oy);
+                out.push(self.xs[v as usize] + dx);
+                out.push(self.ys[v as usize] + dy);
             }
         }
     }

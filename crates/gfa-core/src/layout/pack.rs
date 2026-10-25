@@ -109,8 +109,34 @@ pub fn rows(rects: &[Rect], width: f32, gap: f32, top: f32) -> Vec<(f32, f32)> {
         .collect()
 }
 
+const RIBBON_MARGIN: f32 = 5.0;
+
+/// Takes `x0, y0, x1, y1` per component and returns the `dx, dy` that moves
+/// each one to its packed place.
+pub fn pack(boxes: &[f32], frozen: &[bool]) -> Vec<f32> {
+    let margined: Vec<(f32, f32, f32, f32)> = boxes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|b| {
+            (
+                b[0] - RIBBON_MARGIN,
+                b[1] - RIBBON_MARGIN,
+                b[2] + RIBBON_MARGIN,
+                b[3] + RIBBON_MARGIN,
+            )
+        })
+        .collect();
+    let corners = pack_components(&margined, frozen);
+    margined
+        .iter()
+        .zip(corners)
+        .flat_map(|(&(x0, y0, _, _), (x, y))| [x - x0, y - y0])
+        .collect()
+}
+
 /// Frozen components go in rows under the skyline-packed rest.
-pub(crate) fn pack_components(boxes: &[(f32, f32, f32, f32)], frozen: &[bool]) -> Vec<(f32, f32)> {
+fn pack_components(boxes: &[(f32, f32, f32, f32)], frozen: &[bool]) -> Vec<(f32, f32)> {
     let size = |c: usize| {
         let (x0, y0, x1, y1) = boxes[c];
         Rect {
