@@ -3,6 +3,7 @@ import { Grid, gridSizes } from '../../src/engine/layout/grid';
 import type { Kernels } from '../../src/engine/layout/kernels';
 import { encodeParams } from '../../src/engine/layout/params';
 import { Scan } from '../../src/engine/layout/scan';
+import { forceIteration } from './forces';
 import { assert, cellHash, coarseKey, random } from './reference';
 
 export type Check = (device: GPUDevice, kernels: Kernels) => Promise<void>;
@@ -122,4 +123,4 @@ const binning: Check = async (device, kernels) => {
   }
 };
 
-export const checks: Record<string, Check> = { prefixSum, binning };
+export const checks: Record<string, Check> = { prefixSum, binning, forceIteration };

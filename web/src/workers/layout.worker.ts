@@ -41,18 +41,27 @@ function runCpu(id: number, layout: Layout): void {
   }
 }
 
+// wasm-bindgen copies results out of WASM memory onto plain ArrayBuffers.
+function plain<T extends ArrayBufferLike>(array: Uint32Array<T>): Uint32Array<ArrayBuffer>;
+function plain<T extends ArrayBufferLike>(array: Float32Array<T>): Float32Array<ArrayBuffer>;
+function plain<T extends ArrayBufferLike>(array: Uint8Array<T>): Uint8Array<ArrayBuffer>;
+function plain(array: Uint32Array | Float32Array | Uint8Array): ArrayBufferView<ArrayBuffer> {
+  if (!(array.buffer instanceof ArrayBuffer)) throw new Error('expected a plain ArrayBuffer');
+  return array as ArrayBufferView<ArrayBuffer>;
+}
+
 function copyHierarchy(h: WasmHierarchy): Hierarchy {
   const levels = Array.from({ length: h.levels() }, (_, l) => ({
-    nodes: h.nodes(l),
-    edges: h.edges(l),
-    heat: h.heat(l),
+    nodes: plain(h.nodes(l)),
+    edges: plain(h.edges(l)),
+    heat: plain(h.heat(l)),
     repulsion: h.repulsion(l),
     meanRest: h.meanRest(l),
     iterations: h.iterations(l),
-    parent: h.parent(l),
-    children: h.children(l),
+    parent: plain(h.parent(l)),
+    children: plain(h.children(l)),
   }));
-  return { levels, start: h.start(), frozen: h.frozen() };
+  return { levels, start: plain(h.start()), frozen: plain(h.frozen()) };
 }
 
 function transfers(h: Hierarchy): Transferable[] {

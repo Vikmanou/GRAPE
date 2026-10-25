@@ -93,27 +93,27 @@ export interface Geometry {
 /** Floats inside `nodes`, `edges` and `children` are stored as their bits. */
 export interface HierarchyLevel {
   /** `component, step size, first edge, end edge` per node. */
-  nodes: Uint32Array;
+  nodes: Uint32Array<ArrayBuffer>;
   /** `neighbour, rest length, weight` per spring end. */
-  edges: Uint32Array;
+  edges: Uint32Array<ArrayBuffer>;
   /** Starting temperature per component, zero when frozen. */
-  heat: Float32Array;
+  heat: Float32Array<ArrayBuffer>;
   repulsion: number;
   meanRest: number;
   iterations: number;
   /** Node in the next coarser level; empty on the coarsest. */
-  parent: Uint32Array;
+  parent: Uint32Array<ArrayBuffer>;
   /** `first, second or 0xffffffff, half distance` per node, into the next finer level. */
-  children: Uint32Array;
+  children: Uint32Array<ArrayBuffer>;
 }
 
 export interface Hierarchy {
   /** Level 0 has one node per point; each next level is coarser. */
   levels: HierarchyLevel[];
   /** `x, y` per coarsest node. */
-  start: Float32Array;
+  start: Float32Array<ArrayBuffer>;
   /** 1 per component laid out straight and never moved. */
-  frozen: Uint8Array;
+  frozen: Uint8Array<ArrayBuffer>;
 }
 
 export type LayoutResponse =
