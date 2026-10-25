@@ -4,7 +4,8 @@
 // Usage: node scripts/build-wasm.mjs [--dev]
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,8 +32,18 @@ function lockedBindgenVersion() {
   return match[1];
 }
 
+// `cargo install` puts binaries here, which is not on PATH when Rust came from
+// a distro package rather than the rustup installer.
+// https://doc.rust-lang.org/cargo/commands/cargo-install.html#description
+const cargoBindgen = join(
+  process.env.CARGO_INSTALL_ROOT ?? process.env.CARGO_HOME ?? join(homedir(), '.cargo'),
+  'bin',
+  process.platform === 'win32' ? 'wasm-bindgen.exe' : 'wasm-bindgen',
+);
+const bindgen = () => (existsSync(cargoBindgen) ? cargoBindgen : 'wasm-bindgen');
+
 function installedBindgenVersion() {
-  const result = spawnSync('wasm-bindgen', ['--version'], { encoding: 'utf8' });
+  const result = spawnSync(bindgen(), ['--version'], { encoding: 'utf8' });
   if (result.error) return undefined;
   return /(\d+\.\d+\.\d+)/.exec(result.stdout)?.[1];
 }
@@ -54,7 +65,7 @@ ensureBindgenCli();
 
 run('cargo', ['build', '--package', 'gfa-wasm', '--target', 'wasm32-unknown-unknown', ...(dev ? [] : ['--release'])]);
 
-run('wasm-bindgen', [
+run(bindgen(), [
   join(process.env.CARGO_TARGET_DIR ?? join(repoRoot, 'target'), 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
   '--target',
   'web',
