@@ -228,16 +228,20 @@ decision, reason, alternatives considered.
   doubling per level up to 400). Children are split towards their own
   neighbours. Repulsion is Barnes-Hut `k^2 / d` with `k` the level's mean
   rest length and no mass weighting; springs pull with Hooke's law up to
-  their rest length and with the square of the stretch beyond it. Merged
-  node extents add in quadrature. Point counts and drawn lengths follow
-  Bandage's automatic node length.
+  their rest length and with the square of the stretch beyond it. A merged
+  node's extent is the distance between its children's centres plus half of
+  each child's extent, which is exact for chains. Point counts and drawn
+  lengths follow Bandage's automatic node length.
 - **Reason**: a single-level layout left real graphs tangled (pangenome
   chains folded into balls) and took 43 ms per iteration at 15k points.
   Each change was measured on the samples with the spec's metrics and
-  against `Bandage image` renders: adding extents linearly made coarse
-  layouts 10 times too large (median link 436 units against a rest of 5,
-  now about 38); mass-weighted repulsion crossed coarse edges; more
-  iterations on cheap coarse levels removed most remaining crossings.
+  against `Bandage image` renders: counting the gap between merged nodes
+  twice made extents grow about 2.2 times per level, so coarse layouts were
+  far too large (median link 436 units against a rest of 5; on a 20-level
+  pangenome the coarsest extent exceeded the whole graph's length) and the
+  refined layout collapsed into a strip; mass-weighted repulsion crossed
+  coarse edges; more iterations on cheap coarse levels removed most
+  remaining crossings.
   The M3 GPU layout reuses this coarsening, so it is compared against the
   same scheme.
 - **Alternatives**: FMMM (Bandage's OGDF layout), stress majorization;

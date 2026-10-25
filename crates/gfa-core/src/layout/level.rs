@@ -96,6 +96,8 @@ impl Level {
             let id = split.children.len() as u32;
             split.parent[u] = id;
             let v = partner[u];
+            // Exact for a chain: the gap between the two centres plus half of
+            // each extent.
             let (mass, span, rest) = if v == NONE {
                 (self.mass[u], self.span[u], 0.0)
             } else {
@@ -103,7 +105,7 @@ impl Level {
                 let rest = joined_by[u].max(joined_by[v as usize]);
                 (
                     self.mass[u] + self.mass[v as usize],
-                    self.span[u].hypot(self.span[v as usize]) + rest,
+                    rest + (self.span[u] + self.span[v as usize]) * 0.5,
                     rest,
                 )
             };
@@ -205,16 +207,19 @@ mod tests {
 
     #[test]
     fn merging_a_chain_keeps_its_length() {
-        let fine = chain(64);
+        let mut level = chain(64);
         let mut rng = Rng::new(3);
-        let (coarse, split) = fine.coarsen(&[false], &mut rng).unwrap();
-        assert!(coarse.len() <= 48);
-        assert_eq!(coarse.mass.iter().sum::<f32>(), 64.0);
-        assert!(split.parent.iter().all(|&p| (p as usize) < coarse.len()));
-        // Walking the coarse chain covers the fine chain's 630 units.
-        let end_to_end: f32 = coarse.springs.rest.iter().sum::<f32>()
-            + (coarse.span[0] + coarse.span[coarse.len() - 1]) * 0.5;
-        assert!((end_to_end - 630.0).abs() < 1e-3, "{end_to_end}");
+        for _ in 0..4 {
+            let (coarse, split) = level.coarsen(&[false], &mut rng).unwrap();
+            assert!(coarse.len() * 4 <= level.len() * 3);
+            assert_eq!(coarse.mass.iter().sum::<f32>(), 64.0);
+            assert!(split.parent.iter().all(|&p| (p as usize) < coarse.len()));
+            // Walking the coarse chain still covers the fine chain's 630 units.
+            let end_to_end: f32 = coarse.springs.rest.iter().sum::<f32>()
+                + (coarse.span[0] + coarse.span[coarse.len() - 1]) * 0.5;
+            assert!((end_to_end - 630.0).abs() < 1e-2, "{end_to_end}");
+            level = coarse;
+        }
     }
 
     #[test]
