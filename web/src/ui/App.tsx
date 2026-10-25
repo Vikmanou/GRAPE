@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/detect';
 import type { Engine } from '../engine/Engine';
-import { DEFAULT_SEED, type LayoutSink, useLayout } from '../state/layout';
+import { DEFAULT_OPTIONS, type LayoutSink, useLayout } from '../state/layout';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
@@ -40,7 +40,7 @@ export function App() {
       engine && {
         geometry: (geometry) => {
           setFps(undefined);
-          engine.send({ type: 'set-graph', geometry, seed: DEFAULT_SEED });
+          engine.send({ type: 'set-graph', geometry, seed: DEFAULT_OPTIONS.seed });
         },
         positions: (positions) => {
           engine.send({ type: 'set-positions', positions });

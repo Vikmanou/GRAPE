@@ -1,37 +1,84 @@
-import init, { Layout } from '../wasm/pkg/gfa_wasm';
+import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../wasm/pkg/gfa_wasm';
 import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
-import type { LayoutRequest, LayoutResponse } from './protocol';
+import type { Hierarchy, LayoutOptions, LayoutRequest, LayoutResponse, Topology } from './protocol';
+import { iterationsFor } from './quality';
 
-/** How often positions are posted while the layout runs. */
+/** How often positions are posted while the CPU layout runs. */
 const POST_INTERVAL_MS = 100;
 
 const ready = init({ module_or_path: wasmUrl });
+let frozen = new Uint8Array();
 
 function post(message: LayoutResponse, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer });
 }
 
-async function run({ id, topology: t, seed }: LayoutRequest): Promise<void> {
-  await ready;
-  const layout = new Layout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, seed);
-  try {
-    const pieces = layout.pieces();
-    const links = layout.links();
-    let positions = layout.positions();
-    const geometry = { segments: t.lengths.length, points: positions.length / 2, pieces, links };
-    post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [pieces.buffer, links.buffer]);
-    post({ type: 'positions', id, positions, iteration: 0, done: false }, [positions.buffer]);
-    let last = performance.now();
-    let done = false;
-    while (!done) {
-      done = layout.step(1);
-      const now = performance.now();
-      if (done || now - last >= POST_INTERVAL_MS) {
-        last = now;
-        positions = layout.positions();
-        post({ type: 'positions', id, positions, iteration: layout.iteration(), done }, [positions.buffer]);
-      }
+function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
+  const { coarsest, refine } = iterationsFor(quality);
+  return new Layout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, seed, coarsest, refine);
+}
+
+function postGeometry(id: number, layout: Layout, segments: number): void {
+  const pieces = layout.pieces();
+  const links = layout.links();
+  const geometry = { segments, points: layout.points(), pieces, links };
+  post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [pieces.buffer, links.buffer]);
+}
+
+function runCpu(id: number, layout: Layout): void {
+  let positions = layout.positions();
+  post({ type: 'positions', id, positions, iteration: 0, done: false }, [positions.buffer]);
+  let last = performance.now();
+  let done = false;
+  while (!done) {
+    done = layout.step(1);
+    const now = performance.now();
+    if (done || now - last >= POST_INTERVAL_MS) {
+      last = now;
+      positions = layout.positions();
+      post({ type: 'positions', id, positions, iteration: layout.iteration(), done }, [positions.buffer]);
     }
+  }
+}
+
+function copyHierarchy(h: WasmHierarchy): Hierarchy {
+  const levels = Array.from({ length: h.levels() }, (_, l) => ({
+    nodes: h.nodes(l),
+    edges: h.edges(l),
+    heat: h.heat(l),
+    repulsion: h.repulsion(l),
+    meanRest: h.meanRest(l),
+    iterations: h.iterations(l),
+    parent: h.parent(l),
+    children: h.children(l),
+  }));
+  return { levels, start: h.start(), frozen: h.frozen() };
+}
+
+function transfers(h: Hierarchy): Transferable[] {
+  const arrays = h.levels.flatMap((l) => [l.nodes, l.edges, l.heat, l.parent, l.children]);
+  return [...arrays, h.start].map((a) => a.buffer);
+}
+
+async function handle(request: LayoutRequest): Promise<void> {
+  await ready;
+  if (request.type === 'pack') {
+    const offsets = pack(request.boxes, frozen);
+    post({ type: 'packed', id: request.id, offsets }, [offsets.buffer]);
+    return;
+  }
+  const layout = create(request.topology, request.options);
+  try {
+    postGeometry(request.id, layout, request.topology.lengths.length);
+    if (request.type === 'layout') {
+      runCpu(request.id, layout);
+      return;
+    }
+    const wasm = layout.hierarchy();
+    const hierarchy = copyHierarchy(wasm);
+    wasm.free();
+    frozen = hierarchy.frozen.slice();
+    post({ type: 'hierarchy', id: request.id, hierarchy }, transfers(hierarchy));
   } finally {
     layout.free();
   }
@@ -39,7 +86,7 @@ async function run({ id, topology: t, seed }: LayoutRequest): Promise<void> {
 
 self.addEventListener('message', (event: MessageEvent<LayoutRequest>) => {
   const request = event.data;
-  run(request).catch((error: unknown) => {
+  handle(request).catch((error: unknown) => {
     post({ type: 'error', id: request.id, message: error instanceof Error ? error.message : String(error) });
   });
 });

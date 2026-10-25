@@ -3,7 +3,7 @@
 mod layout;
 
 use gfa_core::{DEFAULT_BUDGET, Format, Graph, ParseOptions, PathKind, SeqMode, Severity};
-pub use layout::Layout;
+pub use layout::{Hierarchy, Layout, pack};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = coreVersion)]

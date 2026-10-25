@@ -1,4 +1,4 @@
-import type { LayoutResponse, Topology } from './protocol';
+import type { LayoutOptions, LayoutResponse, Topology } from './protocol';
 
 export type LayoutListener = (response: LayoutResponse) => void;
 
@@ -6,24 +6,32 @@ export type LayoutListener = (response: LayoutResponse) => void;
 export class LayoutClient {
   private worker: Worker | undefined;
   private nextId = 1;
+  private listener: LayoutListener | undefined;
 
-  start(topology: Topology, seed: number, listener: LayoutListener): void {
+  /** `mode` 'cpu' runs the whole layout in the worker; 'gpu' only coarsens. */
+  start(mode: 'cpu' | 'gpu', topology: Topology, options: LayoutOptions, listener: LayoutListener): void {
     this.cancel();
-    const id = this.nextId++;
     const worker = new Worker(new URL('./layout.worker.ts', import.meta.url), { type: 'module', name: 'layout' });
     worker.addEventListener('message', (event: MessageEvent<LayoutResponse>) => {
-      if (event.data.id === id) listener(event.data);
+      this.listener?.(event.data);
     });
     worker.addEventListener('error', (event) => {
-      listener({ type: 'error', id, message: `layout worker failed: ${event.message || 'unknown error'}` });
+      this.listener?.({ type: 'error', id: 0, message: `layout worker failed: ${event.message || 'unknown error'}` });
     });
-    worker.postMessage({ type: 'layout', id, topology, seed });
     this.worker = worker;
+    this.listener = listener;
+    worker.postMessage({ type: mode === 'cpu' ? 'layout' : 'hierarchy', id: this.nextId++, topology, options });
+  }
+
+  /** Packs components by the hierarchy this worker built; the answer is a `packed` response. */
+  pack(boxes: Float32Array<ArrayBuffer>): void {
+    this.worker?.postMessage({ type: 'pack', id: this.nextId++, boxes }, [boxes.buffer]);
   }
 
   /** WASM cannot be interrupted mid-call, so cancelling ends the worker. */
   cancel(): void {
     this.worker?.terminate();
     this.worker = undefined;
+    this.listener = undefined;
   }
 }

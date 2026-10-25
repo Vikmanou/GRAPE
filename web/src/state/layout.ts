@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { LayoutClient } from '../workers/LayoutClient';
-import type { Geometry, Topology } from '../workers/protocol';
+import type { Geometry, LayoutOptions, Topology } from '../workers/protocol';
 
-/** Fixed until the layout controls (milestone 3) let the user pick one. */
-export const DEFAULT_SEED = 1;
+export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
 
 const IDLE = { state: 'idle' } as const;
 
@@ -43,7 +42,7 @@ export function useLayout(topology: Topology | undefined, sink: LayoutSink | und
     const client = new LayoutClient();
     const start = performance.now();
     let total = 0;
-    client.start(topology, DEFAULT_SEED, (response) => {
+    client.start('cpu', topology, DEFAULT_OPTIONS, (response) => {
       switch (response.type) {
         case 'geometry':
           total = response.totalIterations;
@@ -59,6 +58,9 @@ export function useLayout(topology: Topology | undefined, sink: LayoutSink | und
               ? { state: 'done', total, ms: performance.now() - start }
               : { state: 'running', iteration: response.iteration, total },
           );
+          break;
+        case 'hierarchy':
+        case 'packed':
           break;
         case 'error':
           setStatus({ state: 'failed', message: response.message });

@@ -65,7 +65,21 @@ export interface ParseResult {
   parseMs: number;
 }
 
-export type LayoutRequest = { type: 'layout'; id: number; topology: Topology; seed: number };
+export type Quality = 'fast' | 'balanced' | 'best';
+
+export interface LayoutOptions {
+  /** A u32. */
+  seed: number;
+  quality: Quality;
+}
+
+export type LayoutRequest =
+  /** Runs the CPU layout to the end, posting positions as it goes. */
+  | { type: 'layout'; id: number; topology: Topology; options: LayoutOptions }
+  /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
+  | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
+  /** `x0, y0, x1, y1` per component. */
+  | { type: 'pack'; id: number; boxes: Float32Array };
 
 export interface Geometry {
   segments: number;
@@ -76,8 +90,37 @@ export interface Geometry {
   links: Uint32Array;
 }
 
+/** Floats inside `nodes`, `edges` and `children` are stored as their bits. */
+export interface HierarchyLevel {
+  /** `component, step size, first edge, end edge` per node. */
+  nodes: Uint32Array;
+  /** `neighbour, rest length, weight` per spring end. */
+  edges: Uint32Array;
+  /** Starting temperature per component, zero when frozen. */
+  heat: Float32Array;
+  repulsion: number;
+  meanRest: number;
+  iterations: number;
+  /** Node in the next coarser level; empty on the coarsest. */
+  parent: Uint32Array;
+  /** `first, second or 0xffffffff, half distance` per node, into the next finer level. */
+  children: Uint32Array;
+}
+
+export interface Hierarchy {
+  /** Level 0 has one node per point; each next level is coarser. */
+  levels: HierarchyLevel[];
+  /** `x, y` per coarsest node. */
+  start: Float32Array;
+  /** 1 per component laid out straight and never moved. */
+  frozen: Uint8Array;
+}
+
 export type LayoutResponse =
   | { type: 'geometry'; id: number; geometry: Geometry; totalIterations: number }
   /** `x, y` per point. */
   | { type: 'positions'; id: number; positions: Float32Array; iteration: number; done: boolean }
+  | { type: 'hierarchy'; id: number; hierarchy: Hierarchy }
+  /** `dx, dy` per component. */
+  | { type: 'packed'; id: number; offsets: Float32Array }
   | { type: 'error'; id: number; message: string };
