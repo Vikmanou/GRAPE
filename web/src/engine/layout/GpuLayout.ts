@@ -147,6 +147,17 @@ export class GpuLayout {
     this.device.queue.submit([encoder.finish()]);
   }
 
+  /** Every point's position with `shift` added, read back from the GPU. */
+  async readPositions(shift: Float32Array<ArrayBuffer>): Promise<Float32Array<ArrayBuffer>> {
+    const target = this.shared.storage('positions readback', this.pointCount * 8);
+    try {
+      this.present(target, shift);
+      return new Float32Array(await readBuffer(this.device, target, this.pointCount * 8));
+    } finally {
+      target.destroy();
+    }
+  }
+
   async measure(): Promise<Measured> {
     const encoder = this.device.createCommandEncoder({ label: 'measure' });
     encoder.clearBuffer(this.boxes);

@@ -19,6 +19,8 @@ export type EngineCommand =
   /** `dx, dy` per component, packing the boxes of the last `layout-measured`. */
   | { type: 'set-offsets'; offsets: Float32Array }
   | { type: 'pause-layout'; paused: boolean }
+  /** Answered by a `positions` event. */
+  | { type: 'read-positions' }
   | { type: 'fit' }
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets };
@@ -30,7 +32,9 @@ export type EngineEvent =
   /** `x0, y0, x1, y1` per component as the GPU layout runs, a few times a second. */
   | { type: 'layout-measured'; boxes: Float32Array<ArrayBuffer>; progress: LayoutProgress }
   /** Sent after each second of continuous drawing, such as a pan or zoom. */
-  | ({ type: 'frame-stats' } & FrameStats);
+  | ({ type: 'frame-stats' } & FrameStats)
+  /** `x, y` per point as drawn, answering `read-positions`. */
+  | { type: 'positions'; positions: Float32Array<ArrayBuffer> };
 
 type Listener = (event: EngineEvent) => void;
 
@@ -205,6 +209,9 @@ export class Engine {
       case 'pause-layout':
         this.runner.setPaused(command.paused);
         break;
+      case 'read-positions':
+        void this.readPositions();
+        return;
       case 'fit':
         this.autoFit = true;
         this.fitView();
@@ -233,6 +240,11 @@ export class Engine {
     this.context.unconfigure();
     this.device.destroy();
     this.canvas.remove();
+  }
+
+  private async readPositions(): Promise<void> {
+    const positions = (await this.runner.readPositions()) ?? this.positions?.slice();
+    if (positions && !this.destroyed) this.emit({ type: 'positions', positions });
   }
 
   private emit(event: EngineEvent): void {

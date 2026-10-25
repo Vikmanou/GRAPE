@@ -146,15 +146,23 @@ export class LayoutRunner {
   }
 
   present(target: GPUBuffer, origin: { x: number; y: number }): void {
+    this.layout?.present(target, this.shift(this.layout, origin));
+  }
+
+  /** `x, y` per point as packed, or undefined when no layout runs. */
+  async readPositions(): Promise<Float32Array<ArrayBuffer> | undefined> {
     const layout = this.layout;
-    if (!layout) return;
+    return layout?.readPositions(this.shift(layout, { x: 0, y: 0 }));
+  }
+
+  private shift(layout: GpuLayout, origin: { x: number; y: number }): Float32Array<ArrayBuffer> {
     const offsets = this.offsets;
     const shift = new Float32Array(layout.components * 2);
     for (let c = 0; c < shift.length; c += 2) {
       shift[c] = (offsets?.[c] ?? 0) - origin.x;
       shift[c + 1] = (offsets?.[c + 1] ?? 0) - origin.y;
     }
-    layout.present(target, shift);
+    return shift;
   }
 
   destroy(): void {

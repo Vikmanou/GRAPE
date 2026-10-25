@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Engine } from '../engine/Engine';
 import { LayoutClient } from '../workers/LayoutClient';
 import type { LayoutOptions, Topology } from '../workers/protocol';
+import { exposeSettledLayout } from './testHooks';
 
 export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
 
@@ -65,6 +66,7 @@ export function useLayout(
     let measuredLevel = Infinity;
     let finished = false;
     const unsubscribe = engine?.on((event) => {
+      if (event.type === 'positions' && finished) exposeSettledLayout({ seed, quality, positions: event.positions });
       if (event.type !== 'layout-measured') return;
       const p = event.progress;
       measuredLevel = p.level;
@@ -95,7 +97,10 @@ export function useLayout(
         case 'packed':
           engine?.send({ type: 'set-offsets', offsets: response.offsets });
           if (usableMs === undefined && measuredLevel <= USABLE_LEVEL) usableMs = performance.now() - start;
-          if (finished) setStatus({ state: 'done', total, ms: performance.now() - start, usableMs });
+          if (finished) {
+            setStatus({ state: 'done', total, ms: performance.now() - start, usableMs });
+            if (import.meta.env.DEV) engine?.send({ type: 'read-positions' });
+          }
           break;
         case 'positions':
           engine?.send({ type: 'set-positions', positions: response.positions });
