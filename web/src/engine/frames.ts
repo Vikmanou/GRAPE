@@ -3,6 +3,10 @@ const STATS_INTERVAL_MS = 1000;
 const CONTINUOUS_GAP_MS = 50;
 
 export interface FrameStats {
+  /**
+   * Frames the GPU can keep up with: animation frames per second, or fewer
+   * when each draw takes the GPU longer than a frame.
+   */
   fps: number;
   /** Main thread time per frame. */
   cpuMs: number;
@@ -29,7 +33,8 @@ export class FrameCounter {
     this.frames++;
     this.cpuMs += cpuMs;
     if (this.time < STATS_INTERVAL_MS) return undefined;
-    const stats = { fps: (this.frames * 1000) / this.time, cpuMs: this.cpuMs / this.frames, gpuMs };
+    const fps = (this.frames * 1000) / this.time;
+    const stats = { fps: gpuMs > 0 ? Math.min(fps, 1000 / gpuMs) : fps, cpuMs: this.cpuMs / this.frames, gpuMs };
     this.time = 0;
     this.frames = 0;
     this.cpuMs = 0;

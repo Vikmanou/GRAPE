@@ -41,7 +41,8 @@ export function App() {
     setFps(undefined);
   }, []);
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_OPTIONS);
-  const gpuLayout = backend === 'webgpu';
+  // `?layout=cpu` draws the CPU reference layout instead, for comparisons.
+  const gpuLayout = backend === 'webgpu' && new URLSearchParams(location.search).get('layout') !== 'cpu';
   const layout = useLayout(
     load.state === 'loaded' ? load.result.topology : undefined,
     engine,

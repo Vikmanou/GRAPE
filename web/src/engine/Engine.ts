@@ -87,6 +87,7 @@ export class Engine {
   private lastDraw = -Infinity;
   /** GPU time of recent draws, where the adapter reports it. */
   private drawMs = 0;
+  private draws = 0;
   private lastInteraction = -Infinity;
   /** Something other than layout progress changed since the last draw. */
   private dirty = true;
@@ -348,8 +349,10 @@ export class Engine {
     const palette = palettes[this.theme];
     const [r, g, b, a] = palette.background;
     const encoder = this.device.createCommandEncoder({ label: 'frame' });
-    // Draws are timed only for the layout's redraw budget.
-    const timed = this.runner.busy && this.device.features.has('timestamp-query');
+    // Every draw is timed while the layout runs, for its redraw budget, and
+    // one in eight otherwise, for the frame rate.
+    const timed = this.device.features.has('timestamp-query') && (this.runner.busy || this.draws % 8 === 0);
+    this.draws++;
     const timing = timed ? new PassTiming(this.device) : undefined;
     const pass = encoder.beginRenderPass({
       ...(timing && { timestampWrites: timing.writes }),

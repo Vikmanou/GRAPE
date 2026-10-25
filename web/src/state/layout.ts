@@ -104,6 +104,7 @@ export function useLayout(
           break;
         case 'positions':
           engine?.send({ type: 'set-positions', positions: response.positions });
+          if (response.done) exposeSettledLayout({ seed, quality, positions: response.positions });
           setStatus(
             response.done
               ? { state: 'done', total, ms: performance.now() - start }
