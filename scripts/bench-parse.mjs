@@ -39,7 +39,7 @@ for (const segments of sizes) {
 }
 
 run('node', ['scripts/build-wasm.mjs']);
-run('npx', ['playwright', 'test', 'bench', '--reporter=list'], {
+run('npx', ['playwright', 'test', 'tests/e2e/bench.spec.ts', '--reporter=list'], {
   cwd: join(root, 'web'),
   env: { ...process.env, GRAPE_BENCH_FILES: files.join(',') },
 });

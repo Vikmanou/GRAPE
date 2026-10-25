@@ -20,7 +20,8 @@
     "format": "cargo fmt --all && prettier --write .",
     "fuzz": "node scripts/fuzz.mjs",
     "bench:parse": "node scripts/bench-parse.mjs",
-    "samples": "node scripts/fetch-samples.mjs"
+    "samples": "node scripts/fetch-samples.mjs",
+    "bench:layout": "node scripts/bench-layout.mjs"
   },
   "devDependencies": {
     "prettier": "3.6.2"
