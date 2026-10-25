@@ -19,14 +19,14 @@ interface Job {
 const job = JSON.parse(process.env.GRAPE_LAYOUT_BENCH ?? 'null') as Job | null;
 const SETTLE_MS = 30 * 60_000;
 
-/** Resident memory of every Chromium process, in MB; Linux only. */
+/** Resident memory of the processes of Playwright's Chromium, in MB; Linux only. */
 function browserMemoryMb(): number | undefined {
   if (process.platform !== 'linux') return undefined;
-  const rows = execFileSync('ps', ['-eo', 'rss=,comm='], { encoding: 'utf8' }).split('\n');
+  const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' }).split('\n');
   const kb = rows
-    .map((row) => row.trim().split(/\s+/))
-    .filter(([, name]) => name?.startsWith('chrome'))
-    .reduce((sum, [rss]) => sum + Number(rss), 0);
+    .map((row) => row.trim())
+    .filter((row) => row.includes('ms-playwright/chromium'))
+    .reduce((sum, row) => sum + Number(row.split(/\s+/)[0]), 0);
   return Math.round(kb / 1024);
 }
 
@@ -36,7 +36,10 @@ async function openGraph(page: Page, path: string, query = ''): Promise<void> {
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
   await expect(page.getByTestId('status-renderer')).toHaveAttribute('data-renderer', 'webgpu');
   await page.getByTestId('open-input').setInputFiles(path);
-  await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: SETTLE_MS });
+  const settled = page.locator('[data-testid="status-layout"][data-state="done"], [data-testid="unsupported"]');
+  await expect(settled).toBeVisible({ timeout: SETTLE_MS });
+  const unsupported = page.getByTestId('unsupported');
+  if (await unsupported.isVisible()) throw new Error(`no layout: ${await unsupported.textContent()}`);
   await page.waitForFunction(() => (window as { grapeLayout?: unknown }).grapeLayout !== undefined, undefined, {
     timeout: SETTLE_MS,
   });
