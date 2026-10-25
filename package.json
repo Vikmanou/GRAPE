@@ -1,6 +1,8 @@
 {
   "name": "grape",
   "private": true,
+  "description": "Browser viewer for genome assembly graphs, rendered on the GPU",
+  "repository": "github:Vikmanou/GRAPE",
   "type": "module",
   "license": "MIT",
   "engines": {
