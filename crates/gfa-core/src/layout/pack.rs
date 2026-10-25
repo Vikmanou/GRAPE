@@ -2,6 +2,9 @@
 //! 2010): each rectangle goes where its top is lowest, then leftmost. The
 //! layout grows downward, as screens read.
 
+/// Bandage's `componentSeparation` default.
+const COMPONENT_GAP: f32 = 50.0;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rect {
     pub w: f32,
@@ -108,6 +111,43 @@ pub fn rows(rects: &[Rect], width: f32, gap: f32, top: f32) -> Vec<(f32, f32)> {
             at
         })
         .collect()
+}
+
+/// Multi-segment components are skyline-packed largest box first; single
+/// segments follow in rows underneath, in rank order.
+pub(crate) fn pack_components(boxes: &[(f32, f32, f32, f32)], frozen: &[bool]) -> Vec<(f32, f32)> {
+    let size = |c: usize| {
+        let (x0, y0, x1, y1) = boxes[c];
+        Rect {
+            w: x1 - x0 + COMPONENT_GAP,
+            h: y1 - y0 + COMPONENT_GAP,
+        }
+    };
+    let (mut big, small): (Vec<usize>, Vec<usize>) = (0..boxes.len()).partition(|&c| !frozen[c]);
+    big.sort_by(|&a, &b| {
+        let (ra, rb) = (size(a), size(b));
+        (rb.w * rb.h).total_cmp(&(ra.w * ra.h)).then(a.cmp(&b))
+    });
+    let rects: Vec<Rect> = big.iter().map(|&c| size(c)).collect();
+    let small_rects: Vec<Rect> = small.iter().map(|&c| size(c)).collect();
+    let area: f32 = rects.iter().chain(&small_rects).map(|r| r.w * r.h).sum();
+    // A strip a little wider than tall suits a landscape screen.
+    let width = rects
+        .iter()
+        .map(|r| r.w)
+        .fold((area * 1.6).sqrt(), f32::max);
+    let placed = skyline(&rects, width);
+    let floor = placed
+        .iter()
+        .zip(&rects)
+        .map(|(&(_, y), r)| y + r.h)
+        .fold(0.0, f32::max);
+    let lined = rows(&small_rects, width, 0.0, floor);
+    let mut offsets = vec![(0.0, 0.0); boxes.len()];
+    for (&c, &at) in big.iter().zip(&placed).chain(small.iter().zip(&lined)) {
+        offsets[c] = at;
+    }
+    offsets
 }
 
 #[cfg(test)]

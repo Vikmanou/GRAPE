@@ -12,6 +12,7 @@ mod points;
 mod quadtree;
 mod quality;
 pub mod rng;
+mod topology;
 
 pub use pack::{Rect, rows, skyline};
 pub use points::{
@@ -19,80 +20,20 @@ pub use points::{
 };
 pub use quadtree::{QuadTree, brute_force};
 pub use quality::{Quality, measure};
+pub use topology::{Topology, TopologyError};
 
 use force::Forces;
 use level::{Level, NONE, Split};
+use pack::pack_components;
 use points::NODE_SEGMENT_LENGTH;
 use rng::Rng;
 
-/// Bandage's `componentSeparation` default.
-const COMPONENT_GAP: f32 = 50.0;
 /// Room kept around each component for ribbon width.
 const MARGIN: f32 = 5.0;
 /// Coarsening stops once the largest component has this few nodes.
 const COARSEST: usize = 8;
 /// Final temperature, in drawn units.
 const COLD: f32 = 0.4;
-
-/// The graph as the layout sees it: plain arrays, so it can be built from a
-/// `Graph` or from arrays a worker received.
-#[derive(Debug, Clone, Copy)]
-pub struct Topology<'a> {
-    pub lengths: &'a [u32],
-    /// Component rank per segment.
-    pub components: &'a [u32],
-    pub link_from: &'a [u32],
-    pub link_to: &'a [u32],
-    pub link_bits: &'a [u8],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TopologyError {
-    LengthMismatch,
-    BadSegment,
-    BadComponent,
-}
-
-impl std::fmt::Display for TopologyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            Self::LengthMismatch => "layout arrays have different lengths",
-            Self::BadSegment => "a link names a segment that does not exist",
-            Self::BadComponent => "component ranks are not 0 to n - 1",
-        })
-    }
-}
-
-impl std::error::Error for TopologyError {}
-
-impl Topology<'_> {
-    fn component_count(&self) -> usize {
-        self.components.iter().max().map_or(0, |&c| c as usize + 1)
-    }
-
-    fn validate(&self) -> Result<(), TopologyError> {
-        let n = self.lengths.len();
-        let links = self.link_from.len();
-        if self.components.len() != n
-            || self.link_to.len() != links
-            || self.link_bits.len() != links
-        {
-            return Err(TopologyError::LengthMismatch);
-        }
-        let ok = |&s: &u32| (s as usize) < n;
-        if !self.link_from.iter().all(ok) || !self.link_to.iter().all(ok) {
-            return Err(TopologyError::BadSegment);
-        }
-        let mut seen = vec![false; self.component_count()];
-        for &c in self.components {
-            seen[c as usize] = true;
-        }
-        if seen.contains(&false) {
-            return Err(TopologyError::BadComponent);
-        }
-        Ok(())
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutOptions {
@@ -424,41 +365,4 @@ fn largest_active(level: &Level, frozen: &[bool]) -> usize {
         .map(|c| (s[c + 1] - s[c]) as usize)
         .max()
         .unwrap_or(0)
-}
-
-/// Multi-segment components are skyline-packed largest box first; single
-/// segments follow in rows underneath, in rank order.
-fn pack_components(boxes: &[(f32, f32, f32, f32)], frozen: &[bool]) -> Vec<(f32, f32)> {
-    let size = |c: usize| {
-        let (x0, y0, x1, y1) = boxes[c];
-        Rect {
-            w: x1 - x0 + COMPONENT_GAP,
-            h: y1 - y0 + COMPONENT_GAP,
-        }
-    };
-    let (mut big, small): (Vec<usize>, Vec<usize>) = (0..boxes.len()).partition(|&c| !frozen[c]);
-    big.sort_by(|&a, &b| {
-        let (ra, rb) = (size(a), size(b));
-        (rb.w * rb.h).total_cmp(&(ra.w * ra.h)).then(a.cmp(&b))
-    });
-    let rects: Vec<Rect> = big.iter().map(|&c| size(c)).collect();
-    let small_rects: Vec<Rect> = small.iter().map(|&c| size(c)).collect();
-    let area: f32 = rects.iter().chain(&small_rects).map(|r| r.w * r.h).sum();
-    // A strip a little wider than tall suits a landscape screen.
-    let width = rects
-        .iter()
-        .map(|r| r.w)
-        .fold((area * 1.6).sqrt(), f32::max);
-    let placed = skyline(&rects, width);
-    let floor = placed
-        .iter()
-        .zip(&rects)
-        .map(|(&(_, y), r)| y + r.h)
-        .fold(0.0, f32::max);
-    let lined = rows(&small_rects, width, 0.0, floor);
-    let mut offsets = vec![(0.0, 0.0); boxes.len()];
-    for (&c, &at) in big.iter().zip(&placed).chain(small.iter().zip(&lined)) {
-        offsets[c] = at;
-    }
-    offsets
 }
