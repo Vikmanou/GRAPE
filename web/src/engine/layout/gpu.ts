@@ -1,5 +1,13 @@
 export const WORKGROUP = 256;
 
+/** Timestamp writes for a named pass, when profiling. */
+export type PassTimer = (label: string) => GPUComputePassTimestampWrites | undefined;
+
+export function beginPass(encoder: GPUCommandEncoder, label: string, timer?: PassTimer): GPUComputePassEncoder {
+  const timestampWrites = timer?.(label);
+  return encoder.beginComputePass(timestampWrites ? { label, timestampWrites } : { label });
+}
+
 export function groups(n: number, perGroup = WORKGROUP): number {
   return Math.ceil(n / perGroup);
 }

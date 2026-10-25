@@ -3,16 +3,24 @@
 import { browserEnv, requestAdapter } from '../../src/engine/detect';
 import { createKernels } from '../../src/engine/layout/kernels';
 import { checks } from './checks';
+import { profile } from './profile';
 
 async function main(): Promise<Record<string, string>> {
   const adapter = await requestAdapter(browserEnv().gpu);
   if (!adapter) return { webgpu: 'none' };
+  const timestamps = adapter.features.has('timestamp-query');
   const device = await adapter.requestDevice({
+    requiredFeatures: timestamps ? ['timestamp-query'] : [],
     requiredLimits: { maxStorageBuffersPerShaderStage: adapter.limits.maxStorageBuffersPerShaderStage },
   });
   const errors: string[] = [];
   device.addEventListener('uncapturederror', (event) => errors.push(event.error.message));
   const kernels = await createKernels(device);
+  const profiled = Number(new URLSearchParams(location.search).get('profile'));
+  if (profiled > 0) {
+    if (!timestamps) return { profile: 'this adapter has no timestamp queries' };
+    return profile(device, kernels, profiled);
+  }
   const results: Record<string, string> = {};
   for (const [name, check] of Object.entries(checks)) {
     try {

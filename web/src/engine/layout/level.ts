@@ -1,5 +1,5 @@
 import type { HierarchyLevel } from '../../workers/protocol';
-import { bind, Buffers, groups } from './gpu';
+import { beginPass, bind, Buffers, groups, type PassTimer } from './gpu';
 import { Grid, gridSizes } from './grid';
 import type { Kernels } from './kernels';
 import { encodeParams } from './params';
@@ -106,22 +106,24 @@ export class GpuLevel {
     return this.buffers.bytes;
   }
 
-  encode(encoder: GPUCommandEncoder, iterations: number): void {
+  encode(encoder: GPUCommandEncoder, iterations: number, timer?: PassTimer): void {
     const n = groups(this.count);
     for (let k = 0; k < iterations; k++) {
       encoder.clearBuffer(this.shared.energy);
-      this.grid.encode(encoder, this.current);
-      const pass = encoder.beginComputePass({ label: 'forces' });
-      pass.setPipeline(this.kernels.repel);
-      pass.setBindGroup(0, this.repelGroups[this.current]);
-      pass.dispatchWorkgroups(n);
-      pass.setPipeline(this.kernels.pullAndMove);
-      pass.setBindGroup(0, this.moveGroups[this.current]);
-      pass.dispatchWorkgroups(n);
-      pass.setPipeline(this.kernels.advance);
-      pass.setBindGroup(0, this.advanceGroup);
-      pass.dispatchWorkgroups(1);
-      pass.end();
+      this.grid.encode(encoder, this.current, timer);
+      const repelling = beginPass(encoder, 'repel', timer);
+      repelling.setPipeline(this.kernels.repel);
+      repelling.setBindGroup(0, this.repelGroups[this.current]);
+      repelling.dispatchWorkgroups(n);
+      repelling.end();
+      const moving = beginPass(encoder, 'move', timer);
+      moving.setPipeline(this.kernels.pullAndMove);
+      moving.setBindGroup(0, this.moveGroups[this.current]);
+      moving.dispatchWorkgroups(n);
+      moving.setPipeline(this.kernels.advance);
+      moving.setBindGroup(0, this.advanceGroup);
+      moving.dispatchWorkgroups(1);
+      moving.end();
       this.current = 1 - this.current;
     }
   }

@@ -1,4 +1,4 @@
-import { bind, type Buffers, groups, nextPowerOfTwo } from './gpu';
+import { beginPass, bind, type Buffers, groups, nextPowerOfTwo, type PassTimer } from './gpu';
 import type { Kernels } from './kernels';
 import { Scan } from './scan';
 
@@ -50,23 +50,27 @@ export class Grid {
   }
 
   /** Bins the nodes at `positions[from]`. */
-  encode(encoder: GPUCommandEncoder, from: number): void {
+  encode(encoder: GPUCommandEncoder, from: number, timer?: PassTimer): void {
     const group = this.groups[from];
     if (!group) throw new Error(`no position buffer ${from}`);
     const countBytes = (this.fine + 1) * 4;
     encoder.clearBuffer(this.starts, 0, countBytes);
     encoder.clearBuffer(this.coarse, 0, this.slots * 16);
-    const binning = encoder.beginComputePass({ label: 'bin' });
+    const binning = beginPass(encoder, 'bin', timer);
     binning.setPipeline(this.kernels.bin);
     binning.setBindGroup(0, group.bin);
     binning.dispatchWorkgroups(groups(this.count));
-    this.scan.encode(binning);
     binning.end();
+    const scanning = beginPass(encoder, 'scan', timer);
+    this.scan.encode(scanning);
+    scanning.end();
     encoder.copyBufferToBuffer(this.starts, 0, this.cursor, 0, countBytes);
-    const sorting = encoder.beginComputePass({ label: 'sort' });
-    sorting.setPipeline(this.kernels.scatter);
-    sorting.setBindGroup(0, group.scatter);
-    sorting.dispatchWorkgroups(groups(this.count));
+    const scattering = beginPass(encoder, 'scatter', timer);
+    scattering.setPipeline(this.kernels.scatter);
+    scattering.setBindGroup(0, group.scatter);
+    scattering.dispatchWorkgroups(groups(this.count));
+    scattering.end();
+    const sorting = beginPass(encoder, 'sort', timer);
     sorting.setPipeline(this.kernels.sortBuckets);
     sorting.setBindGroup(0, this.sortGroup);
     sorting.dispatchWorkgroups(groups(this.fine));
