@@ -55,7 +55,7 @@ ensureBindgenCli();
 run('cargo', ['build', '--package', 'gfa-wasm', '--target', 'wasm32-unknown-unknown', ...(dev ? [] : ['--release'])]);
 
 run('wasm-bindgen', [
-  join(repoRoot, 'target', 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
+  join(process.env.CARGO_TARGET_DIR ?? join(repoRoot, 'target'), 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
   '--target',
   'web',
   '--out-dir',
