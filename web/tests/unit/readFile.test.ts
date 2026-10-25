@@ -29,7 +29,13 @@ async function collect(blob: Blob, chunkBytes?: number): Promise<{ text: string;
   const parts: Uint8Array[] = [];
   const progress: number[] = [];
   const compression = await detectCompression(blob);
-  await readFile(blob, compression, (c) => parts.push(c), (n) => progress.push(n), chunkBytes);
+  await readFile(
+    blob,
+    compression,
+    (c) => parts.push(c),
+    (n) => progress.push(n),
+    chunkBytes,
+  );
   return { text: Buffer.concat(parts).toString('utf8'), progress };
 }
 

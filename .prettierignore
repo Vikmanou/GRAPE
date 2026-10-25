@@ -1,0 +1,10 @@
+target/
+node_modules/
+fuzz/
+samples/
+testdata/
+web/dist/
+web/src/wasm/pkg/
+web/test-results/
+web/playwright-report/
+package-lock.json

@@ -54,16 +54,13 @@ function ensureBindgenCli() {
 
 ensureBindgenCli();
 
-run('cargo', [
-  'build',
-  '--package', 'gfa-wasm',
-  '--target', 'wasm32-unknown-unknown',
-  ...(dev ? [] : ['--release']),
-]);
+run('cargo', ['build', '--package', 'gfa-wasm', '--target', 'wasm32-unknown-unknown', ...(dev ? [] : ['--release'])]);
 
 run('wasm-bindgen', [
   join(repoRoot, 'target', 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
-  '--target', 'web',
-  '--out-dir', join(webDir, 'src', 'wasm', 'pkg'),
+  '--target',
+  'web',
+  '--out-dir',
+  join(webDir, 'src', 'wasm', 'pkg'),
   ...(dev ? ['--debug', '--keep-debug'] : []),
 ]);

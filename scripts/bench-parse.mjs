@@ -31,7 +31,9 @@ for (const segments of sizes) {
   }
   const gz = `${plain}.gz`;
   if (!existsSync(gz)) await pipeline(createReadStream(plain), createGzip(), createWriteStream(gz));
-  console.log(`\n${plain}: ${(statSync(plain).size / 1e6).toFixed(1)} MB, gzipped ${(statSync(gz).size / 1e6).toFixed(1)} MB`);
+  console.log(
+    `\n${plain}: ${(statSync(plain).size / 1e6).toFixed(1)} MB, gzipped ${(statSync(gz).size / 1e6).toFixed(1)} MB`,
+  );
   run('cargo', ['run', '-q', '-p', 'gfa-core', '--release', '--example', 'parse_file', '--', plain]);
   files.push(plain, gz);
 }

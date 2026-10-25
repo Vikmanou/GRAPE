@@ -196,7 +196,7 @@ decision, reason, alternatives considered.
   build enables `simd128`.
 - **Reason**: real graphs with many short segments spent their time in cache
   misses on hash tables, not in reading bytes. The densest sample
-  (*M. xanthus*, 595k segments) went from 31 to about 55 MB/s in WASM, and
+  (_M. xanthus_, 595k segments) went from 31 to about 55 MB/s in WASM, and
   sequence-heavy synthetic graphs from about 115 to over 400 MB/s.
 - **Alternatives**: sort-based link deduplication at the end of parsing
   (more transient memory); resolving names in batches. Left for later.
@@ -212,7 +212,7 @@ decision, reason, alternatives considered.
 
 - **Decision**: the spec's ≥100 MB/s parse target is met on sequence-heavy
   graphs (about 430 MB/s on the 200k synthetic graph) but not on the densest
-  real sample, *M. xanthus* (595k short segments), which parses at about
+  real sample, _M. xanthus_ (595k short segments), which parses at about
   55 MB/s in WASM. The owner accepted this for milestone 1.
 - **Reason**: on that graph the time goes to name and link lookups, not
   byte scanning; the remaining ideas trade memory or complexity for an

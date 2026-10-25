@@ -15,7 +15,7 @@ gzipped or bgzipped. GFA 2.0 is not supported.
 
 Parsing runs at a few hundred MB/s on graphs with long sequences, but graphs
 made of many short segments are slower: about 55 MB/s on the densest sample
-(*M. xanthus*, 595k segments, about 2 s).
+(_M. xanthus_, 595k segments, about 2 s).
 
 ## Drawing
 

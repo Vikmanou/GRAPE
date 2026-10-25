@@ -21,10 +21,7 @@ async function run({ id, topology: t, seed }: LayoutRequest): Promise<void> {
     const links = layout.links();
     let positions = layout.positions();
     const geometry = { segments: t.lengths.length, points: positions.length / 2, pieces, links };
-    post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [
-      pieces.buffer,
-      links.buffer,
-    ]);
+    post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [pieces.buffer, links.buffer]);
     post({ type: 'positions', id, positions, iteration: 0, done: false }, [positions.buffer]);
     let last = performance.now();
     let done = false;

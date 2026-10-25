@@ -22,6 +22,7 @@ const web = (script, ...args) => [
 
 const steps = [
   ['rustfmt', 'cargo', ['fmt', '--all', '--check']],
+  ['prettier', 'npx', ['prettier', '--check', '.']],
   ['clippy', 'cargo', ['clippy', '--workspace', '--all-targets', '--', '-D', 'warnings']],
   ['cargo test', 'cargo', ['test', '--workspace']],
   ['wasm build', 'node', ['scripts/build-wasm.mjs']],

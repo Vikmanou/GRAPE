@@ -20,10 +20,7 @@
       "Bash(git commit *)",
       "PowerShell(git commit *)"
     ],
-    "deny": [
-      "Bash(git push *)",
-      "PowerShell(git push *)"
-    ]
+    "deny": ["Bash(git push *)", "PowerShell(git push *)"]
   },
   "attribution": {
     "commit": "",

@@ -38,8 +38,8 @@ saying so.
 
 ## Commits
 
-- One plain sentence, no punctuation: `Add streaming parser for segment and
-  link records`.
+- One plain sentence, no punctuation:
+  `Add streaming parser for segment and link records`.
 - The owner is the only author: no `Co-Authored-By` or any Claude attribution.
 - Commit progressively as work lands, not in one lump at the end.
 - **Never push.** The owner pushes.
