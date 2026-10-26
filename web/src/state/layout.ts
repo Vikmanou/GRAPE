@@ -1,11 +1,9 @@
+import { USABLE_LEVEL } from '../engine/core/backend';
 import type { LayoutOptions } from '../workers/protocol/layout';
 import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
 
 export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
-
-/** The spec's "first usable layout": refined this far and packed. */
-const USABLE_LEVEL = 3;
 
 export type LayoutStatus =
   | { state: 'idle' }

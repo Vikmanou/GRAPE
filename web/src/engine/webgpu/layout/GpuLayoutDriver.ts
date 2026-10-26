@@ -1,5 +1,5 @@
 import type { Hierarchy } from '../../../workers/protocol/layout';
-import type { LayoutDriver, LayoutProgress, Origin } from '../../core/backend';
+import { type LayoutDriver, type LayoutProgress, type Origin, USABLE_LEVEL } from '../../core/backend';
 import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
@@ -54,6 +54,10 @@ export class GpuLayoutDriver implements LayoutDriver {
 
   get active(): boolean {
     return this.layout !== undefined;
+  }
+
+  get usable(): boolean {
+    return !this.layout || this.layout.currentLevel <= USABLE_LEVEL;
   }
 
   get busy(): boolean {

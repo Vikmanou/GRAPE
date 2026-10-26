@@ -16,6 +16,8 @@ export class WebGpuBackend implements Backend {
   private readonly picker: Picker;
   private style: Style = { theme: 'light' };
   private lastView: View | undefined;
+  /** A new graph's position buffer holds zeros until positions arrive; drawing them stacks every ribbon on one point. */
+  private positioned = false;
   private destroyed = false;
   private draws = 0;
   private gpuDrawMs = 0;
@@ -35,6 +37,7 @@ export class WebGpuBackend implements Backend {
       events,
       () => this.renderer.positionBuffer,
       () => {
+        this.positioned = true;
         this.picker.invalidate();
       },
     );
@@ -66,6 +69,7 @@ export class WebGpuBackend implements Backend {
   setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
     this.layout.stop();
     this.renderer.setGeometry(geometry, colors);
+    this.positioned = false;
     this.picker.invalidate();
   }
 
@@ -76,6 +80,7 @@ export class WebGpuBackend implements Backend {
   setPositions(positions: Float32Array<ArrayBuffer>): void {
     this.layout.stop();
     this.renderer.setPositions(positions);
+    this.positioned = true;
     this.picker.invalidate();
   }
 
@@ -90,7 +95,7 @@ export class WebGpuBackend implements Backend {
     const timing = timed ? new PassTiming(this.device) : undefined;
     this.lastView = view;
     const drawn = this.drawn(view);
-    this.renderer.cull(encoder, drawn);
+    if (this.positioned) this.renderer.cull(encoder, drawn);
     const pass = encoder.beginRenderPass({
       ...(timing && { timestampWrites: timing.writes }),
       colorAttachments: [
@@ -102,7 +107,7 @@ export class WebGpuBackend implements Backend {
         },
       ],
     });
-    this.renderer.draw(pass, drawn);
+    if (this.positioned) this.renderer.draw(pass, drawn);
     pass.end();
     timing?.resolve(encoder);
     this.device.queue.submit([encoder.finish()]);
@@ -112,7 +117,7 @@ export class WebGpuBackend implements Backend {
   }
 
   async pick(x: number, y: number): Promise<number | undefined> {
-    if (!this.lastView || this.destroyed) return undefined;
+    if (!this.lastView || !this.positioned || this.destroyed) return undefined;
     const drawn = this.drawn(this.lastView);
     const encoder = this.device.createCommandEncoder({ label: 'pick' });
     if (this.picker.stale(drawn)) this.renderer.cull(encoder, drawn);

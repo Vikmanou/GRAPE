@@ -16,6 +16,9 @@ export interface Style {
   theme: Theme;
 }
 
+/** The spec's "first usable layout": refined to this level or finer, and packed. */
+export const USABLE_LEVEL = 3;
+
 export interface LayoutProgress {
   iteration: number;
   total: number;
@@ -36,6 +39,8 @@ export interface LayoutDriver {
   readonly active: boolean;
   /** The frame loop should keep going for the layout's sake. */
   readonly busy: boolean;
+  /** Refined to `USABLE_LEVEL` or finer, or no layout is running. */
+  readonly usable: boolean;
   start(hierarchy: Hierarchy, seed: number): void;
   stop(): void;
   setPaused(paused: boolean): void;

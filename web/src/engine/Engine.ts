@@ -24,6 +24,12 @@ const LAYOUT_REDRAW_MS = 100;
 const LAYOUT_DRAW_SHARE = 10;
 /** The view counts as moving for this long after the last pan or zoom. */
 const INTERACTION_MS = 250;
+/**
+ * Before the layout is usable, many points share a few coarse positions, and
+ * zooming far into them stacks thousands of screen-sized ribbons: enough
+ * overdraw for the driver to reset the GPU (measured on the 200k graph).
+ */
+const COARSE_MAX_ZOOM = 8;
 
 /**
  * Owns the canvas, the camera and the frame loop, and draws through a
@@ -75,10 +81,11 @@ export class Engine {
         this.moveCamera(pan(this.camera, dx, dy));
       },
       zoom: (x, y, factor) => {
-        this.moveCamera(zoomAt(this.camera, this.viewport(), x, y, factor));
+        this.moveCamera(zoomAt(this.camera, this.viewport(), x, y, this.allowedZoom(factor)));
       },
       zoomCenter: (factor) => {
-        this.moveCamera(zoomAt(this.camera, this.viewport(), canvas.width / 2, canvas.height / 2, factor));
+        const [x, y] = [canvas.width / 2, canvas.height / 2];
+        this.moveCamera(zoomAt(this.camera, this.viewport(), x, y, this.allowedZoom(factor)));
       },
       panView: (fx, fy) => {
         this.moveCamera(pan(this.camera, fx * canvas.width, fy * canvas.height));
@@ -145,8 +152,10 @@ export class Engine {
         break;
       case 'start-layout':
         this.positions = undefined;
-        this.bounds = undefined;
+        // Components overlap until the first pack; their start still frames the view.
+        this.bounds = boundsOf(command.hierarchy.start);
         this.autoFit = true;
+        this.fitView();
         layout.start(command.hierarchy, command.seed);
         break;
       case 'set-offsets':
@@ -216,6 +225,12 @@ export class Engine {
     this.camera = camera;
     this.hoverStale = this.pointer !== undefined;
     this.requestFrame();
+  }
+
+  private allowedZoom(factor: number): number {
+    if (factor <= 1 || this.backend.layout.usable || !this.bounds) return factor;
+    const fitted = fit(this.bounds, this.viewport(), FIT_MARGIN * window.devicePixelRatio).zoom;
+    return Math.max(1, Math.min(factor, (fitted * COARSE_MAX_ZOOM) / this.camera.zoom));
   }
 
   /** At most one pick in flight, for the latest pointer position. */

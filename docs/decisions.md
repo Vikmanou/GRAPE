@@ -500,3 +500,21 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   and memory is at the limit before milestone 4 adds anything.
 - **Alternatives**: memory in milestone 4 and speed in milestone 7; record
   the miss and move on.
+
+## 2026-10-26: Never draw a graph without positions, and cap zoom until the layout is usable
+
+- **Decision**: after a new graph is set, the backend draws and picks nothing
+  until positions arrive; a GPU layout start refits the camera to the coarsest
+  level's start positions; and until the layout has refined to level 3,
+  zooming in stops at 8 times the fitted zoom.
+- **Reason**: zooming 25 wheel steps into the settled 200k graph (near the
+  1000x maximum) and restarting the layout lost the GPU device
+  (`VK_ERROR_DEVICE_LOST`) on the development laptop, before and after
+  picking was added. A new graph's position buffer is all zeros until the
+  layout worker's hierarchy arrives, seconds later, so the old zoomed-in view
+  drew every one of 700k ribbon pieces as a capsule some 2,500 px wide on the
+  same point. Coarse levels stack points the same way, which the zoom cap
+  guards against. With both, the restart and a 40-step zoom during the first
+  seconds of a 200k load keep the device. Owner's choice.
+- **Alternatives**: refitting only (deep zoom in the first seconds of a load
+  could still stack ribbons); deferring to milestone 5.
