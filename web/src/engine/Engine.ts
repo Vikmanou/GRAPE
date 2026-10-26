@@ -102,7 +102,7 @@ export class Engine {
     format: GPUTextureFormat,
     kernels: Kernels,
   ) {
-    this.renderer = new Renderer(device, format);
+    this.renderer = new Renderer(device, format, kernels);
     this.runner = new LayoutRunner(device, kernels, {
       measured: (boxes, progress) => {
         this.emit({ type: 'layout-measured', boxes, progress });
@@ -354,6 +354,18 @@ export class Engine {
     const timed = this.device.features.has('timestamp-query') && (this.runner.busy || this.draws % 8 === 0);
     this.draws++;
     const timing = timed ? new PassTiming(this.device) : undefined;
+    const view = {
+      centerX: c.x - this.origin.x,
+      centerY: c.y - this.origin.y,
+      zoom: c.zoom,
+      width: this.canvas.width,
+      height: this.canvas.height,
+      ribbonHalf: RIBBON_WIDTH / 2,
+      linkHalf: LINK_WIDTH / 2,
+      linkAlpha: linkFade(RIBBON_WIDTH * c.zoom),
+      linkColor: palette.link,
+    };
+    this.renderer.cull(encoder, view);
     const pass = encoder.beginRenderPass({
       ...(timing && { timestampWrites: timing.writes }),
       colorAttachments: [
@@ -365,17 +377,7 @@ export class Engine {
         },
       ],
     });
-    this.renderer.draw(pass, {
-      centerX: c.x - this.origin.x,
-      centerY: c.y - this.origin.y,
-      zoom: c.zoom,
-      width: this.canvas.width,
-      height: this.canvas.height,
-      ribbonHalf: RIBBON_WIDTH / 2,
-      linkHalf: LINK_WIDTH / 2,
-      linkAlpha: linkFade(RIBBON_WIDTH * c.zoom),
-      linkColor: palette.link,
-    });
+    this.renderer.draw(pass, view);
     pass.end();
     timing?.resolve(encoder);
     this.device.queue.submit([encoder.finish()]);

@@ -19,8 +19,8 @@ function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
 }
 
 function postGeometry(id: number, layout: Layout, segments: number): void {
-  const pieces = layout.pieces();
-  const links = layout.links();
+  const pieces = plain(layout.pieces());
+  const links = plain(layout.links());
   const geometry = { segments, points: layout.points(), pieces, links };
   post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [pieces.buffer, links.buffer]);
 }

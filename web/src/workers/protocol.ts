@@ -85,9 +85,9 @@ export interface Geometry {
   segments: number;
   points: number;
   /** `first point, segment` per ribbon piece. */
-  pieces: Uint32Array;
+  pieces: Uint32Array<ArrayBuffer>;
   /** `end a, inner a, end b, inner b` per link. */
-  links: Uint32Array;
+  links: Uint32Array<ArrayBuffer>;
 }
 
 /** Floats inside `nodes`, `edges` and `children` are stored as their bits. */

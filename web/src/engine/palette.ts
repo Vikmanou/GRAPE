@@ -48,7 +48,7 @@ export function hsl(h: number, s: number, l: number): [number, number, number] {
 }
 
 /** RGBA8 with red in the low byte, as WGSL's `unpack4x8unorm` reads it. */
-export function randomColors(segments: number, seed: number): Uint32Array {
+export function randomColors(segments: number, seed: number): Uint32Array<ArrayBuffer> {
   const out = new Uint32Array(segments);
   const start = mix(seed) / 2 ** 32;
   for (let i = 0; i < segments; i++) {

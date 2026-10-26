@@ -20,6 +20,10 @@ struct View {
 @group(0) @binding(3) var<storage, read> colors: array<u32>;
 // End and inner point of each side of each link.
 @group(0) @binding(4) var<storage, read> links: array<vec4u>;
+// The links and pieces that touch the view, from cull.wgsl; draws are
+// instanced over these.
+@group(0) @binding(5) var<storage, read> visible_links: array<u32>;
+@group(0) @binding(6) var<storage, read> visible_pieces: array<u32>;
 
 // x along, y across.
 const QUAD = array<vec2f, 6>(
@@ -48,7 +52,7 @@ struct Ribbon {
 // round joins and caps.
 @vertex
 fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Ribbon {
-  let piece = pieces[i];
+  let piece = pieces[visible_pieces[i]];
   let a = positions[piece.x];
   let b = positions[piece.x + 1u];
   let length_ab = length(b - a);
@@ -118,7 +122,7 @@ fn bezier_tangent(c: array<vec2f, 4>, t: f32) -> vec2f {
 // Neighbouring quads compute their shared edge from the same t: no gaps.
 @vertex
 fn link_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Link {
-  let c = controls(links[i]);
+  let c = controls(links[visible_links[i]]);
   let corner = QUAD[v % 6u];
   let t = (f32(v / 6u) + corner.x) / f32(LINK_STEPS);
   let tangent = normalize_or(bezier_tangent(c, t), c[3] - c[0]);
