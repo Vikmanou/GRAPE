@@ -1,32 +1,21 @@
 // Builds crates/gfa-wasm to wasm32 and runs wasm-bindgen into
 // web/src/wasm/pkg. Written in Node rather than shell so it runs the same on
 // Windows and CI.
+//
 // Usage: node scripts/build-wasm.mjs [--dev]
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { root, run } from './lib.mjs';
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const webDir = join(repoRoot, 'web');
 const dev = process.argv.includes('--dev');
 const profile = dev ? 'debug' : 'release';
 
-function run(cmd, args) {
-  console.log(`> ${cmd} ${args.join(' ')}`);
-  const result = spawnSync(cmd, args, { cwd: repoRoot, stdio: 'inherit' });
-  if (result.error) {
-    console.error(`failed to start ${cmd}: ${result.error.message}`);
-    process.exit(1);
-  }
-  if (result.status !== 0) process.exit(result.status ?? 1);
-}
-
 /** The wasm-bindgen crate version Cargo resolved; the CLI must match it exactly. */
 function lockedBindgenVersion() {
-  const lock = readFileSync(join(repoRoot, 'Cargo.lock'), 'utf8');
+  const lock = readFileSync(join(root, 'Cargo.lock'), 'utf8');
   const match = /name = "wasm-bindgen"\r?\nversion = "([^"]+)"/.exec(lock);
   if (!match?.[1]) throw new Error('wasm-bindgen not found in Cargo.lock');
   return match[1];
@@ -66,10 +55,10 @@ ensureBindgenCli();
 run('cargo', ['build', '--package', 'gfa-wasm', '--target', 'wasm32-unknown-unknown', ...(dev ? [] : ['--release'])]);
 
 run(bindgen(), [
-  join(process.env.CARGO_TARGET_DIR ?? join(repoRoot, 'target'), 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
+  join(process.env.CARGO_TARGET_DIR ?? join(root, 'target'), 'wasm32-unknown-unknown', profile, 'gfa_wasm.wasm'),
   '--target',
   'web',
   '--out-dir',
-  join(webDir, 'src', 'wasm', 'pkg'),
+  join(root, 'web', 'src', 'wasm', 'pkg'),
   ...(dev ? ['--debug', '--keep-debug'] : []),
 ]);

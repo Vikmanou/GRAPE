@@ -5,22 +5,16 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { root, run } from './lib.mjs';
 
 const CARGO_FUZZ = '0.13.2';
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const fuzzDir = join(root, 'fuzz');
 const minutesFlag = process.argv.indexOf('--minutes');
 const minutes = minutesFlag > 0 ? Number(process.argv[minutesFlag + 1]) : 10;
 
 function succeeds(cmd, args) {
   return spawnSync(cmd, args, { stdio: 'ignore' }).status === 0;
-}
-
-function run(cmd, args, options = {}) {
-  const result = spawnSync(cmd, args, { stdio: 'inherit', ...options });
-  if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
 if (!succeeds('rustup', ['run', 'nightly', 'rustc', '--version'])) {

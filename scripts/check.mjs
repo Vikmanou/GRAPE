@@ -8,10 +8,8 @@
 //             WebGPU path are exercised (headless Chromium has no adapter).
 
 import { spawnSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { needsShell, root } from './lib.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const quick = process.argv.includes('--quick');
 const headed = process.argv.includes('--headed');
 
@@ -47,13 +45,7 @@ const results = [];
 for (const [name, cmd, args] of steps) {
   console.log(`\n=== ${name}: ${cmd} ${args.join(' ')}`);
   const start = performance.now();
-  // npm and npx are .cmd shims on Windows, which spawn can only start through
-  // a shell.
-  const result = spawnSync(cmd, args, {
-    cwd: root,
-    stdio: 'inherit',
-    shell: process.platform === 'win32' && (cmd === 'npm' || cmd === 'npx'),
-  });
+  const result = spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell: needsShell(cmd) });
   const seconds = ((performance.now() - start) / 1000).toFixed(1);
   const ok = result.status === 0;
   results.push({ name, ok, seconds });

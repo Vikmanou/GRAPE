@@ -9,11 +9,10 @@
 import { spawnSync } from 'node:child_process';
 import { cpus, platform, release } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import { root, run } from './lib.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const bench = join(root, 'target', 'bench');
 const out = join(bench, 'layout');
 const cpuCache = join(bench, 'cpu');
@@ -29,13 +28,6 @@ const STANDARD = [
   'samples/potato-hifiasm-unitigs-noseq.gfa',
 ];
 const SYNTHETIC_SEGMENTS = 200_000;
-
-function run(cmd, args, options = {}) {
-  // npx is a .cmd shim on Windows, which spawn can only start through a shell.
-  const shell = process.platform === 'win32' && cmd === 'npx';
-  const result = spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell, ...options });
-  if (result.status !== 0) process.exit(result.status ?? 1);
-}
 
 function synthetic(segments) {
   const path = join(bench, `${segments}.gfa`);

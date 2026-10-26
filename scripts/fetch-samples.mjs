@@ -16,13 +16,12 @@ import {
   renameSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { fileURLToPath } from 'node:url';
 import { createGunzip, inflateRawSync } from 'node:zlib';
+import { root, run } from './lib.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const samplesDir = join(root, 'samples');
 const args = new Set(process.argv.slice(2));
 const huge = args.has('--huge');
@@ -129,11 +128,7 @@ function unzip(zip, member) {
 }
 
 function buildParser() {
-  const build = spawnSync('cargo', ['build', '-q', '-p', 'gfa-core', '--release', '--example', 'parse_file'], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-  if (build.status !== 0) process.exit(1);
+  run('cargo', ['build', '-q', '-p', 'gfa-core', '--release', '--example', 'parse_file']);
   return join(root, 'target', 'release', 'examples', process.platform === 'win32' ? 'parse_file.exe' : 'parse_file');
 }
 
