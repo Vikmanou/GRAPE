@@ -63,20 +63,33 @@ function deferred<T>() {
 }
 
 const result = { topology: {} } as unknown as ParseResult;
+const parsed = { result, sequences: { kind: 'dropped' } as const };
+type Parsed = typeof parsed;
 const geometry = { segments: 1, points: 2, pieces: new Uint32Array(2), links: new Uint32Array(0) };
 const progress = { iteration: 10, total: 10, level: 0, levels: 1, energy: 0, done: true };
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function setup() {
-  const parses: ReturnType<typeof deferred<ParseResult>>[] = [];
+  const parses: ReturnType<typeof deferred<Parsed>>[] = [];
   const layouts: FakeLayout[] = [];
   const engines: FakeEngine[] = [];
   let cancels = 0;
+  const loadedSources: unknown[] = [];
   const services: Services = {
+    sequence: {
+      load: (source) => {
+        loadedSources.push(source);
+        return Promise.resolve();
+      },
+      preview: () => Promise.reject(new Error('unused')),
+      sequence: () => Promise.reject(new Error('unused')),
+      rawLine: () => Promise.reject(new Error('unused')),
+      fasta: () => Promise.reject(new Error('unused')),
+    },
     graph: {
       ping: () => Promise.resolve({ coreVersion: 'test', roundTripMs: 1 }),
       parse: () => {
-        const parse = deferred<ParseResult>();
+        const parse = deferred<Parsed>();
         parses.push(parse);
         return parse.promise;
       },
@@ -99,7 +112,7 @@ function setup() {
     search: '',
   };
   const store = createAppStore(services);
-  return { store, parses, layouts, engines, cancels: () => cancels };
+  return { store, parses, layouts, engines, loadedSources, cancels: () => cancels };
 }
 
 async function loadedWithEngine() {
@@ -108,15 +121,16 @@ async function loadedWithEngine() {
   await app.detectRenderer();
   await app.attachEngine({} as HTMLElement);
   app.open(new File(['S\ta\t*'], 'a.gfa'));
-  s.parses[0]?.resolve(result);
+  s.parses[0]?.resolve(parsed);
   await flush();
   return s;
 }
 
 describe('store', () => {
   it('starts a GPU layout once the file is loaded and the engine attached', async () => {
-    const { store, layouts, engines } = await loadedWithEngine();
+    const { store, layouts, engines, loadedSources } = await loadedWithEngine();
     expect(store.getState().load.state).toBe('loaded');
+    expect(loadedSources).toEqual([parsed.sequences]);
     const layout = layouts.at(-1);
     const engine = engines[0];
     if (!layout || !engine) throw new Error('no layout or engine');
@@ -150,7 +164,7 @@ describe('store', () => {
     store.getState().open(new File(['a'], 'first.gfa'));
     store.getState().open(new File(['b'], 'second.gfa'));
     expect(cancels()).toBe(1);
-    parses[1]?.resolve(result);
+    parses[1]?.resolve(parsed);
     await flush();
     const load = store.getState().load;
     expect(load.state === 'loaded' && load.file.name).toBe('second.gfa');

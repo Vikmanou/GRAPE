@@ -2,7 +2,9 @@
 
 import init, { coreVersion, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
+import { plain } from '../plain';
 import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
+import { type SequenceSource, sourceTransfers } from '../protocol/sequence';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -54,7 +56,9 @@ async function parse(id: number, file: File): Promise<void> {
   }
   const result = describe(current, compression, performance.now() - start);
   const { components, warnings, topology } = result;
-  post({ type: 'parsed', id, result }, [
+  const sequences = sequenceSource(current, file, compression);
+  post({ type: 'parsed', id, result, sequences }, [
+    ...sourceTransfers(sequences),
     components.segments.buffer,
     components.lengths.buffer,
     warnings.lines.buffer,
@@ -65,6 +69,28 @@ async function parse(id: number, file: File): Promise<void> {
     topology.linkTo.buffer,
     topology.linkBits.buffer,
   ]);
+}
+
+/** Moves the sequences out to hand to the sequence worker; packed bases leave this worker. */
+function sequenceSource(loaded: Loaded, file: File, compression: Compression): SequenceSource {
+  const lengths = plain(loaded.segmentLengths());
+  const offsets = plain(loaded.sequenceOffsets());
+  const flags = plain(loaded.segmentFlags());
+  if (compression === 'none')
+    return { kind: 'file', file, lengths, offsets, flags, lines: plain(loaded.lineOffsets()) };
+  const parts = loaded.takePacked();
+  if (!parts) return { kind: 'dropped' };
+  const packed = {
+    bits: plain(parts.bits()),
+    bases: parts.bases(),
+    runStarts: plain(parts.runStarts()),
+    runLengths: plain(parts.runLengths()),
+    runBytes: plain(parts.runBytes()),
+    lowerStarts: plain(parts.lowerStarts()),
+    lowerLengths: plain(parts.lowerLengths()),
+  };
+  parts.free();
+  return { kind: 'packed', packed, lengths, offsets, flags };
 }
 
 function describe(loaded: Loaded, compression: Compression, parseMs: number): ParseResult {

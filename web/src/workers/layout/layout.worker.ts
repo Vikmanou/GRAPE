@@ -2,6 +2,7 @@ import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../../wasm/
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { Topology } from '../protocol/graph';
 import type { Hierarchy, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
+import { plain } from '../plain';
 import { iterationsFor } from './quality';
 
 /** How often positions are posted while the CPU layout runs. */
@@ -40,15 +41,6 @@ function runCpu(id: number, layout: Layout): void {
       post({ type: 'positions', id, positions, iteration: layout.iteration(), done }, [positions.buffer]);
     }
   }
-}
-
-// wasm-bindgen copies results out of WASM memory onto plain ArrayBuffers.
-function plain<T extends ArrayBufferLike>(array: Uint32Array<T>): Uint32Array<ArrayBuffer>;
-function plain<T extends ArrayBufferLike>(array: Float32Array<T>): Float32Array<ArrayBuffer>;
-function plain<T extends ArrayBufferLike>(array: Uint8Array<T>): Uint8Array<ArrayBuffer>;
-function plain(array: Uint32Array | Float32Array | Uint8Array): ArrayBufferView<ArrayBuffer> {
-  if (!(array.buffer instanceof ArrayBuffer)) throw new Error('expected a plain ArrayBuffer');
-  return array as ArrayBufferView<ArrayBuffer>;
 }
 
 function copyHierarchy(h: WasmHierarchy): Hierarchy {

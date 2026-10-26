@@ -1,3 +1,5 @@
+use crate::sequence::PackedParts;
+use gfa_core::NO_SEQ;
 use gfa_core::{DEFAULT_BUDGET, Format, Graph, ParseOptions, PathKind, SeqMode, Severity};
 use wasm_bindgen::prelude::*;
 
@@ -153,6 +155,34 @@ impl Loaded {
     #[wasm_bindgen(js_name = linkBits)]
     pub fn link_bits(&self) -> Vec<u8> {
         self.graph.links.bits.clone()
+    }
+
+    /// Per segment: file byte offset (plain) or packed base offset (gzipped), -1 for none.
+    #[wasm_bindgen(js_name = sequenceOffsets)]
+    pub fn sequence_offsets(&self) -> Vec<f64> {
+        let at = |&o: &u64| if o == NO_SEQ { -1.0 } else { o as f64 };
+        self.graph.segments.seq.iter().map(at).collect()
+    }
+
+    #[wasm_bindgen(js_name = segmentFlags)]
+    pub fn segment_flags(&self) -> Vec<u8> {
+        self.graph.segments.flags.clone()
+    }
+
+    /// Empty for gzipped input.
+    #[wasm_bindgen(js_name = lineOffsets)]
+    pub fn line_offsets(&self) -> Vec<f64> {
+        self.graph.segments.line.iter().map(|&o| o as f64).collect()
+    }
+
+    /// Moves the packed bases out; the sequence worker owns them from then on.
+    #[wasm_bindgen(js_name = takePacked)]
+    pub fn take_packed(&mut self) -> Option<PackedParts> {
+        self.graph
+            .packed
+            .take()
+            .filter(|p| !p.dropped)
+            .map(PackedParts)
     }
 
     #[wasm_bindgen(js_name = componentSegments)]

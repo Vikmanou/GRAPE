@@ -2,9 +2,11 @@
 
 mod layout;
 mod parse;
+mod sequence;
 
 pub use layout::{Hierarchy, Layout, pack};
 pub use parse::{Loaded, Parser, Summary};
+pub use sequence::{PackedParts, PackedSequences, bases_from_file_bytes, fasta_record};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = coreVersion)]

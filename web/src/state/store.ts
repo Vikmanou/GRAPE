@@ -1,19 +1,19 @@
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { BackendKind } from '../engine/core/detect';
-import type { Topology, ParseResult } from '../workers/protocol/graph';
+import type { GraphClient } from '../workers/graph/GraphClient';
+import type { Topology } from '../workers/protocol/graph';
 import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
 import { createDisplaySlice, type DisplaySlice } from './display';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFileSlice, type FileSlice } from './load';
 import { createToastSlice, type ToastSlice } from './toasts';
 
-export interface GraphService {
-  ping(): Promise<{ coreVersion: string; roundTripMs: number }>;
-  parse(file: File, onProgress?: (bytesRead: number, totalBytes: number) => void): Promise<ParseResult>;
-  cancel(): void;
-}
+export type GraphService = Pick<GraphClient, 'ping' | 'parse' | 'cancel'>;
+
+export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta'>;
 
 export interface LayoutService {
   start(
@@ -29,6 +29,7 @@ export interface LayoutService {
 /** What the store reaches outside itself; tests pass fakes. */
 export interface Services {
   graph: GraphService;
+  sequence: SequenceService;
   layoutClient(): LayoutService;
   createEngine(host: HTMLElement): Promise<EngineLike>;
   detectBackend(): Promise<BackendKind>;

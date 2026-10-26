@@ -1,4 +1,5 @@
 import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
+import type { SequenceSource } from '../protocol/sequence';
 import { expect, RpcClient } from '../rpc';
 
 export type ProgressListener = (bytesRead: number, totalBytes: number) => void;
@@ -16,7 +17,7 @@ export class GraphClient {
     return { coreVersion, roundTripMs: performance.now() - start };
   }
 
-  async parse(file: File, onProgress?: ProgressListener): Promise<ParseResult> {
+  async parse(file: File, onProgress?: ProgressListener): Promise<{ result: ParseResult; sequences: SequenceSource }> {
     const response = await this.rpc.request(
       { type: 'parse', file },
       {
@@ -25,7 +26,8 @@ export class GraphClient {
         },
       },
     );
-    return expect(response, 'parsed').result;
+    const { result, sequences } = expect(response, 'parsed');
+    return { result, sequences };
   }
 
   cancel(): void {

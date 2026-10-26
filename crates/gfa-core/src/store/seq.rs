@@ -47,6 +47,17 @@ impl Packed {
         }
     }
 
+    /// Rebuilt from its arrays in another worker.
+    pub fn from_parts(bits: Vec<u8>, bases: u64, runs: Vec<Run>, lower: Vec<Span>) -> Self {
+        Self {
+            bits,
+            bases,
+            runs,
+            lower,
+            ..Self::default()
+        }
+    }
+
     pub(crate) fn start(&self) -> u64 {
         self.bases
     }

@@ -1,4 +1,5 @@
 import type { ErrorResponse } from '../rpc';
+import type { SequenceSource } from './sequence';
 import type { Compression } from '../graph/readFile';
 
 export type GraphRequest = { type: 'ping'; id: number } | { type: 'parse'; id: number; file: File };
@@ -6,7 +7,7 @@ export type GraphRequest = { type: 'ping'; id: number } | { type: 'parse'; id: n
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
   | { type: 'progress'; id: number; bytesRead: number; totalBytes: number }
-  | { type: 'parsed'; id: number; result: ParseResult }
+  | { type: 'parsed'; id: number; result: ParseResult; sequences: SequenceSource }
   | ErrorResponse;
 
 export interface GraphStats {

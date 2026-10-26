@@ -63,10 +63,13 @@ export function createFileSlice(ctx: Context): FileSlice {
           set({ load: { state: 'parsing', file: info, fraction: totalBytes > 0 ? bytesRead / totalBytes : 0 } });
         })
         .then(
-          (result) => {
+          ({ result, sequences }) => {
             if (parsing !== file) return;
             parsing = undefined;
             set({ load: { state: 'loaded', file: info, result } });
+            services.sequence.load(sequences).catch((error: unknown) => {
+              get().toast('Sequences could not be loaded', message(error));
+            });
             get().restartLayout();
           },
           (error: unknown) => {
