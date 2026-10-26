@@ -87,6 +87,7 @@ impl Graph {
         s.seq.shrink_to_fit();
         s.component.shrink_to_fit();
         s.flags.shrink_to_fit();
+        s.line.shrink_to_fit();
         let l = &mut self.links;
         l.from.shrink_to_fit();
         l.to.shrink_to_fit();

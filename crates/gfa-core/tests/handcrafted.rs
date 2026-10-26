@@ -333,3 +333,44 @@ fn fastg_malformed() {
     assert_eq!(g.stats.segments, 1);
     assert_eq!(g.segments.length, [2]);
 }
+
+fn line_at(bytes: &[u8], offset: u64) -> &[u8] {
+    let rest = &bytes[offset as usize..];
+    &rest[..rest.iter().position(|&b| b == b'\n').unwrap_or(rest.len())]
+}
+
+#[test]
+fn segment_lines_point_at_their_records() {
+    let bytes = testdata("star_ln.gfa");
+    let g = parse(&bytes, ParseOptions::default()).unwrap();
+    for i in 0..g.segments.len() as u32 {
+        let name = g.names.get(i);
+        let line = line_at(&bytes, g.segments.line[i as usize]);
+        assert!(
+            line.starts_with(&[b"S\t", name, b"\t"].concat()),
+            "{line:?}"
+        );
+    }
+
+    let bytes = testdata("reverse_only.fastg");
+    let g = parse(&bytes, ParseOptions::default()).unwrap();
+    for i in 0..g.segments.len() as u32 {
+        let name = g.names.get(i);
+        let line = line_at(&bytes, g.segments.line[i as usize]);
+        assert!(
+            line.starts_with(&[b">EDGE_", name, b"_"].concat()),
+            "{line:?}"
+        );
+    }
+}
+
+#[test]
+fn packed_input_keeps_no_line_offsets() {
+    let options = ParseOptions {
+        seq_mode: SeqMode::Packed {
+            budget_bytes: DEFAULT_BUDGET,
+        },
+    };
+    let g = parse(&testdata("linear.gfa"), options).unwrap();
+    assert!(g.segments.line.is_empty());
+}

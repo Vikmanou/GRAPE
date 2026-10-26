@@ -105,6 +105,7 @@ fn segment<'a>(
     let Some(id) = b.define(name, no) else {
         return;
     };
+    b.segments.set_line(id, offset);
     let i = id as usize;
 
     let length = if seq == b"*" {

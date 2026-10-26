@@ -20,9 +20,20 @@ pub struct Segments {
     /// Component rank, largest total length first.
     pub component: Vec<u32>,
     pub flags: Vec<u8>,
+    /// File byte offset of each segment's `S` line or FASTG header, for plain
+    /// input only: gzipped files cannot be read at an offset.
+    pub line: Vec<u64>,
+    track_lines: bool,
 }
 
 impl Segments {
+    pub(crate) fn new(track_lines: bool) -> Self {
+        Self {
+            track_lines,
+            ..Self::default()
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.length.len()
     }
@@ -42,6 +53,15 @@ impl Segments {
         self.seq.push(NO_SEQ);
         self.component.push(0);
         self.flags.push(0);
+        if self.track_lines {
+            self.line.push(0);
+        }
+    }
+
+    pub(crate) fn set_line(&mut self, id: u32, offset: u64) {
+        if let Some(line) = self.line.get_mut(id as usize) {
+            *line = offset;
+        }
     }
 
     pub fn heap_bytes(&self) -> usize {
@@ -51,5 +71,6 @@ impl Segments {
             + self.seq.capacity() * 8
             + self.component.capacity() * 4
             + self.flags.capacity()
+            + self.line.capacity() * 8
     }
 }

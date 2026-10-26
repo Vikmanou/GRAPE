@@ -37,7 +37,7 @@ impl Fastg {
     pub(crate) fn line(&mut self, b: &mut Builder, line: &[u8], offset: u64, no: u64) {
         if let Some(header) = line.trim_ascii_start().strip_prefix(b">") {
             self.close(b);
-            self.header(b, header, no);
+            self.header(b, header, offset, no);
             return;
         }
         let seq = line.trim_ascii();
@@ -58,7 +58,7 @@ impl Fastg {
         }
     }
 
-    fn header(&mut self, b: &mut Builder, header: &[u8], no: u64) {
+    fn header(&mut self, b: &mut Builder, header: &[u8], offset: u64, no: u64) {
         let header = header.trim_ascii_end();
         let header = header.strip_suffix(b";").unwrap_or(header);
         let (this, neighbours) = match header.iter().position(|&c| c == b':') {
@@ -109,6 +109,7 @@ impl Fastg {
         };
         if defines {
             b.claim(id);
+            b.segments.set_line(id, offset);
             if reverse {
                 b.segments.flags[id as usize] |= seg_flags::SEQ_REVERSED;
             }

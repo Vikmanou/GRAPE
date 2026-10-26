@@ -59,7 +59,7 @@ impl Builder {
     pub(crate) fn new(mode: SeqMode) -> Self {
         Self {
             names: Names::default(),
-            segments: Segments::default(),
+            segments: Segments::new(mode == SeqMode::FileOffsets),
             links: Links::default(),
             paths: Paths::default(),
             packed: match mode {

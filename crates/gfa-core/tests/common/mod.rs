@@ -36,7 +36,12 @@ pub fn snapshot(g: &Graph) -> String {
         let name = String::from_utf8_lossy(g.names.get(i as u32));
         let (depth, gc) = (seg.depth[i].to_bits(), seg.gc[i].to_bits());
         let (len, at, comp, flags) = (seg.length[i], seg.seq[i], seg.component[i], seg.flags[i]);
-        writeln!(s, "S {name:?} {len} {depth:x} {gc:x} {at} {comp} {flags:x}").unwrap();
+        let line = seg.line.get(i).copied().unwrap_or(u64::MAX);
+        writeln!(
+            s,
+            "S {name:?} {len} {depth:x} {gc:x} {at} {comp} {flags:x} {line}"
+        )
+        .unwrap();
     }
     let l = &g.links;
     for i in 0..l.len() {
