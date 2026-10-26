@@ -46,6 +46,7 @@ struct Ribbon {
   // Piece length, half width.
   @location(1) @interpolate(flat) size: vec2f,
   @location(2) @interpolate(flat) color: vec4f,
+  @location(3) @interpolate(flat) segment: u32,
 }
 
 // Each piece is a capsule cut from a quad by a signed distance, which gives
@@ -67,6 +68,7 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   out.local = local;
   out.size = vec2f(length_ab, half);
   out.color = unpack4x8unorm(colors[piece.y]);
+  out.segment = piece.y;
   return out;
 }
 
@@ -78,6 +80,17 @@ fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
     discard;
   }
   return vec4f(in.color.rgb * alpha, alpha);
+}
+
+// Segment id plus one into the picking texture, 0 where nothing is drawn.
+// Pixels whose centre lies inside the capsule count, with no antialiasing.
+@fragment
+fn ribbon_id_fragment(in: Ribbon) -> @location(0) u32 {
+  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
+  if length(in.local - nearest) > in.size.y {
+    discard;
+  }
+  return in.segment + 1u;
 }
 
 const LINK_STEPS = 16u;

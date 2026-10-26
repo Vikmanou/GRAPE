@@ -1,6 +1,11 @@
-/** Camera gestures, in canvas pixels. */
+/** Pointer and camera gestures, in canvas pixels. */
 export interface InputHandler {
   pan(dx: number, dy: number): void;
+  /** The pointer moved over the canvas with no button held. */
+  hover(x: number, y: number): void;
+  leave(): void;
+  /** A press and release that moved less than `CLICK_SLOP`. */
+  click(x: number, y: number, shift: boolean): void;
   zoom(x: number, y: number, factor: number): void;
   zoomCenter(factor: number): void;
   panView(fx: number, fy: number): void;
@@ -11,6 +16,8 @@ const KEY_ZOOM = 1.25;
 /** Fraction of the view an arrow key pans. */
 const KEY_PAN = 0.1;
 const LINE_PIXELS = 16;
+/** CSS pixels a press may move and still count as a click. */
+const CLICK_SLOP = 4;
 
 /** Wheel steps differ by device; this maps a typical mouse notch to about 1.2×. */
 function wheelFactor(event: WheelEvent): number {
@@ -35,7 +42,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
     const s = scale();
     return [(event.clientX - rect.left) * s, (event.clientY - rect.top) * s];
   };
-  let drag: { id: number; x: number; y: number } | undefined;
+  let press: { id: number; x: number; y: number; startX: number; startY: number; dragging: boolean } | undefined;
 
   const down = (event: PointerEvent) => {
     if (event.button !== 0) return;
@@ -45,17 +52,29 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
       // Pointers that are no longer active (or synthetic ones) cannot be
       // captured; the drag still works while the pointer stays on the canvas.
     }
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    const { clientX: x, clientY: y } = event;
+    press = { id: event.pointerId, x, y, startX: x, startY: y, dragging: false };
   };
   const move = (event: PointerEvent) => {
-    if (drag?.id !== event.pointerId) return;
+    if (!press) {
+      handler.hover(...local(event));
+      return;
+    }
+    if (press.id !== event.pointerId) return;
+    press.dragging ||= Math.hypot(event.clientX - press.startX, event.clientY - press.startY) > CLICK_SLOP;
+    if (!press.dragging) return;
     const s = scale();
-    handler.pan((event.clientX - drag.x) * s, (event.clientY - drag.y) * s);
-    drag.x = event.clientX;
-    drag.y = event.clientY;
+    handler.pan((event.clientX - press.x) * s, (event.clientY - press.y) * s);
+    press.x = event.clientX;
+    press.y = event.clientY;
   };
   const up = (event: PointerEvent) => {
-    if (drag?.id === event.pointerId) drag = undefined;
+    if (press?.id !== event.pointerId) return;
+    if (!press.dragging && event.type === 'pointerup') handler.click(...local(event), event.shiftKey);
+    press = undefined;
+  };
+  const leave = () => {
+    if (!press) handler.leave();
   };
   const wheel = (event: WheelEvent) => {
     event.preventDefault();
@@ -100,6 +119,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('pointerleave', leave);
   canvas.addEventListener('wheel', wheel, { passive: false });
   window.addEventListener('keydown', key);
   return () => {
@@ -107,6 +127,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
     canvas.removeEventListener('pointermove', move);
     canvas.removeEventListener('pointerup', up);
     canvas.removeEventListener('pointercancel', up);
+    canvas.removeEventListener('pointerleave', leave);
     canvas.removeEventListener('wheel', wheel);
     window.removeEventListener('keydown', key);
   };

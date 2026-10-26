@@ -70,5 +70,7 @@ export interface Backend {
   /** `x, y` per point relative to the view's origin, from a layout run elsewhere. */
   setPositions(positions: Float32Array<ArrayBuffer>): void;
   draw(view: View): void;
+  /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
+  pick(x: number, y: number): Promise<number | undefined>;
   destroy(): void;
 }

@@ -49,6 +49,12 @@ export class Engine {
   private dirty = true;
   /** Layout positions moved since they were last presented. */
   private stale = false;
+  /** Canvas pixel under the pointer, while it is over the canvas. */
+  private pointer: [number, number] | undefined;
+  /** What is under the pointer must be picked again at the next frame. */
+  private hoverStale = false;
+  private hoverPicking = false;
+  private hovered: number | undefined;
 
   private constructor(
     host: HTMLElement,
@@ -80,6 +86,16 @@ export class Engine {
       fit: () => {
         this.send({ type: 'fit' });
       },
+      hover: (x, y) => {
+        this.pointer = [x, y];
+        this.hoverStale = true;
+        this.scheduleFrame();
+      },
+      leave: () => {
+        this.pointer = undefined;
+        this.setHovered(undefined);
+      },
+      click: () => undefined,
     });
   }
 
@@ -115,6 +131,7 @@ export class Engine {
         break;
       case 'set-graph':
         this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
+        this.setHovered(undefined);
         this.positions = undefined;
         this.bounds = undefined;
         this.autoFit = true;
@@ -154,6 +171,13 @@ export class Engine {
         this.insets = command.insets;
         if (this.autoFit) this.fitView();
         break;
+      case 'pick': {
+        const { x, y } = command;
+        void this.backend.pick(x, y).then((segment) => {
+          this.emit({ type: 'picked', x, y, segment });
+        });
+        return;
+      }
     }
     this.requestFrame();
   }
@@ -190,7 +214,29 @@ export class Engine {
     this.lastInteraction = performance.now();
     this.autoFit = false;
     this.camera = camera;
+    this.hoverStale = this.pointer !== undefined;
     this.requestFrame();
+  }
+
+  /** At most one pick in flight, for the latest pointer position. */
+  private pickHover(): void {
+    const pointer = this.pointer;
+    if (!this.hoverStale || this.hoverPicking || !pointer) return;
+    this.hoverStale = false;
+    this.hoverPicking = true;
+    void this.backend.pick(...pointer).then((segment) => {
+      this.hoverPicking = false;
+      if (this.destroyed) return;
+      if (this.pointer) this.setHovered(segment);
+      if (this.hoverStale) this.scheduleFrame();
+    });
+  }
+
+  private setHovered(segment: number | undefined): void {
+    if (segment === this.hovered) return;
+    this.hovered = segment;
+    this.canvas.style.cursor = segment === undefined ? '' : 'pointer';
+    this.emit({ type: 'hover', segment });
   }
 
   private fitView(): void {
@@ -262,6 +308,7 @@ export class Engine {
     const busy = layout.busy;
     const redraw = Math.max(LAYOUT_REDRAW_MS, this.backend.drawMs * LAYOUT_DRAW_SHARE);
     if (this.dirty || (this.stale && (!busy || now - this.lastDraw >= redraw))) this.draw(now);
+    this.pickHover();
     if (busy) this.scheduleFrame();
   }
 

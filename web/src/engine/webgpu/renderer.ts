@@ -11,6 +11,7 @@ const LINK_STEPS = 16;
 /** `vertexCount, instanceCount, firstVertex, firstInstance` for links, then pieces. */
 const INDIRECT = [LINK_STEPS * 6, 0, 0, 0, 6, 0, 0, 0];
 const PIECES_INDIRECT = 16;
+export const ID_FORMAT = 'r32uint';
 
 export interface View {
   centerX: number;
@@ -29,6 +30,7 @@ interface Graph {
   buffers: Buffers;
   positions: GPUBuffer;
   bindGroup: GPUBindGroup;
+  idBindGroup: GPUBindGroup;
   indirect: GPUBuffer;
   pieces: Cull | undefined;
   links: Cull | undefined;
@@ -41,8 +43,10 @@ interface Graph {
 export class Renderer {
   private readonly ribbon: GPURenderPipeline;
   private readonly link: GPURenderPipeline;
+  private readonly ribbonIds: GPURenderPipeline;
   private readonly layout: GPUBindGroupLayout;
   private readonly view: GPUBuffer;
+  private readonly idView: GPUBuffer;
   private readonly viewData = new Float32Array(VIEW_BYTES / 4);
   private graph: Graph | undefined;
 
@@ -77,11 +81,17 @@ export class Renderer {
       });
     this.ribbon = pipeline('ribbon');
     this.link = pipeline('link');
-    this.view = device.createBuffer({
-      label: 'view',
-      size: VIEW_BYTES,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    this.ribbonIds = device.createRenderPipeline({
+      label: 'ribbon ids',
+      layout: pipelineLayout,
+      vertex: { module, entryPoint: 'ribbon_vertex' },
+      fragment: { module, entryPoint: 'ribbon_id_fragment', targets: [{ format: ID_FORMAT }] },
+      primitive: { topology: 'triangle-list' },
     });
+    const uniform = (label: string) =>
+      device.createBuffer({ label, size: VIEW_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.view = uniform('view');
+    this.idView = uniform('id view');
   }
 
   setGeometry(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
@@ -98,25 +108,28 @@ export class Renderer {
     const pieceCull = cull('pieces', pieceCount, pieces, PIECES_INDIRECT / 4 + 1);
     const linkCull = cull('links', linkCount, links, 1);
     const empty = b.storage('empty', 4);
+    const shared = [
+      positions,
+      pieces,
+      b.upload('colors', colors),
+      links,
+      linkCull?.visible ?? empty,
+      pieceCull?.visible ?? empty,
+    ];
+    const bindGroup = (label: string, view: GPUBuffer) =>
+      this.device.createBindGroup({
+        label,
+        layout: this.layout,
+        entries: [view, ...shared].map((buffer, binding) => ({ binding, resource: { buffer } })),
+      });
     this.graph = {
       buffers: b,
       positions,
       indirect,
       pieces: pieceCull,
       links: linkCull,
-      bindGroup: this.device.createBindGroup({
-        label: 'graph',
-        layout: this.layout,
-        entries: [
-          this.view,
-          positions,
-          pieces,
-          b.upload('colors', colors),
-          links,
-          linkCull?.visible ?? empty,
-          pieceCull?.visible ?? empty,
-        ].map((buffer, binding) => ({ binding, resource: { buffer } })),
-      }),
+      bindGroup: bindGroup('graph', this.view),
+      idBindGroup: bindGroup('graph ids', this.idView),
     };
   }
 
@@ -154,19 +167,7 @@ export class Renderer {
   draw(pass: GPURenderPassEncoder, view: View): void {
     const graph = this.graph;
     if (!graph) return;
-    const d = this.viewData;
-    d.set([
-      view.centerX,
-      view.centerY,
-      (view.zoom * 2) / view.width,
-      (-view.zoom * 2) / view.height,
-      1 / view.zoom,
-      view.ribbonHalf,
-      view.linkHalf,
-      view.linkAlpha,
-      ...view.linkColor,
-    ]);
-    this.device.queue.writeBuffer(this.view, 0, d);
+    this.writeView(this.view, view);
     pass.setBindGroup(0, graph.bindGroup);
     // Links first, so ribbons cover their ends, as in Bandage.
     if (view.linkAlpha > 0 && graph.links) {
@@ -179,9 +180,36 @@ export class Renderer {
     }
   }
 
+  /** Segment ids of the ribbons in view, into an `ID_FORMAT` target; reuses the last cull. */
+  drawIds(pass: GPURenderPassEncoder, view: View): void {
+    const graph = this.graph;
+    if (!graph?.pieces) return;
+    this.writeView(this.idView, view);
+    pass.setBindGroup(0, graph.idBindGroup);
+    pass.setPipeline(this.ribbonIds);
+    pass.drawIndirect(graph.indirect, PIECES_INDIRECT);
+  }
+
+  private writeView(target: GPUBuffer, view: View): void {
+    const d = this.viewData;
+    d.set([
+      view.centerX,
+      view.centerY,
+      (view.zoom * 2) / view.width,
+      (-view.zoom * 2) / view.height,
+      1 / view.zoom,
+      view.ribbonHalf,
+      view.linkHalf,
+      view.linkAlpha,
+      ...view.linkColor,
+    ]);
+    this.device.queue.writeBuffer(target, 0, d);
+  }
+
   destroy(): void {
     this.graph?.buffers.destroy();
     this.graph = undefined;
     this.view.destroy();
+    this.idView.destroy();
   }
 }

@@ -6,13 +6,16 @@ import { createGpuContext } from './device';
 import { PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
 import { createKernels, type Kernels } from './layout/kernels';
-import { Renderer } from './renderer';
+import { Picker } from './pick';
+import { Renderer, type View as DrawnView } from './renderer';
 
 export class WebGpuBackend implements Backend {
   readonly kind = 'webgpu';
   readonly layout: GpuLayoutDriver;
   private readonly renderer: Renderer;
+  private readonly picker: Picker;
   private style: Style = { theme: 'light' };
+  private lastView: View | undefined;
   private destroyed = false;
   private draws = 0;
   private gpuDrawMs = 0;
@@ -25,7 +28,16 @@ export class WebGpuBackend implements Backend {
     events: BackendEvents,
   ) {
     this.renderer = new Renderer(device, format, kernels);
-    this.layout = new GpuLayoutDriver(device, kernels, events, () => this.renderer.positionBuffer);
+    this.picker = new Picker(device);
+    this.layout = new GpuLayoutDriver(
+      device,
+      kernels,
+      events,
+      () => this.renderer.positionBuffer,
+      () => {
+        this.picker.invalidate();
+      },
+    );
     device.addEventListener('uncapturederror', (event) => {
       events.error(event.error.message);
     });
@@ -54,6 +66,7 @@ export class WebGpuBackend implements Backend {
   setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
     this.layout.stop();
     this.renderer.setGeometry(geometry, colors);
+    this.picker.invalidate();
   }
 
   setStyle(style: Style): void {
@@ -63,6 +76,7 @@ export class WebGpuBackend implements Backend {
   setPositions(positions: Float32Array<ArrayBuffer>): void {
     this.layout.stop();
     this.renderer.setPositions(positions);
+    this.picker.invalidate();
   }
 
   draw(view: View): void {
@@ -74,13 +88,8 @@ export class WebGpuBackend implements Backend {
     const timed = this.device.features.has('timestamp-query') && (this.layout.busy || this.draws % 8 === 0);
     this.draws++;
     const timing = timed ? new PassTiming(this.device) : undefined;
-    const drawn = {
-      ...view,
-      ribbonHalf: RIBBON_WIDTH / 2,
-      linkHalf: LINK_WIDTH / 2,
-      linkAlpha: linkFade(view.zoom),
-      linkColor: palette.link,
-    };
+    this.lastView = view;
+    const drawn = this.drawn(view);
     this.renderer.cull(encoder, drawn);
     const pass = encoder.beginRenderPass({
       ...(timing && { timestampWrites: timing.writes }),
@@ -102,10 +111,35 @@ export class WebGpuBackend implements Backend {
     });
   }
 
+  async pick(x: number, y: number): Promise<number | undefined> {
+    if (!this.lastView || this.destroyed) return undefined;
+    const drawn = this.drawn(this.lastView);
+    const encoder = this.device.createCommandEncoder({ label: 'pick' });
+    if (this.picker.stale(drawn)) this.renderer.cull(encoder, drawn);
+    const staging = this.picker.staging();
+    if (!this.picker.encode(encoder, this.renderer, drawn, x, y, staging)) {
+      staging.destroy();
+      return undefined;
+    }
+    this.device.queue.submit([encoder.finish()]);
+    return this.picker.read(staging);
+  }
+
+  private drawn(view: View): DrawnView {
+    return {
+      ...view,
+      ribbonHalf: RIBBON_WIDTH / 2,
+      linkHalf: LINK_WIDTH / 2,
+      linkAlpha: linkFade(view.zoom),
+      linkColor: palettes[this.style.theme].link,
+    };
+  }
+
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
     this.layout.destroy();
+    this.picker.destroy();
     this.renderer.destroy();
     this.context.unconfigure();
     this.device.destroy();

@@ -49,6 +49,7 @@ export class GpuLayoutDriver implements LayoutDriver {
     private readonly events: DriverEvents,
     /** Where presented positions go: the renderer's position buffer. */
     private readonly target: () => GPUBuffer | undefined,
+    private readonly presented: () => void,
   ) {}
 
   get active(): boolean {
@@ -116,7 +117,9 @@ export class GpuLayoutDriver implements LayoutDriver {
 
   present(origin: Origin): void {
     const target = this.target();
-    if (target) this.layout?.present(target, this.shift(this.layout, origin));
+    if (!target || !this.layout) return;
+    this.layout.present(target, this.shift(this.layout, origin));
+    this.presented();
   }
 
   async readPositions(): Promise<Float32Array<ArrayBuffer> | undefined> {

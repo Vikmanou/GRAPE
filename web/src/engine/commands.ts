@@ -18,7 +18,9 @@ export type EngineCommand =
   | { type: 'read-positions' }
   | { type: 'fit' }
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
-  | { type: 'set-insets'; insets: Insets };
+  | { type: 'set-insets'; insets: Insets }
+  /** Answered by a `picked` event: the segment drawn at canvas pixel `x, y`. */
+  | { type: 'pick'; x: number; y: number };
 
 export type EngineEvent =
   | { type: 'resize'; width: number; height: number }
@@ -29,4 +31,7 @@ export type EngineEvent =
   /** Sent after each second of continuous drawing, such as a pan or zoom. */
   | ({ type: 'frame-stats' } & FrameStats)
   /** `x, y` per point as drawn, answering `read-positions`. */
-  | { type: 'positions'; positions: Float32Array<ArrayBuffer> };
+  | { type: 'positions'; positions: Float32Array<ArrayBuffer> }
+  | { type: 'picked'; x: number; y: number; segment: number | undefined }
+  /** The segment under the pointer changed. */
+  | { type: 'hover'; segment: number | undefined };

@@ -9,6 +9,8 @@ import { Bridge, type EngineLike } from './bridge';
 import { createDisplaySlice, type DisplaySlice } from './display';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFileSlice, type FileSlice } from './load';
+import { createSelectionSlice, type SelectionSlice } from './selection';
+import { exposeForTests } from './testHooks';
 import { createToastSlice, type ToastSlice } from './toasts';
 
 export type GraphService = Pick<GraphClient, 'ping' | 'parse' | 'cancel'>;
@@ -37,7 +39,7 @@ export interface Services {
   search: string;
 }
 
-export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice;
+export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -58,9 +60,11 @@ export function createAppStore(services: Services): AppStore {
       ...createLayoutSlice(ctx),
       ...createDisplaySlice(ctx),
       ...createToastSlice(ctx),
+      ...createSelectionSlice(),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
+  exposeForTests(store, ctx.bridge);
   return store;
 }
 
