@@ -38,10 +38,6 @@ fn begin(@builtin(global_invocation_id) id: vec3u, @builtin(num_workgroups) grou
   }
 }
 
-fn coarse_key(component: u32, cell: vec2i) -> u32 {
-  return mix32(cell_hash(component, cell) ^ 0x68e31da4u) | 1u;
-}
-
 @compute @workgroup_size(WORKGROUP)
 fn bin(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x;
@@ -50,10 +46,11 @@ fn bin(@builtin(global_invocation_id) id: vec3u) {
   }
   let p = positions[i];
   let component = nodes[i].x;
-  atomicAdd(&counts[cell_hash(component, cell_of(p, params.cell)) & params.fine_mask], 1u);
+  let fine = cell_of(p, params.cell);
+  atomicAdd(&counts[cell_hash(component, fine) & params.fine_mask], 1u);
 
-  let cell = cell_of(p, params.coarse_cell);
-  let key = bitcast<i32>(coarse_key(component, cell));
+  let cell = coarse_of(fine);
+  let key = bitcast<i32>(cell_key(component, cell));
   var slot = cell_hash(component, cell) & params.coarse_mask;
   // Linear probing; a weak exchange can fail spuriously, which retries the slot.
   for (var probes = 0u; probes <= params.coarse_mask; ) {
@@ -66,10 +63,10 @@ fn bin(@builtin(global_invocation_id) id: vec3u) {
       probes++;
     }
   }
-  let local = (p - vec2f(cell) * params.coarse_cell) / params.coarse_cell;
+  let offset = fixed_offset(p, cell);
   atomicAdd(&coarse[slot * 4u + 1u], 1);
-  atomicAdd(&coarse[slot * 4u + 2u], i32(local.x * FIXED));
-  atomicAdd(&coarse[slot * 4u + 3u], i32(local.y * FIXED));
+  atomicAdd(&coarse[slot * 4u + 2u], offset.x);
+  atomicAdd(&coarse[slot * 4u + 3u], offset.y);
 }
 
 // `counts` is bound to a copy of `starts` here: each bucket's cursor.

@@ -1,10 +1,10 @@
 // One force iteration, a Jacobi step like the CPU reference
 // (gfa-core layout/force.rs): repulsion first, then springs and the move.
 //
-// Repulsion is `k^2 / d` split in two by distance: exact pairs from the 3x3
-// fine cells around a node, fading out from half a cell to a cell, and
-// coarse cell centroids from a 3x3 block around it, fading in over the same
-// range. Each pair is counted once in total, whichever side it falls on.
+// Repulsion is `k^2 / d` from every node of the component within reach,
+// each counted once: exact pairs from the 3x3 fine cells around a node, and
+// the centroids of the 5x5 coarse cells around it with those fine cells'
+// nodes taken out.
 
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var<storage, read> positions: array<vec2f>;
@@ -23,7 +23,7 @@
 // x bits, y bits, component, node per node, in bucket order
 @group(0) @binding(12) var<storage, read> packed: array<vec4u>;
 
-const FAR_REACH = 1;
+const FAR_REACH = 2;
 const COLD = 0.4;
 const MIN_APART = 1e-2;
 
@@ -37,12 +37,8 @@ fn apart(d: vec2f, i: u32, j: u32) -> vec2f {
   return vec2f(s, s * 0.5);
 }
 
-fn far_weight(d: f32) -> f32 {
-  return smoothstep(0.5 * params.cell, params.cell, d);
-}
-
 fn coarse_slot(component: u32, cell: vec2i) -> i32 {
-  let key = bitcast<i32>(mix32(cell_hash(component, cell) ^ 0x68e31da4u) | 1u);
+  let key = bitcast<i32>(cell_key(component, cell));
   var slot = cell_hash(component, cell) & params.coarse_mask;
   for (var probes = 0u; probes <= params.coarse_mask; probes++) {
     let found = coarse[slot * 4u];
@@ -74,24 +70,33 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
   var f = vec2f(0.0);
 
   let home = cell_of(p, params.cell);
+  let own = coarse_of(home);
+  // What the near cells hold, by coarse cell around `own`, to take out of
+  // those coarse cells' sums: near cells lie at most one coarse cell away.
+  var near_count: array<i32, 9>;
+  var near_sum: array<vec2i, 9>;
   for (var dy = -1; dy <= 1; dy++) {
     for (var dx = -1; dx <= 1; dx++) {
       let cell = home + vec2i(dx, dy);
+      let coarse_cell = coarse_of(cell);
+      let at = (coarse_cell.y - own.y + 1) * 3 + coarse_cell.x - own.x + 1;
       let bucket = cell_hash(component, cell) & params.fine_mask;
       for (var k = starts[bucket]; k < starts[bucket + 1u]; k++) {
         let other = packed[k];
         let q = bitcast<vec2f>(other.xy);
-        if (other.w == i || other.z != component || any(cell_of(q, params.cell) != cell)) {
+        if (other.z != component || any(cell_of(q, params.cell) != cell)) {
           continue;
         }
-        let d = apart(p - q, i, other.w);
-        let d2 = dot(d, d);
-        f += d / d2 * (1.0 - far_weight(sqrt(d2)));
+        near_count[at] += 1;
+        near_sum[at] += fixed_offset(q, coarse_cell);
+        if (other.w != i) {
+          let d = apart(p - q, i, other.w);
+          f += d / dot(d, d);
+        }
       }
     }
   }
 
-  let own = cell_of(p, params.coarse_cell);
   for (var dy = -FAR_REACH; dy <= FAR_REACH; dy++) {
     for (var dx = -FAR_REACH; dx <= FAR_REACH; dx++) {
       let cell = own + vec2i(dx, dy);
@@ -100,20 +105,19 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
         continue;
       }
       let s = u32(slot) * 4u;
-      var count = f32(coarse[s + 1u]);
-      var sum = vec2f(f32(coarse[s + 2u]), f32(coarse[s + 3u]));
-      if (dx == 0 && dy == 0) {
-        let local = (p - vec2f(cell) * params.coarse_cell) / params.coarse_cell;
-        sum -= vec2f(f32(i32(local.x * FIXED)), f32(i32(local.y * FIXED)));
-        count -= 1.0;
+      var count = coarse[s + 1u];
+      var sum = vec2i(coarse[s + 2u], coarse[s + 3u]);
+      if (abs(dx) <= 1 && abs(dy) <= 1) {
+        let at = (dy + 1) * 3 + dx + 1;
+        count -= near_count[at];
+        sum -= near_sum[at];
       }
-      if (count < 0.5) {
+      if (count <= 0) {
         continue;
       }
-      let centroid = (vec2f(cell) + sum / (count * FIXED)) * params.coarse_cell;
+      let centroid = (vec2f(cell) + vec2f(sum) / (f32(count) * FIXED)) * params.coarse_cell;
       let d = p - centroid;
-      let d2 = max(dot(d, d), MIN_APART * MIN_APART);
-      f += count * d / d2 * far_weight(sqrt(d2));
+      f += f32(count) * d / max(dot(d, d), MIN_APART * MIN_APART);
     }
   }
   force[i] = f * params.repulsion;

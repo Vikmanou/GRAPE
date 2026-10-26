@@ -11,12 +11,11 @@ export function mix32(x: number): number {
 }
 
 export function cellHash(component: number, x: number, y: number): number {
-  const h = mix32(component + 0x9e3779b9);
-  return mix32(mix32(h ^ (x >>> 0)) ^ (y >>> 0));
+  return mix32(Math.imul(x, 73856093) + Math.imul(y, 19349663) + Math.imul(component, 83492791));
 }
 
-export function coarseKey(component: number, x: number, y: number): number {
-  return (mix32(cellHash(component, x, y) ^ 0x68e31da4) | 1) >>> 0;
+export function cellKey(component: number, x: number, y: number): number {
+  return (mix32(Math.imul(x, 2654435761) + Math.imul(y, 2246822519) + Math.imul(component, 3266489917)) | 1) >>> 0;
 }
 
 /** SplitMix32-style generator, so checks are repeatable. */

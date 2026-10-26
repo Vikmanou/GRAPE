@@ -5,7 +5,7 @@ import { encodeParams } from '../../src/engine/layout/params';
 import { Scan } from '../../src/engine/layout/scan';
 import { culling } from './cull';
 import { forceIteration } from './forces';
-import { assert, cellHash, coarseKey, random } from './reference';
+import { assert, cellHash, cellKey, random } from './reference';
 
 export type Check = (device: GPUDevice, kernels: Kernels) => Promise<void>;
 
@@ -101,7 +101,7 @@ const binning: Check = async (device, kernels) => {
         count: 0,
         x: 0,
         y: 0,
-        key: coarseKey(c, cx, cy) | 0,
+        key: cellKey(c, cx, cy) | 0,
         start: (cellHash(c, cx, cy) & (sizes.coarse - 1)) >>> 0,
       };
       sum.count++;

@@ -16,11 +16,6 @@ interface Graph {
   adjacency: { to: number; rest: number }[][];
 }
 
-function smoothstep(e0: number, e1: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
-  return t * t * (3 - 2 * t);
-}
-
 function makeGraph(): Graph {
   const next = random(3);
   const sizes = [3000, 900, 100];
@@ -82,25 +77,26 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
   const n = g.component.length;
   const coarseCell = cell * COARSE_PER_CELL;
   const at = (i: number): [number, number] => [p[i * 2] ?? 0, p[i * 2 + 1] ?? 0];
-  const coarse = new Map<string, { count: number; x: number; y: number }>();
-  const coarseOf = (i: number) => {
+  const fine = (i: number): [number, number] => {
     const [x, y] = at(i);
-    const [cx, cy] = [Math.floor(x / coarseCell), Math.floor(y / coarseCell)];
-    return {
-      cx,
-      cy,
-      fx: Math.trunc(((x - cx * coarseCell) / coarseCell) * FIXED),
-      fy: Math.trunc(((y - cy * coarseCell) / coarseCell) * FIXED),
-    };
+    return [Math.floor(x / cell), Math.floor(y / cell)];
   };
+  const coarseOf = (i: number): [number, number] => {
+    const [fx, fy] = fine(i);
+    return [Math.floor(fx / COARSE_PER_CELL), Math.floor(fy / COARSE_PER_CELL)];
+  };
+  const offset = (i: number): [number, number] => {
+    const [x, y] = at(i);
+    const [cx, cy] = coarseOf(i);
+    return [
+      Math.trunc(((x - cx * coarseCell) / coarseCell) * FIXED),
+      Math.trunc(((y - cy * coarseCell) / coarseCell) * FIXED),
+    ];
+  };
+  const members = new Map<string, number[]>();
   for (let i = 0; i < n; i++) {
-    const { cx, cy, fx, fy } = coarseOf(i);
-    const key = `${g.component[i]},${cx},${cy}`;
-    const s = coarse.get(key) ?? { count: 0, x: 0, y: 0 };
-    s.count++;
-    s.x += fx;
-    s.y += fy;
-    coarse.set(key, s);
+    const key = `${g.component[i]},${coarseOf(i).join()}`;
+    members.set(key, [...(members.get(key) ?? []), i]);
   }
   const out = new Float64Array(n * 2);
   for (let i = 0; i < n; i++) {
@@ -112,36 +108,31 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
       continue;
     }
     let [fx, fy] = [0, 0];
-    const [hx, hy] = [Math.floor(x / cell), Math.floor(y / cell)];
+    const [hx, hy] = fine(i);
+    const near = new Set<number>();
     for (let j = 0; j < n; j++) {
-      if (j === i || g.component[j] !== comp) continue;
+      const [jx, jy] = fine(j);
+      if (g.component[j] !== comp || Math.abs(jx - hx) > 1 || Math.abs(jy - hy) > 1) continue;
+      near.add(j);
+      if (j === i) continue;
       const [qx, qy] = at(j);
-      if (Math.abs(Math.floor(qx / cell) - hx) > 1 || Math.abs(Math.floor(qy / cell) - hy) > 1) continue;
       const [dx, dy] = [x - qx, y - qy];
       const d2 = dx * dx + dy * dy;
-      const w = 1 - smoothstep(cell / 2, cell, Math.sqrt(d2));
-      fx += (dx / d2) * w;
-      fy += (dy / d2) * w;
+      fx += dx / d2;
+      fy += dy / d2;
     }
-    const own = coarseOf(i);
-    for (let oy = -FAR_REACH; oy <= FAR_REACH; oy++) {
-      for (let ox = -FAR_REACH; ox <= FAR_REACH; ox++) {
-        const s = coarse.get(`${comp},${own.cx + ox},${own.cy + oy}`);
-        if (!s) continue;
-        let { count, x: sx, y: sy } = s;
-        if (ox === 0 && oy === 0) {
-          count -= 1;
-          sx -= own.fx;
-          sy -= own.fy;
-        }
-        if (count < 0.5) continue;
-        const cx = (own.cx + ox + sx / (count * FIXED)) * coarseCell;
-        const cy = (own.cy + oy + sy / (count * FIXED)) * coarseCell;
-        const [dx, dy] = [x - cx, y - cy];
+    const [ox, oy] = coarseOf(i);
+    for (let cy = oy - FAR_REACH; cy <= oy + FAR_REACH; cy++) {
+      for (let cx = ox - FAR_REACH; cx <= ox + FAR_REACH; cx++) {
+        const far = (members.get(`${comp},${cx},${cy}`) ?? []).filter((j) => !near.has(j));
+        if (far.length === 0) continue;
+        const [sx, sy] = far.reduce(([ax, ay], j) => [ax + offset(j)[0], ay + offset(j)[1]], [0, 0]);
+        const centroidX = (cx + sx / (far.length * FIXED)) * coarseCell;
+        const centroidY = (cy + sy / (far.length * FIXED)) * coarseCell;
+        const [dx, dy] = [x - centroidX, y - centroidY];
         const d2 = Math.max(dx * dx + dy * dy, 1e-4);
-        const w = smoothstep(cell / 2, cell, Math.sqrt(d2));
-        fx += ((count * dx) / d2) * w;
-        fy += ((count * dy) / d2) * w;
+        fx += (far.length * dx) / d2;
+        fy += (far.length * dy) / d2;
       }
     }
     fx *= g.input.repulsion;

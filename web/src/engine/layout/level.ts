@@ -6,9 +6,9 @@ import { encodeParams } from './params';
 
 /** Fine cells span this many mean rest lengths; coarse cells this many fine cells. */
 export const CELL_PER_REST = 2;
-export const COARSE_PER_CELL = 6;
+export const COARSE_PER_CELL = 3;
 /** Coarse cells read on each side of a node's own; `FAR_REACH` in forces.wgsl. */
-export const FAR_REACH = 1;
+export const FAR_REACH = 2;
 
 export type LevelInput = Pick<HierarchyLevel, 'nodes' | 'edges' | 'heat' | 'repulsion' | 'meanRest' | 'iterations'>;
 
