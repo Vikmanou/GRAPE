@@ -1,8 +1,8 @@
-import type { BackendKind } from '../engine/core/detect';
-import type { LayoutStatus } from '../state/layout';
-import type { CoreStatus } from '../state/load';
-import { useApp } from '../state/store';
-import { formatCount, formatPercent, formatSeconds } from './format';
+import type { BackendKind } from '../../engine/core/detect';
+import type { LayoutStatus } from '../../state/layout';
+import type { CoreStatus } from '../../state/load';
+import { useApp } from '../../state/store';
+import { formatCount, formatPercent, formatSeconds } from '../format';
 
 interface Props {
   onToggleWarnings: () => void;

@@ -4,7 +4,7 @@
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
+import { failOnPageError, repo, showTab, skipWithoutWebGpu } from './helpers';
 
 const GRAPHS = ['testdata/tangle.gfa', 'testdata/two_components.gfa', 'samples/bacterial-spades.gfa'];
 
@@ -25,6 +25,7 @@ async function settledHash(page: Page, after: number): Promise<{ run: number; ha
 }
 
 async function setSeed(page: Page, seed: number): Promise<void> {
+  await showTab(page, 'display');
   await page.getByTestId('layout-seed').fill(String(seed));
   await page.getByTestId('layout-seed').press('Enter');
 }

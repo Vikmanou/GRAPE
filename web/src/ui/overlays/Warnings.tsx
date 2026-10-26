@@ -1,5 +1,5 @@
-import type { ParseWarnings } from '../workers/protocol/graph';
-import { formatCount } from './format';
+import type { ParseWarnings } from '../../workers/protocol/graph';
+import { formatCount } from '../format';
 
 interface Props {
   warnings: ParseWarnings;
@@ -9,7 +9,7 @@ interface Props {
 export function Warnings({ warnings, onClose }: Props) {
   const { lines, severities, messages, total } = warnings;
   return (
-    <section className="warnings-panel" aria-label="Parse warnings" data-testid="warnings-panel">
+    <section className="warnings-panel floating-panel" aria-label="Parse warnings" data-testid="warnings-panel">
       <header>
         <h2>Warnings</h2>
         <button type="button" onClick={onClose} aria-label="Close warnings">

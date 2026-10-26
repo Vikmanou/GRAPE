@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../state/store';
-import { EmptyState } from './EmptyState';
+import { EmptyState } from './overlays/EmptyState';
 import { EngineHost } from './EngineHost';
-import { LayoutControls } from './LayoutControls';
 import { usePanelInsets } from './insets';
-import { Overview } from './Overview';
-import { StatusBar } from './StatusBar';
-import { TopBar } from './TopBar';
-import { Unsupported } from './Unsupported';
-import { Warnings } from './Warnings';
+import { Sidebar } from './panels/Sidebar';
+import { StatusBar } from './bars/StatusBar';
+import { TopBar } from './bars/TopBar';
+import { Unsupported } from './overlays/Unsupported';
+import { Toasts } from './overlays/Toasts';
+import { Warnings } from './overlays/Warnings';
 
 export function App() {
   const renderer = useApp((s) => s.renderer);
@@ -24,7 +24,8 @@ export function App() {
     [open],
   );
   const dragging = useFileDrop(openFile);
-  usePanelInsets(load.state);
+  const sidebarOpen = useApp((s) => s.sidebar.open);
+  usePanelInsets(`${load.state}:${String(sidebarOpen)}`);
 
   const unsupported = renderer === 'none' || engineError !== undefined;
   const file = load.state === 'idle' ? undefined : load.file;
@@ -41,11 +42,7 @@ export function App() {
           <p>{load.message}</p>
         </div>
       )}
-      {load.state === 'loaded' && (
-        <Overview result={load.result}>
-          <LayoutControls />
-        </Overview>
-      )}
+      {load.state === 'loaded' && <Sidebar result={load.result} />}
       {load.state === 'loaded' && showWarnings && (
         <Warnings
           warnings={load.result.warnings}
@@ -54,6 +51,7 @@ export function App() {
           }}
         />
       )}
+      <Toasts />
       <StatusBar
         onToggleWarnings={() => {
           setShowWarnings((shown) => !shown);

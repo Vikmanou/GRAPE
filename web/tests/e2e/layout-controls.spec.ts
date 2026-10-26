@@ -3,7 +3,7 @@
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
+import { failOnPageError, repo, showTab, skipWithoutWebGpu } from './helpers';
 
 const PANGENOME = repo('samples/brca2-cactus.gfa');
 
@@ -13,6 +13,7 @@ async function open(page: Page): Promise<void> {
   await skipWithoutWebGpu(page);
   test.skip(!existsSync(PANGENOME), 'run `npm run samples` first');
   await page.getByTestId('open-input').setInputFiles(PANGENOME);
+  await showTab(page, 'display');
 }
 
 test('pauses and resumes the layout', async ({ page }) => {

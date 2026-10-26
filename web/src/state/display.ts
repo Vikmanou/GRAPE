@@ -3,6 +3,8 @@ import type { BackendKind } from '../engine/core/detect';
 import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
 
+export type SidebarTab = 'overview' | 'display';
+
 export interface DisplaySlice {
   renderer: BackendKind | 'detecting';
   /** Set when the engine could not start or lost its device. */
@@ -12,6 +14,9 @@ export interface DisplaySlice {
   gpuLayout: boolean;
   /** Frames per second over the last second of continuous drawing. */
   fps: number | undefined;
+  sidebar: { open: boolean; tab: SidebarTab };
+  showSidebar: (tab: SidebarTab) => void;
+  toggleSidebar: () => void;
   detectRenderer: () => Promise<void>;
   attachEngine: (host: HTMLElement) => Promise<void>;
   detachEngine: () => void;
@@ -29,6 +34,16 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     theme: 'light',
     gpuLayout: false,
     fps: undefined,
+    sidebar: { open: true, tab: 'overview' },
+
+    showSidebar(tab) {
+      set({ sidebar: { open: true, tab } });
+    },
+
+    toggleSidebar() {
+      const { sidebar } = get();
+      set({ sidebar: { ...sidebar, open: !sidebar.open } });
+    },
 
     async detectRenderer() {
       const renderer = await services.detectBackend();

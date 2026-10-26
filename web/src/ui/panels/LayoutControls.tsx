@@ -1,5 +1,5 @@
-import { useApp } from '../state/store';
-import type { Quality } from '../workers/protocol/layout';
+import { useApp } from '../../state/store';
+import type { Quality } from '../../workers/protocol/layout';
 
 const QUALITIES: [Quality, string][] = [
   ['fast', 'Fast'],

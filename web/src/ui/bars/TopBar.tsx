@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import type { FileInfo } from '../state/load';
-import { formatBytes } from './format';
+import type { FileInfo } from '../../state/load';
+import { formatBytes } from '../format';
 
 const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz';
 

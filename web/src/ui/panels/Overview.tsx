@@ -1,6 +1,5 @@
-import type { ReactNode } from 'react';
-import type { ParseResult } from '../workers/protocol/graph';
-import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from './format';
+import type { ParseResult } from '../../workers/protocol/graph';
+import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
 
 const TOP_COMPONENTS = 10;
 
@@ -8,11 +7,9 @@ const compressionLabel = { none: '', gzip: ', gzipped', bgzf: ', bgzipped' } as 
 
 interface Props {
   result: ParseResult;
-  /** Shown under the file format, above the stats. */
-  children?: ReactNode;
 }
 
-export function Overview({ result, children }: Props) {
+export function Overview({ result }: Props) {
   const { stats, components } = result;
   const rows: [string, string, string][] = [
     ['segments', 'Segments', formatCount(stats.segments)],
@@ -37,8 +34,7 @@ export function Overview({ result, children }: Props) {
   const shown = Math.min(components.segments.length, TOP_COMPONENTS);
 
   return (
-    <aside className="sidebar" aria-label="Overview" data-inset="left">
-      <h2>Overview</h2>
+    <section aria-label="Overview">
       <p className="muted" data-testid="format" data-parse-ms={Math.round(result.parseMs)}>
         {format}
         {compressionLabel[result.compression]} · parsed in {formatCount(result.parseMs)} ms
@@ -46,7 +42,6 @@ export function Overview({ result, children }: Props) {
       {result.memory.sequencesDropped && (
         <p className="notice">Sequences exceeded the memory budget and were dropped.</p>
       )}
-      {children}
       <dl className="stats">
         {rows.map(([id, label, value]) => (
           <div key={id}>
@@ -81,6 +76,6 @@ export function Overview({ result, children }: Props) {
         Memory: {result.memory.bytesPerSegment.toFixed(1)} B per segment, names {formatBytes(result.memory.nameBytes)}
         {result.memory.sequenceBytes > 0 ? `, sequences ${formatBytes(result.memory.sequenceBytes)}` : ''}
       </p>
-    </aside>
+    </section>
   );
 }

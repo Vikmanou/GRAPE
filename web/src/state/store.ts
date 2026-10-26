@@ -7,6 +7,7 @@ import { Bridge, type EngineLike } from './bridge';
 import { createDisplaySlice, type DisplaySlice } from './display';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFileSlice, type FileSlice } from './load';
+import { createToastSlice, type ToastSlice } from './toasts';
 
 export interface GraphService {
   ping(): Promise<{ coreVersion: string; roundTripMs: number }>;
@@ -35,7 +36,7 @@ export interface Services {
   search: string;
 }
 
-export type AppState = FileSlice & LayoutSlice & DisplaySlice;
+export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -51,7 +52,12 @@ export function createAppStore(services: Services): AppStore {
   const store = createStore<AppState>()((set, get) => {
     ctx.set = set;
     ctx.get = get;
-    return { ...createFileSlice(ctx), ...createLayoutSlice(ctx), ...createDisplaySlice(ctx) };
+    return {
+      ...createFileSlice(ctx),
+      ...createLayoutSlice(ctx),
+      ...createDisplaySlice(ctx),
+      ...createToastSlice(ctx),
+    };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
   return store;

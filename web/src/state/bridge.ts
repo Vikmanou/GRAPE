@@ -67,6 +67,7 @@ export class Bridge {
         break;
       case 'error':
         console.error(`GPU error: ${event.message}`);
+        get().toast('The GPU reported an error', event.message);
         break;
       case 'device-lost':
         get().engineFailed(`GPU device lost: ${event.message}`);
