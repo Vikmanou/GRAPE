@@ -1,18 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Engine } from '../engine/Engine';
-import { LayoutClient } from '../workers/layout/LayoutClient';
-import type { Topology } from '../workers/protocol/graph';
 import type { LayoutOptions } from '../workers/protocol/layout';
+import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
 
 export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
 
 /** The spec's "first usable layout": refined this far and packed. */
 const USABLE_LEVEL = 3;
-
-const IDLE = { state: 'idle' } as const;
-
-const ignore = () => undefined;
 
 export type LayoutStatus =
   | { state: 'idle' }
@@ -28,112 +21,127 @@ export type LayoutStatus =
   | { state: 'done'; total: number; ms: number; usableMs?: number | undefined }
   | { state: 'failed'; message: string };
 
-export interface LayoutRun {
-  status: LayoutStatus;
-  paused: boolean;
+export interface LayoutSlice {
+  layoutOptions: LayoutOptions;
+  layoutStatus: LayoutStatus;
+  layoutPaused: boolean;
+  setLayoutOptions: (options: LayoutOptions) => void;
   /** Pauses or resumes the GPU layout; the CPU layout cannot pause. */
-  setPaused: (paused: boolean) => void;
+  setLayoutPaused: (paused: boolean) => void;
+  /** Lays out the loaded graph from the start, when it and its renderer are ready. */
+  restartLayout: () => void;
+  stopLayout: () => void;
 }
 
-/**
- * Lays out `topology`: on the GPU through `engine` when `gpu` is set,
- * otherwise in the layout worker. The worker always builds the geometry and,
- * for the GPU, the coarsened levels and the component packing.
- */
-export function useLayout(
-  topology: Topology | undefined,
-  engine: Engine | undefined,
-  gpu: boolean,
-  options: LayoutOptions,
-  onGeometry: () => void,
-): LayoutRun {
-  // Tagged with its run, so a stale run reads as idle without an effect resetting it.
-  const [run, setRun] = useState<{ topology?: Topology; key?: string; status: LayoutStatus }>({ status: IDLE });
-  const [pausedRun, setPausedRun] = useState<{ topology: Topology; key: string }>();
-  const onGeometryRef = useRef(onGeometry);
-  useEffect(() => {
-    onGeometryRef.current = onGeometry;
-  }, [onGeometry]);
-  const { seed, quality } = options;
-  const key = `${gpu ? 'gpu' : 'cpu'}:${seed}:${quality}`;
+const ignore = () => undefined;
 
-  useEffect(() => {
-    if (!topology || (gpu && !engine)) return;
-    const setStatus = (status: LayoutStatus) => {
-      setRun({ topology, key, status });
-    };
-    const client = new LayoutClient();
+/**
+ * On the GPU through the engine, or in the layout worker with `?layout=cpu`.
+ * The worker always builds the geometry and, for the GPU, the coarsened
+ * levels and the component packing.
+ */
+export function createLayoutSlice(ctx: Context): LayoutSlice {
+  const { set, get, services } = ctx;
+  let stopRun: (() => void) | undefined;
+
+  function run(): () => void {
+    const { load, gpuLayout: gpu, layoutOptions: options } = get();
+    if (load.state !== 'loaded') return ignore;
+    const bridge = ctx.bridge;
+    const { seed, quality } = options;
+    const client = services.layoutClient();
     const start = performance.now();
+    let live = true;
     let total = 0;
     let usableMs: number | undefined;
     let measuredLevel = Infinity;
     let finished = false;
-    const unsubscribe = engine?.on((event) => {
+    const status = (layoutStatus: LayoutStatus) => {
+      if (live) set({ layoutStatus });
+    };
+
+    const unsubscribe = bridge.on((event) => {
       if (event.type === 'positions' && finished) exposeSettledLayout({ seed, quality, positions: event.positions });
       if (event.type !== 'layout-measured') return;
       const p = event.progress;
       measuredLevel = p.level;
       finished = p.done;
       client.pack(event.boxes).then((offsets) => {
-        engine.send({ type: 'set-offsets', offsets });
+        if (!live) return;
+        bridge.send({ type: 'set-offsets', offsets });
         if (usableMs === undefined && measuredLevel <= USABLE_LEVEL) usableMs = performance.now() - start;
         if (finished) {
-          setStatus({ state: 'done', total, ms: performance.now() - start, usableMs });
-          if (import.meta.env.DEV) engine.send({ type: 'read-positions' });
+          status({ state: 'done', total, ms: performance.now() - start, usableMs });
+          if (import.meta.env.DEV) bridge.send({ type: 'read-positions' });
         }
       }, ignore);
       if (!p.done) {
-        setStatus({
-          state: 'running',
-          iteration: p.iteration,
-          total,
-          level: p.level,
-          levels: p.levels,
-          energy: p.energy,
-        });
+        status({ state: 'running', iteration: p.iteration, total, level: p.level, levels: p.levels, energy: p.energy });
       }
     });
-    client.start(gpu ? 'gpu' : 'cpu', topology, { seed, quality }, (response) => {
+
+    client.start(gpu ? 'gpu' : 'cpu', load.result.topology, options, (response) => {
+      if (!live) return;
       switch (response.type) {
         case 'geometry':
           total = response.totalIterations;
-          onGeometryRef.current();
-          engine?.send({ type: 'set-graph', geometry: response.geometry, seed });
-          setStatus({ state: 'running', iteration: 0, total });
+          set({ fps: undefined });
+          bridge.send({ type: 'set-graph', geometry: response.geometry, seed });
+          status({ state: 'running', iteration: 0, total });
           break;
         case 'hierarchy':
-          engine?.send({ type: 'start-layout', hierarchy: response.hierarchy, seed });
+          bridge.send({ type: 'start-layout', hierarchy: response.hierarchy, seed });
           break;
         case 'positions':
-          engine?.send({ type: 'set-positions', positions: response.positions });
+          bridge.send({ type: 'set-positions', positions: response.positions });
           if (response.done) exposeSettledLayout({ seed, quality, positions: response.positions });
-          setStatus(
+          status(
             response.done
               ? { state: 'done', total, ms: performance.now() - start }
               : { state: 'running', iteration: response.iteration, total },
           );
           break;
         case 'error':
-          setStatus({ state: 'failed', message: response.message });
+          status({ state: 'failed', message: response.message });
+          break;
+        default:
           break;
       }
     });
+
     return () => {
-      unsubscribe?.();
+      live = false;
+      unsubscribe();
       client.cancel();
     };
-  }, [topology, engine, gpu, seed, quality, key]);
+  }
 
-  // A GPU layout whose engine went away, such as after losing the device, is over.
-  const current = run.topology === topology && run.key === key && (!gpu || engine !== undefined);
-  const paused = pausedRun !== undefined && pausedRun.topology === topology && pausedRun.key === key;
-  const setPaused = useCallback(
-    (pause: boolean) => {
-      if (!engine || !topology) return;
-      engine.send({ type: 'pause-layout', paused: pause });
-      setPausedRun(pause ? { topology, key } : undefined);
+  return {
+    layoutOptions: DEFAULT_OPTIONS,
+    layoutStatus: { state: 'idle' },
+    layoutPaused: false,
+
+    setLayoutOptions(layoutOptions) {
+      set({ layoutOptions });
+      get().restartLayout();
     },
-    [engine, topology, key],
-  );
-  return { status: current ? run.status : IDLE, paused, setPaused };
+
+    setLayoutPaused(paused) {
+      if (get().layoutStatus.state !== 'running' || !get().gpuLayout) return;
+      ctx.bridge.send({ type: 'pause-layout', paused });
+      set({ layoutPaused: paused });
+    },
+
+    restartLayout() {
+      get().stopLayout();
+      if (get().gpuLayout && !ctx.bridge.attached) return;
+      stopRun = run();
+    },
+
+    stopLayout() {
+      stopRun?.();
+      stopRun = undefined;
+      set({ layoutStatus: { state: 'idle' }, layoutPaused: false });
+    },
+  };
 }

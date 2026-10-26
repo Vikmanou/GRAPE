@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { GraphClient } from '../workers/graph/GraphClient';
-import { WorkerTerminatedError } from '../workers/rpc';
 import type { ParseResult } from '../workers/protocol/graph';
+import { WorkerTerminatedError } from '../workers/rpc';
+import type { Context } from './store';
 
 export interface FileInfo {
   name: string;
@@ -19,64 +18,69 @@ export type CoreStatus =
   | { state: 'ready'; version: string; roundTripMs: number }
   | { state: 'error'; message: string };
 
+export interface FileSlice {
+  core: CoreStatus;
+  load: LoadState;
+  startCore: () => void;
+  /** A newer file replaces one still parsing. */
+  open: (file: File) => void;
+  cancelLoad: () => void;
+}
+
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** The parse worker's lifecycle and the current file's load state. */
-export function useLoader() {
-  const client = useRef<GraphClient>(null);
-  const parsing = useRef(false);
-  const [core, setCore] = useState<CoreStatus>({ state: 'loading' });
-  const [load, setLoad] = useState<LoadState>({ state: 'idle' });
+export function createFileSlice(ctx: Context): FileSlice {
+  const { set, get, services } = ctx;
+  let parsing: File | undefined;
 
-  useEffect(() => {
-    const created = new GraphClient();
-    client.current = created;
-    created.ping().then(
-      (r) => {
-        setCore({ state: 'ready', version: r.coreVersion, roundTripMs: r.roundTripMs });
-      },
-      (error: unknown) => {
-        if (!(error instanceof WorkerTerminatedError)) setCore({ state: 'error', message: message(error) });
-      },
-    );
-    return () => {
-      created.terminate();
-      client.current = null;
-    };
-  }, []);
+  return {
+    core: { state: 'loading' },
+    load: { state: 'idle' },
 
-  const open = useCallback((file: File) => {
-    const parser = client.current;
-    if (!parser) return;
-    // A newer file replaces one still parsing.
-    if (parsing.current) parser.cancel();
-    parsing.current = true;
-    const info = { name: file.name, size: file.size };
-    setLoad({ state: 'parsing', file: info, fraction: 0 });
-    parser
-      .parse(file, (bytesRead, totalBytes) => {
-        setLoad({ state: 'parsing', file: info, fraction: totalBytes > 0 ? bytesRead / totalBytes : 0 });
-      })
-      .then(
-        (result) => {
-          parsing.current = false;
-          setLoad({ state: 'loaded', file: info, result });
+    startCore() {
+      services.graph.ping().then(
+        ({ coreVersion, roundTripMs }) => {
+          set({ core: { state: 'ready', version: coreVersion, roundTripMs } });
         },
         (error: unknown) => {
-          if (error instanceof WorkerTerminatedError) return;
-          parsing.current = false;
-          setLoad({ state: 'failed', file: info, message: message(error) });
+          if (!(error instanceof WorkerTerminatedError)) set({ core: { state: 'error', message: message(error) } });
         },
       );
-  }, []);
+    },
 
-  const cancel = useCallback(() => {
-    client.current?.cancel();
-    parsing.current = false;
-    setLoad({ state: 'idle' });
-  }, []);
+    open(file) {
+      const graph = services.graph;
+      if (parsing) graph.cancel();
+      parsing = file;
+      get().stopLayout();
+      const info = { name: file.name, size: file.size };
+      set({ load: { state: 'parsing', file: info, fraction: 0 } });
+      graph
+        .parse(file, (bytesRead, totalBytes) => {
+          if (parsing !== file) return;
+          set({ load: { state: 'parsing', file: info, fraction: totalBytes > 0 ? bytesRead / totalBytes : 0 } });
+        })
+        .then(
+          (result) => {
+            if (parsing !== file) return;
+            parsing = undefined;
+            set({ load: { state: 'loaded', file: info, result } });
+            get().restartLayout();
+          },
+          (error: unknown) => {
+            if (error instanceof WorkerTerminatedError || parsing !== file) return;
+            parsing = undefined;
+            set({ load: { state: 'failed', file: info, message: message(error) } });
+          },
+        );
+    },
 
-  return { core, load, open, cancel };
+    cancelLoad() {
+      services.graph.cancel();
+      parsing = undefined;
+      set({ load: { state: 'idle' } });
+    },
+  };
 }

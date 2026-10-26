@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { detectBackend, type Backend } from '../engine/core/detect';
-import type { Engine } from '../engine/Engine';
-import { DEFAULT_OPTIONS, useLayout } from '../state/layout';
-import type { LayoutOptions } from '../workers/protocol/layout';
-import { useLoader } from '../state/load';
+import { useApp } from '../state/store';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';
 import { LayoutControls } from './LayoutControls';
@@ -15,10 +11,11 @@ import { Unsupported } from './Unsupported';
 import { Warnings } from './Warnings';
 
 export function App() {
-  const [backend, setBackend] = useState<Backend | 'detecting'>('detecting');
-  const [engineError, setEngineError] = useState<string>();
+  const renderer = useApp((s) => s.renderer);
+  const engineError = useApp((s) => s.engineError);
+  const load = useApp((s) => s.load);
+  const open = useApp((s) => s.open);
   const [showWarnings, setShowWarnings] = useState(false);
-  const { core, load, open, cancel } = useLoader();
   const openFile = useCallback(
     (file: File) => {
       setShowWarnings(false);
@@ -27,47 +24,14 @@ export function App() {
     [open],
   );
   const dragging = useFileDrop(openFile);
-  const [engine, setEngine] = useState<Engine>();
-  const [fps, setFps] = useState<number>();
-  useEffect(
-    () =>
-      engine?.on((event) => {
-        if (event.type === 'frame-stats') setFps(event.fps);
-        if (event.type === 'error') console.error(`GPU error: ${event.message}`);
-      }),
-    [engine],
-  );
-  const resetFps = useCallback(() => {
-    setFps(undefined);
-  }, []);
-  const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_OPTIONS);
-  // `?layout=cpu` draws the CPU reference layout instead, for comparisons.
-  const gpuLayout = backend === 'webgpu' && new URLSearchParams(location.search).get('layout') !== 'cpu';
-  const layout = useLayout(
-    load.state === 'loaded' ? load.result.topology : undefined,
-    engine,
-    gpuLayout,
-    layoutOptions,
-    resetFps,
-  );
-  usePanelInsets(engine, load.state);
+  usePanelInsets(load.state);
 
-  useEffect(() => {
-    let cancelled = false;
-    void detectBackend().then((result) => {
-      if (!cancelled) setBackend(result);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const unsupported = backend === 'none' || engineError !== undefined;
+  const unsupported = renderer === 'none' || engineError !== undefined;
   const file = load.state === 'idle' ? undefined : load.file;
 
   return (
     <main className="app">
-      {backend === 'webgpu' && !engineError && <EngineHost onError={setEngineError} onEngine={setEngine} />}
+      {renderer === 'webgpu' && !engineError && <EngineHost />}
       <TopBar file={file} onOpen={openFile} />
       {unsupported && <Unsupported detail={engineError} />}
       {!unsupported && (load.state === 'idle' || load.state === 'parsing') && <EmptyState dragging={dragging} />}
@@ -79,14 +43,7 @@ export function App() {
       )}
       {load.state === 'loaded' && (
         <Overview result={load.result}>
-          <LayoutControls
-            options={layoutOptions}
-            status={layout.status}
-            paused={layout.paused}
-            canPause={gpuLayout}
-            onOptions={setLayoutOptions}
-            onPause={layout.setPaused}
-          />
+          <LayoutControls />
         </Overview>
       )}
       {load.state === 'loaded' && showWarnings && (
@@ -98,13 +55,6 @@ export function App() {
         />
       )}
       <StatusBar
-        backend={backend}
-        core={core}
-        load={load}
-        layout={layout.status}
-        paused={layout.paused}
-        fps={fps}
-        onCancel={cancel}
         onToggleWarnings={() => {
           setShowWarnings((shown) => !shown);
         }}

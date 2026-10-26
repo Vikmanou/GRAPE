@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
-import type { Engine } from '../engine/Engine';
+import { useApp } from '../state/store';
 
 /** Panels marked `data-inset` are kept clear when fitting; `key` changes when panels come or go. */
-export function usePanelInsets(engine: Engine | undefined, key: string): void {
+export function usePanelInsets(key: string): void {
+  const setInsets = useApp((s) => s.setInsets);
+  const attached = useApp((s) => s.renderer === 'webgpu' && s.engineError === undefined);
   useEffect(() => {
-    const host = engine && document.querySelector<HTMLElement>('.app');
-    if (!engine || !host) return;
+    const host = document.querySelector<HTMLElement>('.app');
+    if (!attached || !host) return;
     const panels = [...host.querySelectorAll<HTMLElement>('[data-inset]')];
     const measure = () => {
       const h = host.getBoundingClientRect();
@@ -27,12 +29,12 @@ export function usePanelInsets(engine: Engine | undefined, key: string): void {
             break;
         }
       }
-      engine.send({ type: 'set-insets', insets });
+      setInsets(insets);
     };
     const observer = new ResizeObserver(measure);
     for (const element of [host, ...panels]) observer.observe(element);
     return () => {
       observer.disconnect();
     };
-  }, [engine, key]);
+  }, [setInsets, attached, key]);
 }

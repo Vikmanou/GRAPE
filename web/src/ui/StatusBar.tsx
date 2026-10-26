@@ -1,20 +1,14 @@
-import type { Backend } from '../engine/core/detect';
+import type { BackendKind } from '../engine/core/detect';
 import type { LayoutStatus } from '../state/layout';
-import type { CoreStatus, LoadState } from '../state/load';
+import type { CoreStatus } from '../state/load';
+import { useApp } from '../state/store';
 import { formatCount, formatPercent, formatSeconds } from './format';
 
 interface Props {
-  backend: Backend | 'detecting';
-  core: CoreStatus;
-  load: LoadState;
-  layout: LayoutStatus;
-  paused: boolean;
-  fps: number | undefined;
-  onCancel: () => void;
   onToggleWarnings: () => void;
 }
 
-const rendererLabel: Record<Props['backend'], string> = {
+const rendererLabel: Record<BackendKind | 'detecting', string> = {
   detecting: 'Detecting GPU…',
   webgpu: 'WebGPU',
   webgl2: 'WebGL2 detected; WebGL2 rendering arrives in milestone 8',
@@ -53,7 +47,14 @@ function coreLabel(core: CoreStatus): string {
   }
 }
 
-export function StatusBar({ backend, core, load, layout, paused, fps, onCancel, onToggleWarnings }: Props) {
+export function StatusBar({ onToggleWarnings }: Props) {
+  const backend = useApp((s) => s.renderer);
+  const core = useApp((s) => s.core);
+  const load = useApp((s) => s.load);
+  const layout = useApp((s) => s.layoutStatus);
+  const paused = useApp((s) => s.layoutPaused);
+  const fps = useApp((s) => s.fps);
+  const onCancel = useApp((s) => s.cancelLoad);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
   return (

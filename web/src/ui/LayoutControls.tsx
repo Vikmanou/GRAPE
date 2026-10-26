@@ -1,15 +1,5 @@
-import type { LayoutStatus } from '../state/layout';
-import type { LayoutOptions, Quality } from '../workers/protocol/layout';
-
-interface Props {
-  options: LayoutOptions;
-  status: LayoutStatus;
-  paused: boolean;
-  /** Only the GPU layout can pause. */
-  canPause: boolean;
-  onOptions: (options: LayoutOptions) => void;
-  onPause: (paused: boolean) => void;
-}
+import { useApp } from '../state/store';
+import type { Quality } from '../workers/protocol/layout';
 
 const QUALITIES: [Quality, string][] = [
   ['fast', 'Fast'],
@@ -23,8 +13,13 @@ function randomSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
 }
 
-export function LayoutControls({ options, status, paused, canPause, onOptions, onPause }: Props) {
-  const running = status.state === 'running';
+export function LayoutControls() {
+  const options = useApp((s) => s.layoutOptions);
+  const running = useApp((s) => s.layoutStatus.state === 'running');
+  const paused = useApp((s) => s.layoutPaused);
+  const canPause = useApp((s) => s.gpuLayout);
+  const onOptions = useApp((s) => s.setLayoutOptions);
+  const onPause = useApp((s) => s.setLayoutPaused);
   return (
     <section className="layout-controls" aria-label="Layout">
       <h3>Layout</h3>

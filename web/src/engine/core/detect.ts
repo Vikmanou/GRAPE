@@ -1,5 +1,5 @@
 /** Which GPU backend this browser can run. */
-export type Backend = 'webgpu' | 'webgl2' | 'none';
+export type BackendKind = 'webgpu' | 'webgl2' | 'none';
 
 /** Browser capabilities `detectBackend` depends on, injectable for tests. */
 export interface DetectEnv {
@@ -42,7 +42,7 @@ export async function requestAdapter(gpu: GPU | undefined): Promise<GPUAdapter |
  * probe adapter is discarded: an adapter can create only one device, so the
  * engine requests its own.
  */
-export async function detectBackend(env: DetectEnv = browserEnv()): Promise<Backend> {
+export async function detectBackend(env: DetectEnv = browserEnv()): Promise<BackendKind> {
   if (await requestAdapter(env.gpu)) return 'webgpu';
   return env.hasWebGL2() ? 'webgl2' : 'none';
 }
