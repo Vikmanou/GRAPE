@@ -6,11 +6,11 @@ import type { Kernels } from './kernels';
 
 /**
  * GPU time a batch aims for, smaller while the user moves the view. Longer
- * than a frame, so the GPU stays busy between frames with two batches queued.
+ * than a frame, so the GPU stays busy between frames with batches queued.
  */
-const BATCH_MS = 20;
+const BATCH_MS = 30;
 const INTERACTIVE_BATCH_MS = 4;
-const MAX_IN_FLIGHT = 2;
+const MAX_IN_FLIGHT = 3;
 /** Encoding an iteration costs the main thread about 50 µs. */
 const MAX_BATCH = 128;
 const MEASURE_INTERVAL_MS = 250;
@@ -31,7 +31,7 @@ export interface RunnerEvents {
 
 /**
  * Drives a `GpuLayout` from the frame loop: a batch of iterations per frame,
- * with at most two in flight so the queue never backs up. Each batch is sized
+ * with at most three in flight so the queue never backs up. Each batch is sized
  * from the GPU time of the last one: timestamps where the adapter has them,
  * otherwise the time until the queue reports it done, which runs long.
  */

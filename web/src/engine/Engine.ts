@@ -50,11 +50,11 @@ const FIT_MARGIN = 24;
 const REBASE_PIXELS = 1e5;
 /**
  * While the layout runs, the graph is redrawn at most this often, and less
- * often when a draw is slow, so drawing takes at most a sixth of the GPU.
+ * often when a draw is slow, so drawing takes at most a tenth of the GPU.
  * Moving the view still redraws every frame.
  */
 const LAYOUT_REDRAW_MS = 100;
-const LAYOUT_DRAW_SHARE = 6;
+const LAYOUT_DRAW_SHARE = 10;
 /** The view counts as moving for this long after the last pan or zoom. */
 const INTERACTION_MS = 250;
 
