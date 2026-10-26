@@ -3,27 +3,6 @@
 Running log of non-obvious design decisions. Newest last. Each entry: date,
 decision, reason, alternatives considered.
 
-## 2026-10-23: Project name GRAPE
-
-- **Decision**: name the project GRAPE (GPU-Rendered Assembly Path Explorer).
-  Crate names stay `gfa-core`, `gfa-wasm`, `gfa-gen` as in the spec.
-- **Reason**: chosen by the owner; a bunch of grapes looks like a graph.
-- **Alternatives**: Gauze (spec working name), Splint, Tangle, Unitig, Ravel.
-
-## 2026-10-23: MIT license
-
-- **Decision**: MIT only.
-- **Reason**: owner's choice; short and permissive.
-- **Alternatives**: Apache-2.0, MIT OR Apache-2.0 dual license.
-
-## 2026-10-23: Rust, not Bend2, for the core
-
-- **Decision**: keep the spec's Rust to WASM core.
-- **Reason**: Bend2's JavaScript backend is sequential and much slower than
-  WASM, it has no supported browser or WebGPU target, no `U64`, and strings are
-  linked lists, which rules out the parser throughput target.
-- **Alternatives**: Bend2 for pure graph algorithms via its ES module output.
-
 ## 2026-10-23: cargo + wasm-bindgen-cli instead of wasm-pack
 
 - **Decision**: build with `cargo build --target wasm32-unknown-unknown` then
@@ -124,15 +103,6 @@ decision, reason, alternatives considered.
 - **Reason**: names are file content of any length (SPAdes names run to 30+
   bytes), so no fixed budget can include them.
 
-## 2026-10-24: Link overlaps keep one side
-
-- **Decision**: a link is stored once in canonical form with the overlap
-  length on its From side. CIGARs with indels or clipping set a flag and get
-  one summary warning.
-- **Reason**: the GFA 1 spec makes From the reference and To the query, so
-  the two sides differ only for non-`M` CIGARs, which assemblers rarely
-  write. Exact trimming matters first for chain merging.
-
 ## 2026-10-24: Undefined depth is NaN, not 1
 
 - **Decision**: segments without DP/KC/RC/FC tags have depth NaN and are
@@ -173,7 +143,7 @@ decision, reason, alternatives considered.
 - **Alternatives**: commit the permissively licensed small files; record a
   hash and expected counts per file.
 
-## 2026-10-24: Links keep both overlap sides (supersedes "Link overlaps keep one side")
+## 2026-10-24: Links keep both overlap sides
 
 - **Decision**: each link stores the overlap on its From and its To segment.
   When the mirror of a stored link repeats it with a different simple `nM`,
