@@ -42,6 +42,11 @@ npm run bench:parse    # time parsing a synthetic 200k-segment graph
 npm run bench:layout   # GPU layout timings and quality against the CPU reference
 ```
 
+Native tools for the Rust core, run with
+`cargo run -p gfa-core --release --example <name> -- <file>`: `parse_file`
+times parsing, `layout_file` times the CPU reference layout (`--svg out.svg`
+draws it) and `compare_layout` measures a GPU layout against it.
+
 Design decisions are recorded in [docs/decisions.md](docs/decisions.md).
 
 ## About AI
