@@ -21,12 +21,20 @@ pub struct Run {
     pub byte: u8,
 }
 
+/// Bases written in lowercase (soft-masked), so decoding restores the file's case.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Span {
+    pub start: u64,
+    pub len: u32,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Packed {
     /// First base in the low bits; A=0 C=1 G=2 T=3.
     pub bits: Vec<u8>,
     pub bases: u64,
     pub runs: Vec<Run>,
+    pub lower: Vec<Span>,
     pub dropped: bool,
     budget_bytes: u64,
 }
@@ -53,6 +61,7 @@ impl Packed {
             self.dropped = true;
             self.bits = Vec::new();
             self.runs = Vec::new();
+            self.lower = Vec::new();
             return false;
         }
         self.bits.resize(bases.div_ceil(4) as usize, 0);
@@ -62,6 +71,9 @@ impl Packed {
                 self.add_run(pos, b);
             } else {
                 self.bits[(pos / 4) as usize] |= code << ((pos % 4) * 2);
+                if b.is_ascii_lowercase() {
+                    self.add_lower(pos);
+                }
             }
         }
         self.bases = bases;
@@ -84,6 +96,17 @@ impl Packed {
         });
     }
 
+    fn add_lower(&mut self, pos: u64) {
+        if let Some(last) = self.lower.last_mut()
+            && last.start + u64::from(last.len) == pos
+            && last.len < u32::MAX
+        {
+            last.len += 1;
+            return;
+        }
+        self.lower.push(Span { start: pos, len: 1 });
+    }
+
     pub fn decode(&self, start: u64, len: u64) -> Vec<u8> {
         const BASES: [u8; 4] = *b"ACGT";
         let end = start + len;
@@ -103,11 +126,24 @@ impl Packed {
                 out[(p - start) as usize] = run.byte;
             }
         }
+        let first = self
+            .lower
+            .partition_point(|r| r.start + u64::from(r.len) <= start);
+        for span in &self.lower[first..] {
+            if span.start >= end {
+                break;
+            }
+            let from = span.start.max(start);
+            let to = (span.start + u64::from(span.len)).min(end);
+            out[(from - start) as usize..(to - start) as usize].make_ascii_lowercase();
+        }
         out
     }
 
     pub fn heap_bytes(&self) -> usize {
-        self.bits.capacity() + self.runs.capacity() * std::mem::size_of::<Run>()
+        self.bits.capacity()
+            + self.runs.capacity() * std::mem::size_of::<Run>()
+            + self.lower.capacity() * std::mem::size_of::<Span>()
     }
 }
 
@@ -168,10 +204,11 @@ mod tests {
         let mut p = Packed::new(DEFAULT_BUDGET);
         assert!(p.append(b"ACGTNNac"));
         assert!(p.append(b"gtRN"));
-        assert_eq!(p.decode(0, 8), b"ACGTNNAC");
-        assert_eq!(p.decode(8, 4), b"GTRN");
-        assert_eq!(p.decode(5, 3), b"NAC");
+        assert_eq!(p.decode(0, 8), b"ACGTNNac");
+        assert_eq!(p.decode(8, 4), b"gtRN");
+        assert_eq!(p.decode(5, 3), b"Nac");
         assert_eq!(p.runs.len(), 3);
+        assert_eq!(p.lower, [Span { start: 6, len: 4 }]);
     }
 
     #[test]

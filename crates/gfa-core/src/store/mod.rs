@@ -1,3 +1,4 @@
+pub(crate) mod bases;
 pub mod csr;
 pub(crate) mod graph;
 pub(crate) mod links;

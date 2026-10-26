@@ -98,6 +98,7 @@ impl Graph {
         if let Some(p) = &mut self.packed {
             p.bits.shrink_to_fit();
             p.runs.shrink_to_fit();
+            p.lower.shrink_to_fit();
         }
     }
 
