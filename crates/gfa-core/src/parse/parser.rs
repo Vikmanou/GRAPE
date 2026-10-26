@@ -1,12 +1,12 @@
 //! Push-based streaming parser. Lines split across chunks are carried over,
 //! so the result never depends on where chunks break.
 
-use crate::builder::Builder;
-use crate::fastg::Fastg;
-use crate::gfa;
-use crate::graph::{Format, Graph};
-use crate::seq::SeqMode;
-use crate::warnings::FatalError;
+use crate::parse::builder::Builder;
+use crate::parse::fastg::Fastg;
+use crate::parse::gfa;
+use crate::parse::warnings::FatalError;
+use crate::store::graph::{Format, Graph};
+use crate::store::seq::SeqMode;
 
 /// A NUL byte this far into the file means binary input.
 const SNIFF_BYTES: u64 = 64 * 1024;

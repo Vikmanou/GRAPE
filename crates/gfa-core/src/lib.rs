@@ -2,32 +2,21 @@
 //! stats and sequence search. Pure Rust with no browser dependencies, so
 //! everything here is tested natively.
 
-mod builder;
-mod components;
-pub mod csr;
-mod fastg;
-mod fields;
-mod gfa;
-mod graph;
+mod analysis;
 pub mod layout;
-mod names;
-mod parser;
-mod paths;
-mod seq;
-mod stats;
+mod parse;
 mod store;
-mod warnings;
 
-pub use builder::RecordCounts;
-pub use components::Components;
-pub use graph::{Format, Graph, MemoryReport};
-pub use names::{Arena, Names};
-pub use parser::{ParseOptions, Parser, parse};
-pub use paths::{PathKind, Paths, REVERSE};
-pub use seq::{DEFAULT_BUDGET, Packed, Run, SeqMode};
-pub use stats::Stats;
-pub use store::{Links, NO_SEQ, Segments, link_bits, seg_flags};
-pub use warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warnings};
+pub use analysis::components::Components;
+pub use analysis::stats::Stats;
+pub use parse::builder::RecordCounts;
+pub use parse::parser::{ParseOptions, Parser, parse};
+pub use parse::warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warnings};
+pub use store::graph::{Format, Graph, MemoryReport};
+pub use store::names::{Arena, Names};
+pub use store::paths::{PathKind, Paths, REVERSE};
+pub use store::seq::{DEFAULT_BUDGET, Packed, Run, SeqMode};
+pub use store::{Links, NO_SEQ, Segments, csr, link_bits, seg_flags};
 
 /// Version of this crate, reported to the UI so a stale WASM build is visible.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

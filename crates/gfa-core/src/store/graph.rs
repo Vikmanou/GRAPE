@@ -1,13 +1,13 @@
-use crate::builder::{Builder, RecordCounts};
-use crate::components::{self, Components};
-use crate::csr::Adjacency;
+use crate::analysis::components::{self, Components};
+use crate::analysis::stats::{self, Stats};
 use crate::layout::Topology;
-use crate::names::Names;
-use crate::paths::Paths;
-use crate::seq::{Packed, SeqMode};
-use crate::stats::{self, Stats};
+use crate::parse::builder::{Builder, RecordCounts};
+use crate::parse::warnings::{FatalError, Warnings};
+use crate::store::csr::Adjacency;
+use crate::store::names::Names;
+use crate::store::paths::Paths;
+use crate::store::seq::{Packed, SeqMode};
 use crate::store::{Links, NO_SEQ, Segments};
-use crate::warnings::{FatalError, Warnings};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {

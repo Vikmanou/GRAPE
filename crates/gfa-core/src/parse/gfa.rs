@@ -2,12 +2,12 @@
 //! Depth tags follow Bandage's `buildDeBruijnGraphFromGfa`
 //! (<https://github.com/rrwick/Bandage/blob/main/graph/assemblygraph.cpp>).
 
-use crate::builder::Builder;
-use crate::fields::{self, Overlap};
-use crate::paths::{PathKind, REVERSE, walk_steps};
-use crate::seq::BaseCount;
+use crate::parse::builder::Builder;
+use crate::parse::fields::{self, Overlap};
+use crate::parse::warnings::{FatalError, WarningKind, show};
+use crate::store::paths::{PathKind, REVERSE, walk_steps};
 use crate::store::seg_flags;
-use crate::warnings::{FatalError, WarningKind, show};
+use crate::store::seq::BaseCount;
 
 /// `offset` is the file offset of the line's first byte.
 pub(crate) fn line(b: &mut Builder, line: &[u8], offset: u64, no: u64) {

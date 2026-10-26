@@ -1,4 +1,4 @@
-use crate::names::{Arena, Full};
+use crate::store::names::{Arena, Full};
 
 /// Step bit for the reverse orientation.
 pub const REVERSE: u32 = 1 << 31;

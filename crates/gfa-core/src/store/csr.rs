@@ -81,7 +81,7 @@ impl Adjacency {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fields::Overlap;
+    use crate::parse::fields::Overlap;
 
     #[test]
     fn ends_follow_orientation() {

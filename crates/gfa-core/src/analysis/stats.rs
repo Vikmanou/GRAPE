@@ -2,8 +2,8 @@
 //! `getDeadEndCount`
 //! (<https://github.com/rrwick/Bandage/blob/main/graph/assemblygraph.cpp>).
 
-use crate::components::Components;
-use crate::csr::{Adjacency, end};
+use crate::analysis::components::Components;
+use crate::store::csr::{Adjacency, end};
 use crate::store::{Segments, seg_flags};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]

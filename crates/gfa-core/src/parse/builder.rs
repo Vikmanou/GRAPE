@@ -1,9 +1,9 @@
-use crate::fields::Overlap;
-use crate::names::{MAX_ID, Names};
-use crate::paths::Paths;
-use crate::seq::{Packed, SeqMode};
+use crate::parse::fields::Overlap;
+use crate::parse::warnings::{FatalError, WarningKind, Warnings, show};
+use crate::store::names::{MAX_ID, Names};
+use crate::store::paths::Paths;
+use crate::store::seq::{Packed, SeqMode};
 use crate::store::{LinkInsert, Links, Segments, seg_flags};
-use crate::warnings::{FatalError, WarningKind, Warnings, show};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct RecordCounts {

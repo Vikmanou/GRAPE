@@ -11,12 +11,12 @@
 //! segment name is the number alone and depth is the `cov` field. FASTG
 //! states no overlaps, so links get an unknown overlap.
 
-use crate::builder::Builder;
-use crate::fields::{self, Overlap};
-use crate::gfa::{clamp_length, sequences_dropped};
-use crate::seq::BaseCount;
+use crate::parse::builder::Builder;
+use crate::parse::fields::{self, Overlap};
+use crate::parse::gfa::{clamp_length, sequences_dropped};
+use crate::parse::warnings::{WarningKind, show};
 use crate::store::seg_flags;
-use crate::warnings::{WarningKind, show};
+use crate::store::seq::BaseCount;
 
 #[derive(Debug, Default)]
 pub(crate) struct Fastg {

@@ -1,0 +1,6 @@
+pub(crate) mod builder;
+pub(crate) mod fastg;
+pub(crate) mod fields;
+pub(crate) mod gfa;
+pub(crate) mod parser;
+pub(crate) mod warnings;
