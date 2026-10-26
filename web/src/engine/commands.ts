@@ -2,7 +2,7 @@ import type { Geometry, Hierarchy } from '../workers/protocol/layout';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { Theme } from './style/palette';
-import type { LayoutProgress } from './webgpu/layout/runner';
+import type { LayoutProgress } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }

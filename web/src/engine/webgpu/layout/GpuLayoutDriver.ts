@@ -1,4 +1,5 @@
 import type { Hierarchy } from '../../../workers/protocol/layout';
+import type { LayoutDriver, LayoutProgress, Origin } from '../../core/backend';
 import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
@@ -15,16 +16,7 @@ const MAX_IN_FLIGHT = 3;
 const MAX_BATCH = 128;
 const MEASURE_INTERVAL_MS = 250;
 
-export interface LayoutProgress {
-  iteration: number;
-  total: number;
-  level: number;
-  levels: number;
-  energy: number;
-  done: boolean;
-}
-
-export interface RunnerEvents {
+export interface DriverEvents {
   /** Unpacked boxes to pack, with the progress at the time they were measured. */
   measured(boxes: Float32Array<ArrayBuffer>, progress: LayoutProgress): void;
 }
@@ -35,7 +27,7 @@ export interface RunnerEvents {
  * from the GPU time of the last one: timestamps where the adapter has them,
  * otherwise the time until the queue reports it done, which runs long.
  */
-export class LayoutRunner {
+export class GpuLayoutDriver implements LayoutDriver {
   private layout: GpuLayout | undefined;
   private paused = false;
   private inFlight = 0;
@@ -54,14 +46,15 @@ export class LayoutRunner {
   constructor(
     private readonly device: GPUDevice,
     private readonly kernels: Kernels,
-    private readonly events: RunnerEvents,
+    private readonly events: DriverEvents,
+    /** Where presented positions go: the renderer's position buffer. */
+    private readonly target: () => GPUBuffer | undefined,
   ) {}
 
   get active(): boolean {
     return this.layout !== undefined;
   }
 
-  /** Whether the frame loop should keep going for the layout's sake. */
   get busy(): boolean {
     if (!this.layout) return false;
     return this.measuring || this.inFlight > 0 || (!this.reportedDone && !this.paused);
@@ -89,13 +82,11 @@ export class LayoutRunner {
     this.paused = paused;
   }
 
-  /** `dx, dy` per component, from packing the boxes last measured. */
   setOffsets(offsets: Float32Array): void {
     this.offsets = offsets;
     this.moved = true;
   }
 
-  /** The packed graph's extent, once a pack has arrived. */
   bounds(): Bounds | undefined {
     const { offsets, boxes } = this;
     if (!offsets || !boxes || offsets.length * 2 !== boxes.length) return undefined;
@@ -110,7 +101,6 @@ export class LayoutRunner {
     return b;
   }
 
-  /** Runs this frame's batch. Returns whether positions moved since the last call. */
   tick(now: number, interactive: boolean): boolean {
     const layout = this.layout;
     if (!layout) return false;
@@ -124,11 +114,11 @@ export class LayoutRunner {
     return moved;
   }
 
-  present(target: GPUBuffer, origin: { x: number; y: number }): void {
-    this.layout?.present(target, this.shift(this.layout, origin));
+  present(origin: Origin): void {
+    const target = this.target();
+    if (target) this.layout?.present(target, this.shift(this.layout, origin));
   }
 
-  /** `x, y` per point as packed, or undefined when no layout runs. */
   async readPositions(): Promise<Float32Array<ArrayBuffer> | undefined> {
     const layout = this.layout;
     return layout?.readPositions(this.shift(layout, { x: 0, y: 0 }));
@@ -138,7 +128,7 @@ export class LayoutRunner {
     this.stop();
   }
 
-  private shift(layout: GpuLayout, origin: { x: number; y: number }): Float32Array<ArrayBuffer> {
+  private shift(layout: GpuLayout, origin: Origin): Float32Array<ArrayBuffer> {
     const offsets = this.offsets;
     const shift = new Float32Array(layout.components * 2);
     for (let c = 0; c < shift.length; c += 2) {
