@@ -2,19 +2,15 @@
 // `npm run check:headed` and skips elsewhere.
 
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
 
-const PANGENOME = fileURLToPath(new URL('../../../samples/brca2-cactus.gfa', import.meta.url));
+const PANGENOME = repo('samples/brca2-cactus.gfa');
 
 async function open(page: Page): Promise<void> {
-  page.on('pageerror', (error) => {
-    throw error;
-  });
+  failOnPageError(page);
   await page.goto('/');
-  await expect(page.getByTestId('status-renderer')).not.toHaveAttribute('data-renderer', 'detecting');
-  const renderer = await page.getByTestId('status-renderer').getAttribute('data-renderer');
-  test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
+  await skipWithoutWebGpu(page);
   test.skip(!existsSync(PANGENOME), 'run `npm run samples` first');
   await page.getByTestId('open-input').setInputFiles(PANGENOME);
 }

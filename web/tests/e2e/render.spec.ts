@@ -2,10 +2,9 @@
 // under `npm run check:headed` and skip elsewhere.
 
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
 
-const repo = (path: string) => fileURLToPath(new URL(`../../../${path}`, import.meta.url));
 const BACTERIAL = repo('samples/bacterial-spades.gfa');
 
 async function start(page: Page): Promise<string[]> {
@@ -13,16 +12,11 @@ async function start(page: Page): Promise<string[]> {
   page.on('console', (message) => {
     if (message.text().startsWith('GPU error')) gpuErrors.push(message.text());
   });
-  page.on('pageerror', (error) => {
-    throw error;
-  });
+  failOnPageError(page);
   await page.setViewportSize({ width: 1000, height: 700 });
   await page.goto('/');
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  // Detection can finish after the core is ready, especially on a busy GPU.
-  await expect(page.getByTestId('status-renderer')).not.toHaveAttribute('data-renderer', 'detecting');
-  const renderer = await page.getByTestId('status-renderer').getAttribute('data-renderer');
-  test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
+  await skipWithoutWebGpu(page);
   return gpuErrors;
 }
 

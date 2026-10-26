@@ -18,6 +18,11 @@ export function cellKey(component: number, x: number, y: number): number {
   return (mix32(Math.imul(x, 2654435761) + Math.imul(y, 2246822519) + Math.imul(component, 3266489917)) | 1) >>> 0;
 }
 
+/** The bits of `v` as an f32, as the kernels read packed floats. */
+export function floatBits(v: number): number {
+  return new Uint32Array(new Float32Array([v]).buffer)[0] ?? 0;
+}
+
 /** SplitMix32-style generator, so checks are repeatable. */
 export function random(seed: number): () => number {
   let state = seed >>> 0;

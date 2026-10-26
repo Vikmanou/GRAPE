@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { failOnPageError, repo } from './helpers';
 
-const testdata = (name: string) => fileURLToPath(new URL(`../../../testdata/${name}`, import.meta.url));
+const testdata = (name: string) => repo(`testdata/${name}`);
 
 async function open(page: Page, name: string): Promise<void> {
   await page.goto('/');
@@ -11,9 +11,7 @@ async function open(page: Page, name: string): Promise<void> {
 }
 
 test.beforeEach(({ page }) => {
-  page.on('pageerror', (error) => {
-    throw error;
-  });
+  failOnPageError(page);
 });
 
 test('shows stats for a plain GFA file', async ({ page }) => {

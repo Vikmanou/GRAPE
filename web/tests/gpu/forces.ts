@@ -3,7 +3,7 @@
 import { Buffers, Passes, readBuffer } from '../../src/engine/layout/gpu';
 import type { Kernels } from '../../src/engine/layout/kernels';
 import { COARSE_PER_CELL, FAR_REACH, GpuLevel, type LevelInput } from '../../src/engine/layout/level';
-import { assert, random } from './reference';
+import { assert, floatBits, random } from './reference';
 
 const COLD = 0.4;
 const FIXED = 1024;
@@ -43,20 +43,15 @@ function makeGraph(): Graph {
     positions[i * 2 + 1] = next() * 400;
   }
   const nodes = new Uint32Array(n * 4);
-  const bits = new Float32Array(1);
-  const asBits = (v: number) => {
-    bits[0] = v;
-    return new Uint32Array(bits.buffer)[0] ?? 0;
-  };
   const edges: number[] = [];
   const step: number[] = [];
   let rests = 0;
   for (let i = 0; i < n; i++) {
     const list = adjacency[i] ?? [];
     step.push(Math.fround(1 / (1 + list.length)));
-    nodes.set([component[i] ?? 0, asBits(step[i] ?? 0), edges.length / 3, edges.length / 3 + list.length], i * 4);
+    nodes.set([component[i] ?? 0, floatBits(step[i] ?? 0), edges.length / 3, edges.length / 3 + list.length], i * 4);
     for (const { to, rest } of list) {
-      edges.push(to, asBits(rest), asBits(1));
+      edges.push(to, floatBits(rest), floatBits(1));
       rests += rest;
     }
   }

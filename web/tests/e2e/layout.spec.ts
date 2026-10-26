@@ -1,12 +1,10 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { failOnPageError, repo } from './helpers';
 
-const testdata = (name: string) => fileURLToPath(new URL(`../../../testdata/${name}`, import.meta.url));
+const testdata = (name: string) => repo(`testdata/${name}`);
 
 test.beforeEach(({ page }) => {
-  page.on('pageerror', (error) => {
-    throw error;
-  });
+  failOnPageError(page);
 });
 
 test('lays out each test graph in the layout worker', async ({ page }) => {

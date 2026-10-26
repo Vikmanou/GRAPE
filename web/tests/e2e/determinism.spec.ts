@@ -3,10 +3,9 @@
 // `npm run check:headed` and skips elsewhere.
 
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
 
-const repo = (path: string) => fileURLToPath(new URL(`../../../${path}`, import.meta.url));
 const GRAPHS = ['testdata/tangle.gfa', 'testdata/two_components.gfa', 'samples/bacterial-spades.gfa'];
 
 /** Waits for the next settled layout and returns an FNV-1a hash of its positions' bits. */
@@ -33,13 +32,9 @@ async function setSeed(page: Page, seed: number): Promise<void> {
 for (const graph of GRAPHS) {
   test(`same seed gives the same layout: ${graph}`, async ({ page }) => {
     test.skip(!existsSync(repo(graph)), 'run `npm run samples` first');
-    page.on('pageerror', (error) => {
-      throw error;
-    });
+    failOnPageError(page);
     await page.goto('/');
-    await expect(page.getByTestId('status-renderer')).not.toHaveAttribute('data-renderer', 'detecting');
-    const renderer = await page.getByTestId('status-renderer').getAttribute('data-renderer');
-    test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
+    await skipWithoutWebGpu(page);
 
     await page.getByTestId('open-input').setInputFiles(repo(graph));
     const first = await settledHash(page, 0);

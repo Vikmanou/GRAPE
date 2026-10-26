@@ -4,7 +4,7 @@
 import { Buffers, Passes } from '../../src/engine/layout/gpu';
 import type { Kernels } from '../../src/engine/layout/kernels';
 import { GpuLevel } from '../../src/engine/layout/level';
-import { random } from './reference';
+import { floatBits, random } from './reference';
 
 const ITERATIONS = 10;
 /** Timed passes per iteration, an upper bound for the query set. */
@@ -14,7 +14,6 @@ export async function profile(device: GPUDevice, kernels: Kernels, count: number
   const side = Math.ceil(Math.sqrt(count));
   const rest = 10;
   const next = random(5);
-  const asBits = (v: number) => new Uint32Array(new Float32Array([v]).buffer)[0] ?? 0;
   const positions = new Float32Array(count * 2);
   const nodes = new Uint32Array(count * 4);
   const edges: number[] = [];
@@ -26,13 +25,13 @@ export async function profile(device: GPUDevice, kernels: Kernels, count: number
     nodes.set(
       [
         Math.floor((y / side) * 10),
-        asBits(1 / (1 + neighbours.length)),
+        floatBits(1 / (1 + neighbours.length)),
         edges.length / 3,
         edges.length / 3 + neighbours.length,
       ],
       i * 4,
     );
-    for (const j of neighbours) edges.push(j, asBits(rest), asBits(1));
+    for (const j of neighbours) edges.push(j, floatBits(rest), floatBits(1));
   }
   const shared = new Buffers(device);
   const state = shared.storage('state', 4);
