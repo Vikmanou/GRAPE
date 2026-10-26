@@ -1,4 +1,4 @@
-import type { Geometry, Hierarchy } from '../workers/protocol';
+import type { Geometry, Hierarchy } from '../workers/protocol/layout';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { Theme } from './style/palette';

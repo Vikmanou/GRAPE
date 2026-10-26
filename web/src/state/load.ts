@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ParseClient, WorkerTerminatedError } from '../workers/ParseClient';
-import type { ParseResult } from '../workers/protocol';
+import { GraphClient } from '../workers/graph/GraphClient';
+import { WorkerTerminatedError } from '../workers/rpc';
+import type { ParseResult } from '../workers/protocol/graph';
 
 export interface FileInfo {
   name: string;
@@ -24,13 +25,13 @@ function message(error: unknown): string {
 
 /** The parse worker's lifecycle and the current file's load state. */
 export function useLoader() {
-  const client = useRef<ParseClient>(null);
+  const client = useRef<GraphClient>(null);
   const parsing = useRef(false);
   const [core, setCore] = useState<CoreStatus>({ state: 'loading' });
   const [load, setLoad] = useState<LoadState>({ state: 'idle' });
 
   useEffect(() => {
-    const created = new ParseClient();
+    const created = new GraphClient();
     client.current = created;
     created.ping().then(
       (r) => {

@@ -1,4 +1,4 @@
-import type { Quality } from './protocol';
+import type { Quality } from '../protocol/layout';
 
 // Balanced is the CPU reference's budget (gfa-core `LayoutOptions::default`).
 const COARSEST_ITERATIONS = 500;

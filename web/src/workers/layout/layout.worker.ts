@@ -1,6 +1,7 @@
-import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../wasm/pkg/gfa_wasm';
-import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
-import type { Hierarchy, LayoutOptions, LayoutRequest, LayoutResponse, Topology } from './protocol';
+import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../../wasm/pkg/gfa_wasm';
+import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
+import type { Topology } from '../protocol/graph';
+import type { Hierarchy, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
 import { iterationsFor } from './quality';
 
 /** How often positions are posted while the CPU layout runs. */

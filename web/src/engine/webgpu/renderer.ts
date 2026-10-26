@@ -1,4 +1,4 @@
-import type { Geometry } from '../../workers/protocol';
+import type { Geometry } from '../../workers/protocol/layout';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';

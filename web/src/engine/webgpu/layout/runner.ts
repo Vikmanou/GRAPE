@@ -1,4 +1,4 @@
-import type { Hierarchy } from '../../../workers/protocol';
+import type { Hierarchy } from '../../../workers/protocol/layout';
 import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';

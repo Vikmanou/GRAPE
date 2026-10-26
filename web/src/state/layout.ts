@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Engine } from '../engine/Engine';
-import { LayoutClient } from '../workers/LayoutClient';
-import type { LayoutOptions, Topology } from '../workers/protocol';
+import { LayoutClient } from '../workers/layout/LayoutClient';
+import type { Topology } from '../workers/protocol/graph';
+import type { LayoutOptions } from '../workers/protocol/layout';
 import { exposeSettledLayout } from './testHooks';
 
 export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
@@ -10,6 +11,8 @@ export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
 const USABLE_LEVEL = 3;
 
 const IDLE = { state: 'idle' } as const;
+
+const ignore = () => undefined;
 
 export type LayoutStatus =
   | { state: 'idle' }
@@ -71,7 +74,14 @@ export function useLayout(
       const p = event.progress;
       measuredLevel = p.level;
       finished = p.done;
-      client.pack(event.boxes);
+      client.pack(event.boxes).then((offsets) => {
+        engine.send({ type: 'set-offsets', offsets });
+        if (usableMs === undefined && measuredLevel <= USABLE_LEVEL) usableMs = performance.now() - start;
+        if (finished) {
+          setStatus({ state: 'done', total, ms: performance.now() - start, usableMs });
+          if (import.meta.env.DEV) engine.send({ type: 'read-positions' });
+        }
+      }, ignore);
       if (!p.done) {
         setStatus({
           state: 'running',
@@ -93,14 +103,6 @@ export function useLayout(
           break;
         case 'hierarchy':
           engine?.send({ type: 'start-layout', hierarchy: response.hierarchy, seed });
-          break;
-        case 'packed':
-          engine?.send({ type: 'set-offsets', offsets: response.offsets });
-          if (usableMs === undefined && measuredLevel <= USABLE_LEVEL) usableMs = performance.now() - start;
-          if (finished) {
-            setStatus({ state: 'done', total, ms: performance.now() - start, usableMs });
-            if (import.meta.env.DEV) engine?.send({ type: 'read-positions' });
-          }
           break;
         case 'positions':
           engine?.send({ type: 'set-positions', positions: response.positions });

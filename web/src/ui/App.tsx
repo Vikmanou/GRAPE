@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, type Backend } from '../engine/core/detect';
 import type { Engine } from '../engine/Engine';
 import { DEFAULT_OPTIONS, useLayout } from '../state/layout';
-import type { LayoutOptions } from '../workers/protocol';
+import type { LayoutOptions } from '../workers/protocol/layout';
 import { useLoader } from '../state/load';
 import { EmptyState } from './EmptyState';
 import { EngineHost } from './EngineHost';

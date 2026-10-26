@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ParseResult } from '../workers/protocol';
+import type { ParseResult } from '../workers/protocol/graph';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from './format';
 
 const TOP_COMPONENTS = 10;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { iterationsFor } from '../../src/workers/quality';
+import { iterationsFor } from '../../src/workers/layout/quality';
 
 describe('iterationsFor', () => {
   it('scales the reference budget', () => {

@@ -1,8 +1,8 @@
 // Owns the WASM module, so parsing never blocks the main thread.
 
-import init, { coreVersion, type Loaded, Parser } from '../wasm/pkg/gfa_wasm';
-import wasmUrl from '../wasm/pkg/gfa_wasm_bg.wasm?url';
-import type { ParseRequest, ParseResponse, ParseResult } from './protocol';
+import init, { coreVersion, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
+import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
+import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -14,7 +14,7 @@ const ready = init({ module_or_path: wasmUrl });
 /** Kept for later milestones (layout, info panel); freed on the next load. */
 let current: Loaded | undefined;
 
-function post(message: ParseResponse, transfer: Transferable[] = []): void {
+function post(message: GraphResponse, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer });
 }
 
@@ -121,7 +121,7 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
   return result;
 }
 
-async function handle(request: ParseRequest): Promise<void> {
+async function handle(request: GraphRequest): Promise<void> {
   try {
     await ready;
     if (request.type === 'ping') {
@@ -134,6 +134,6 @@ async function handle(request: ParseRequest): Promise<void> {
   }
 }
 
-self.addEventListener('message', (event: MessageEvent<ParseRequest>) => {
+self.addEventListener('message', (event: MessageEvent<GraphRequest>) => {
   void handle(event.data);
 });

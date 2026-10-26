@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { crc32, deflateRawSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { bgzfBlockSize, CHUNK_BYTES, detectCompression, readFile } from '../../src/workers/readFile';
+import { bgzfBlockSize, CHUNK_BYTES, detectCompression, readFile } from '../../src/workers/graph/readFile';
 
 function testdata(name: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(readFileSync(new URL(`../../../testdata/${name}`, import.meta.url)));

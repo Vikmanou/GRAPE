@@ -1,5 +1,5 @@
 import type { LayoutStatus } from '../state/layout';
-import type { LayoutOptions, Quality } from '../workers/protocol';
+import type { LayoutOptions, Quality } from '../workers/protocol/layout';
 
 interface Props {
   options: LayoutOptions;
