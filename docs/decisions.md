@@ -317,3 +317,125 @@ decision, reason, alternatives considered.
   appears. Headless runs still get no hardware adapter.
 - **Alternatives**: a Linux-only headed config; documenting the flag for
   manual runs only.
+
+## 2026-10-25: GPU layout on a spatial hash, deterministic by construction
+
+- **Decision**: the GPU layout (milestone 3) runs the CPU reference's
+  multilevel scheme with its coarsening, rest lengths, cooling and
+  prolongation, and replaces Barnes-Hut with the spec's grid. Every
+  iteration rebuilds a hash of fine cells keyed by (component, cell), with
+  cells two mean rest lengths wide: a counting sort (count, prefix sum,
+  scatter), then each bucket sorted by node and copied next to its
+  neighbours. Coarse cells are 3x3 blocks of fine cells and sum their nodes
+  in fixed point. Repulsion is `k^2 / d` with every node within reach counted
+  once: exact pairs from the 3x3 fine cells around a node, and the centroids
+  of the 5x5 coarse cells around it with those fine cells' nodes subtracted.
+  Springs are gathered per node through a CSR, never scattered.
+- **Reason**: components keep their own frames without bounding boxes;
+  integer sums and sorted buckets make every float sum run in a fixed order,
+  so a seed reproduces a layout bit for bit on one machine (tested), whatever
+  the batch sizes. A first version faded exact pairs into coarse centroids
+  over a distance window instead of subtracting; a node near its own coarse
+  cell's centroid then lost the repulsion of most of that cell, and the 200k
+  graph had 4.8 times the CPU reference's overlaps (5,098 against 1,059).
+  The exact split brought it to 1,676.
+- **Alternatives**: a uniform grid over each component's bounding box (needs
+  boxes every iteration); float atomics (not in WGSL, and order dependent);
+  Barnes-Hut on the GPU.
+
+## 2026-10-25: Cell hashes sum each coordinate times its own prime
+
+- **Decision**: `cell_hash` is murmur3's finaliser over `x * p1 + y * p2 +
+component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
+  cells apart in the coarse table, does the same with other multipliers.
+- **Reason**: two earlier versions collided. Mixing `x * k ^ y` maps (1, 1)
+  and (-1, -1) together, which merged coarse cells mirrored through the
+  origin (caught by the force check); xoring the products, as Teschner does,
+  repeats about 8% of keys on a small grid, which merged coarse cells
+  (caught by the binning check, which now compares against true cell
+  coordinates). The sums repeat none over 1.8 million cells.
+
+## 2026-10-25: The layout's division of work
+
+- **Decision**: the layout worker coarsens (WASM) and packs components; the
+  engine runs every iteration on the GPU and presents positions straight
+  into the renderer's buffer, adding each component's packing offset there.
+  Four times a second it reads back component boxes for the worker to pack.
+- **Reason**: positions never cross to the CPU while the layout runs, the
+  main thread only encodes commands, and packing (a skyline over up to
+  100k boxes) stays off the main thread.
+- **Alternatives**: packing in TypeScript on the main thread; reading back
+  all positions each update.
+
+## 2026-10-25: Pacing the GPU layout
+
+- **Decision**: each frame submits a batch of iterations in one compute
+  pass, at most three batches in flight. Batches aim at 30 ms of GPU time (4
+  ms while the user pans or zooms), measured with timestamp queries where
+  the adapter has them. A settling layout is redrawn at most every 100 ms,
+  and no more than a tenth of GPU time goes to drawing it; panning and
+  zooming draw every frame. The status bar's frame rate is capped by
+  measured draw time.
+- **Reason**: measured on the 200k graph (Intel UHD 620 class GPU): drawing
+  every frame starved the layout (680 s); `onSubmittedWorkDone` resolves up
+  to 100 ms late in Chrome, so sizing batches from it left the GPU idle; ten
+  passes per iteration cost about 1 ms of fixed overhead on small levels.
+  Animation frames kept coming at 60 Hz while the GPU was 200 ms behind, so
+  frames counted alone overstated the frame rate. A hidden tab gets no
+  animation frames, so its layout waits until it is shown again.
+- **Alternatives**: a fixed iteration count per frame; drawing only after
+  the layout settles (no progressive view).
+
+## 2026-10-25: Draw only what is in view
+
+- **Decision**: before each draw a compute pass marks the ribbon pieces and
+  links whose bounds touch the view, prefix-sums the marks and compacts the
+  survivors' indices; the render pass draws them with `drawIndirect`.
+- **Reason**: zoomed in on the 200k graph, every one of 710k pieces and
+  220k links (16 quads each) went through the vertex shader each frame: 21
+  fps. Compacting by prefix sum keeps the original order, so overlapping
+  ribbons do not swap places (and flicker) as the view moves, which an
+  atomic append would cause.
+- **Alternatives**: discarding off-screen instances in the vertex shader
+  (still runs every vertex); a CPU-side grid query (positions live on the
+  GPU).
+
+## 2026-10-25: Layout presets, seeds and first usable time
+
+- **Decision**: presets are fast, balanced and best, scaling the CPU
+  reference's iteration budget (500 coarsest, 50 refining) by 0.5, 1 and 2.
+  Changing the preset restarts the layout with the same seed. Seeds are u32,
+  shown and editable in decimal. "First usable layout" is timed when the
+  layout has refined to level 3 or finer and a component pack has been
+  applied. GPU quality passes when it is no more than 15% worse than the CPU
+  reference on edge CV and on overlaps, with overlaps also allowed 0.1% of
+  the point count. Owner's choices.
+- **Reason**: these values end up in share links (milestone 7); overlaps on
+  small graphs are near zero, where a relative tolerance means nothing.
+
+## 2026-10-25: Pinning and re-layout of a selection wait for milestone 4
+
+- **Decision**: pin by drag, unpin all and re-layout selection come with
+  picking and selection in milestone 4.
+- **Reason**: they need to know what is under the cursor and what is
+  selected.
+
+## 2026-10-25: Test and benchmark hooks
+
+- **Decision**: `?layout=cpu` draws the CPU reference layout in the same
+  renderer, and development builds put the last settled layout on
+  `window.grapeLayout`. `npm run bench:layout` lays out a fixed standard set
+  (a SPAdes bacterial graph, the SPAdes Acacia mitochondrion, the LPA
+  pangenome region, the 20k-segment potato hifiasm graph and the 200k
+  synthetic graph), or the files passed as arguments instead, on the GPU;
+  compares each with the CPU reference natively (`compare_layout`); and
+  writes `bench/results.md` and a screenshot per graph.
+  `GRAPE_GPU_HEADLESS=1` runs Playwright's full
+  Chromium headless on the real GPU through Vulkan (`--use-angle=vulkan
+--use-vulkan`); the benchmark uses it. Tab memory is the resident size of
+  the page's renderer process; the GPU process is reported apart.
+- **Reason**: comparisons need both layouts drawn the same way and the
+  GPU's positions in a file. Headed runs stall when the display sleeps or
+  the window is covered: Chrome stops animation frames and screenshots, and
+  the benchmark hung for minutes. Summing every Chromium process counted
+  1.2 GB for a 336-segment graph.

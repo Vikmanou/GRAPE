@@ -16,8 +16,11 @@ all run on your machine.
 
 - GFA 1.0 and 1.1 and SPAdes-style FASTG, plain, gzipped or bgzipped.
 - Graph stats, components and parse warnings with line numbers.
-- Segments drawn as ribbons and links as curves, in Bandage's style, laid out
-  progressively in a background worker.
+- Segments drawn as ribbons and links as curves, in Bandage's style.
+- Multilevel force-directed layout on the GPU that you watch settle, with
+  pause, resume, a seed you can set (the same seed gives the same layout) and
+  Fast, Balanced and Best presets. A 200k-segment graph settles in under a
+  minute on integrated graphics; see [bench/results.md](bench/results.md).
 - Drag to pan, scroll or pinch to zoom, arrow keys and +/-, F to fit.
 
 GRAPE needs WebGPU: current desktop Chrome or Edge.
@@ -36,6 +39,7 @@ npm run format         # rustfmt and Prettier
 npm run samples        # download real sample graphs (see samples/README.md)
 npm run fuzz           # fuzz the parser
 npm run bench:parse    # time parsing a synthetic 200k-segment graph
+npm run bench:layout   # GPU layout timings and quality against the CPU reference
 ```
 
 Design decisions are recorded in [docs/decisions.md](docs/decisions.md).
