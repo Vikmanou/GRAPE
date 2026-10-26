@@ -20,7 +20,7 @@ export interface Bounds {
   maxY: number;
 }
 
-export const MIN_ZOOM = 1e-6;
+const MIN_ZOOM = 1e-6;
 export const MAX_ZOOM = 1e3;
 
 function clampZoom(zoom: number): number {

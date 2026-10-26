@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { FileInfo } from '../state/load';
 import { formatBytes } from './format';
 
-export const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz';
+const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz';
 
 interface Props {
   file: FileInfo | undefined;

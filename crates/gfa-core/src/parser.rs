@@ -54,10 +54,6 @@ impl Parser {
         }
     }
 
-    pub fn bytes_read(&self) -> u64 {
-        self.offset
-    }
-
     pub fn push(&mut self, chunk: &[u8]) {
         if self.builder.fatal.is_some() {
             return;
