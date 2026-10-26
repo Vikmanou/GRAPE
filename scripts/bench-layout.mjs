@@ -1,14 +1,14 @@
 // Benchmarks the GPU layout in Chromium on the real GPU (headless through
-// Vulkan, so a sleeping display cannot stall it) and compares each result
-// with the CPU reference, then writes bench/results.md.
-// CPU reference layouts are cached in target/bench/cpu, since the 200k graph
-// takes minutes.
+// Vulkan, so a sleeping display cannot stall it), compares each layout with
+// the CPU reference, and writes bench/results.md and a screenshot per graph.
+// CPU reference layouts are cached in target/bench/cpu.
 //
-// Usage: npm run bench:layout [-- --stress]   (--stress adds a 1M-segment graph)
+// Usage: npm run bench:layout                  the standard set below
+//        npm run bench:layout -- a.gfa b.gfa   these files instead
 
 import { spawnSync } from 'node:child_process';
 import { cpus, platform, release } from 'node:os';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
@@ -18,8 +18,17 @@ const bench = join(root, 'target', 'bench');
 const out = join(bench, 'layout');
 const cpuCache = join(bench, 'cpu');
 const shots = join(root, 'bench', 'screenshots');
-const stress = process.argv.includes('--stress');
-for (const dir of [out, cpuCache, shots]) mkdirSync(dir, { recursive: true });
+
+// A bacterial isolate from the most common assembler, a real organelle
+// assembly, a tangled pangenome region, a 20k-segment hifiasm graph and the
+// spec's 200k-segment performance target.
+const STANDARD = [
+  'samples/bacterial-spades.gfa',
+  'samples/mitochondrion-acacia-spades.gfa',
+  'samples/lpa-13-haplotypes.gfa',
+  'samples/potato-hifiasm-unitigs-noseq.gfa',
+];
+const SYNTHETIC_SEGMENTS = 200_000;
 
 function run(cmd, args, options = {}) {
   // npx is a .cmd shim on Windows, which spawn can only start through a shell.
@@ -36,23 +45,16 @@ function synthetic(segments) {
   return path;
 }
 
-const testdata = ['linear', 'circle', 'bubble', 'tip', 'tangle', 'two_components', 'self_loop', 'palindrome'].map(
-  (name) => join(root, 'testdata', `${name}.gfa`),
-);
-const samples = existsSync(join(root, 'samples'))
-  ? readdirSync(join(root, 'samples'))
-      .filter((name) => /\.gfa(\.gz)?$/.test(name))
-      .sort()
-      .map((name) => join(root, 'samples', name))
-  : [];
-const large = [synthetic(200_000), ...(stress ? [synthetic(1_000_000)] : [])];
-// The CPU reference on these would take the better part of an hour each.
-const withoutReference = ['1000000.gfa', 'myxococcus-10-assemblies.gfa.gz'];
-const files = [...testdata, ...samples, ...large];
-const sample = (name) => join(root, 'samples', name);
-const pictured = ['mitochondrion-acacia-spades.gfa', 'brca2-cactus.gfa', 'lpa-13-haplotypes.gfa']
-  .map(sample)
-  .filter(existsSync);
+const given = process.argv.slice(2).map((path) => resolve(path));
+for (const dir of [out, cpuCache]) mkdirSync(dir, { recursive: true });
+const files = given.length > 0 ? given : [...STANDARD.map((path) => join(root, path)), synthetic(SYNTHETIC_SEGMENTS)];
+const missing = files.filter((path) => !existsSync(path));
+if (missing.length > 0) {
+  console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples -- --large\` for the standard set`);
+  process.exit(1);
+}
+rmSync(shots, { recursive: true, force: true });
+mkdirSync(shots, { recursive: true });
 
 run('node', ['scripts/build-wasm.mjs']);
 run('npx', ['playwright', 'install', 'chromium']);
@@ -61,12 +63,7 @@ run('npx', ['playwright', 'test', 'tests/e2e/layout-bench.spec.ts', '--workers=1
   env: {
     ...process.env,
     GRAPE_GPU_HEADLESS: '1',
-    GRAPE_LAYOUT_BENCH: JSON.stringify({
-      files,
-      out,
-      screenshots: { dir: shots, gpu: [...pictured, large[0]], cpu: pictured },
-      interaction: files.filter((path) => large.includes(path) || withoutReference.includes(basename(path))),
-    }),
+    GRAPE_LAYOUT_BENCH: JSON.stringify({ files, out, screenshots: shots }),
   },
 });
 
@@ -82,28 +79,26 @@ const rows = [];
 for (const path of files) {
   const name = basename(path);
   const timing = JSON.parse(readFileSync(join(out, `${name}.json`), 'utf8'));
-  const compared = withoutReference.includes(name)
-    ? undefined
-    : spawnSync(
-        'cargo',
-        [
-          'run',
-          '-q',
-          '-p',
-          'gfa-core',
-          '--release',
-          '--example',
-          'compare_layout',
-          '--',
-          plainCopy(path),
-          join(out, `${name}.gpu.f32`),
-          '--cpu-cache',
-          join(cpuCache, `${name}.f32`),
-        ],
-        { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
-      );
-  if (compared && compared.status !== 0) process.exit(compared.status ?? 1);
-  rows.push({ name, timing, quality: compared ? JSON.parse(compared.stdout) : undefined });
+  const compared = spawnSync(
+    'cargo',
+    [
+      'run',
+      '-q',
+      '-p',
+      'gfa-core',
+      '--release',
+      '--example',
+      'compare_layout',
+      '--',
+      plainCopy(path),
+      join(out, `${name}.gpu.f32`),
+      '--cpu-cache',
+      join(cpuCache, `${name}.f32`),
+    ],
+    { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
+  );
+  if (compared.status !== 0) process.exit(compared.status ?? 1);
+  rows.push({ name, timing, quality: JSON.parse(compared.stdout) });
 }
 
 /** The tolerance agreed for milestone 3: within 15%, or 0.1% of points for overlaps. */
@@ -120,7 +115,7 @@ const adapter = readFileSync(join(out, 'adapter.txt'), 'utf8') || 'unknown GPU';
 const lines = [
   '# Benchmarks',
   '',
-  `Written by \`npm run bench:layout\` on ${new Date().toISOString().slice(0, 10)}: ${cpus()[0]?.model ?? 'unknown CPU'},`,
+  `Written by \`npm run bench:layout\` on ${new Date().toLocaleDateString('en-CA')}: ${cpus()[0]?.model ?? 'unknown CPU'},`,
   `GPU ${adapter}, ${platform()} ${release()}, Playwright's Chromium.`,
   '',
   '## GPU layout against the CPU reference',
@@ -136,35 +131,33 @@ const lines = [
   '|---|---:|---:|---:|---:|---:|---:|---|',
 ];
 for (const { name, quality: q } of rows) {
-  if (!q) continue;
   lines.push(
     `| ${name} | ${q.segments.toLocaleString('en')} | ${q.points.toLocaleString('en')} | ${q.cpu.edgeCv.toFixed(3)} | ${q.gpu.edgeCv.toFixed(3)} | ${q.cpu.overlaps.toLocaleString('en')} | ${q.gpu.overlaps.toLocaleString('en')} | ${verdict(q)} |`,
   );
 }
-const target = rows.find((r) => r.name === '200000.gfa');
+const target = rows.find((r) => r.name === `${SYNTHETIC_SEGMENTS}.gfa`);
 if (target) {
   const t = target.timing;
   lines.push(
     '',
     '## 200k-segment synthetic graph against the spec targets',
     '',
-    '`gfa-gen --segments 200000`, 191 MB. First usable: refined to level 3 and',
-    'packed. Frame rates are what the GPU keeps up with while panning and',
-    "zooming every frame. Tab memory is the resident size of the page's",
+    '`gfa-gen --segments 200000`, 191 MB. Layout times count from opening the',
+    'file, parse included, with the time after parsing in brackets. First',
+    'usable: refined to level 3 and packed. Frame rates are what the GPU keeps',
+    "up with while panning and zooming every frame. Tab memory is the page's",
     'renderer process (the page and its workers) after the layout settled;',
     "Chromium's GPU process, shared by all tabs, is listed apart.",
     '',
     '| Measure | Target | Measured |',
     '|---|---|---|',
     `| Parse | < 5 s | ${seconds(t.parseMs)} |`,
-    `| First usable layout | < 15 s | ${seconds(t.usableMs)} |`,
-    `| Settled layout | < 60 s | ${seconds(t.settledMs)} |`,
+    `| First usable layout | < 15 s | ${seconds(t.parseMs + t.usableMs)} (${seconds(t.usableMs)} after parsing) |`,
+    `| Settled layout | < 60 s | ${seconds(t.parseMs + t.settledMs)} (${seconds(t.settledMs)} after parsing) |`,
     `| Interaction, zoomed in | 60 fps | ${t.fpsZoomedIn ?? '–'} fps |`,
     `| Interaction, zoomed out | 30+ fps | ${t.fpsZoomedOut ?? '–'} fps |`,
     `| Tab memory | < 1 GB | ${t.tabMb ?? '–'} MB (GPU process ${t.gpuProcessMb ?? '–'} MB) |`,
   );
-  if (target.quality?.cpuMs)
-    lines.push('', `The CPU reference took ${seconds(target.quality.cpuMs)} natively on this graph.`);
 }
 lines.push(
   '',
@@ -179,4 +172,4 @@ lines.push(
   '',
 );
 writeFileSync(join(root, 'bench', 'results.md'), lines.join('\n'));
-console.log(`\nwrote bench/results.md and ${pictured.length * 2 + 1} screenshots in bench/screenshots`);
+console.log(`\nwrote bench/results.md and ${files.length} screenshots in bench/screenshots`);

@@ -1,7 +1,6 @@
 // Run through scripts/bench-layout.mjs, which sets GRAPE_LAYOUT_BENCH to a JSON
-// job: graphs to lay out on the GPU, where to write positions and timings,
-// which graphs to screenshot (with the CPU layout too) and which to time
-// panning and zooming on.
+// job: graphs to lay out on the GPU, where to write their positions and
+// timings, and where to put a screenshot of each.
 
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -11,9 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
 interface Job {
   files: string[];
   out: string;
-  /** Screenshots of the GPU layout, and of the CPU layout for `cpu` graphs. */
-  screenshots?: { dir: string; gpu: string[]; cpu: string[] };
-  interaction?: string[];
+  screenshots: string;
 }
 
 const job = JSON.parse(process.env.GRAPE_LAYOUT_BENCH ?? 'null') as Job | null;
@@ -38,9 +35,9 @@ function memoryMb(): { tab: number; gpu: number } | undefined {
   };
 }
 
-async function openGraph(page: Page, path: string, query = ''): Promise<void> {
+async function openGraph(page: Page, path: string): Promise<void> {
   await page.setViewportSize({ width: 1200, height: 800 });
-  await page.goto(`/${query}`);
+  await page.goto('/');
   // A page loaded right after a large graph can take a while to come up.
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.getByTestId('status-renderer')).toHaveAttribute('data-renderer', 'webgpu');
@@ -139,17 +136,10 @@ test.describe('layout benchmark', () => {
       });
       writeFileSync(join(job.out, `${name}.gpu.f32`), Buffer.from(positions, 'base64'));
 
-      const shots = job.screenshots;
-      if (shots?.gpu.includes(path)) await page.screenshot({ path: join(shots.dir, `${name}-gpu.png`) });
-      if (job.interaction?.includes(path)) {
-        result.fpsZoomedOut = await panAndZoom(page);
-        await zoomIn(page, 30);
-        result.fpsZoomedIn = await panAndZoom(page);
-      }
-      if (shots?.cpu.includes(path)) {
-        await openGraph(page, path, '?layout=cpu');
-        await page.screenshot({ path: join(shots.dir, `${name}-cpu.png`) });
-      }
+      await page.screenshot({ path: join(job.screenshots, `${name}.png`) });
+      result.fpsZoomedOut = await panAndZoom(page);
+      await zoomIn(page, 30);
+      result.fpsZoomedIn = await panAndZoom(page);
       writeFileSync(join(job.out, `${name}.json`), JSON.stringify(result));
     });
   }
