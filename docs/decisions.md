@@ -409,3 +409,94 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   the window is covered: Chrome stops animation frames and screenshots, and
   the benchmark hung for minutes. Summing every Chromium process counted
   1.2 GB for a 336-segment graph.
+
+## 2026-10-26: The spec is a Claude Doc with twelve milestones
+
+- **Decision**: the spec lives in the Claude Doc "GRAPE: Build Spec", rewritten
+  to match what milestones 0 to 3 built, with an architecture map, a target
+  code layout and twelve milestones: 4 Interaction, 5 Scale, 6 Display,
+  7 WebGL2 fallback, 8 Graph features, 9 Sequence search, 10 Export and
+  sharing, 11 Release. `CLAUDE.md` and `/milestone` read it with the docs
+  tools.
+- **Reason**: the PDF export drifted from the code (name, npm, FASTG, GFA 2,
+  layout details), and the old milestone 4 held about twelve features.
+- **Alternatives**: keep the PDF and add `docs/plan.md`; keep nine milestones.
+
+## 2026-10-26: Double mode shifts strands at draw time, as Bandage does
+
+- **Decision**: double mode adds no layout points. Each strand is drawn from
+  the shared chain, shifted sideways along the line's normal by 2 units.
+- **Reason**: Bandage lays out one chain per segment pair (`addToOgdfGraph`
+  skips a node whose complement is already in OGDF) and shifts each strand
+  in `GraphicsItemNode::shiftPointSideways` by `doubleModeNodeSeparation`
+  (2.0, `settings.cpp`). Switching is instant and costs no memory.
+- **Alternatives**: separate strand chains held side by side by springs (the
+  old spec text; twice the points, about 7M for a 1M graph).
+
+## 2026-10-26: The WebGL2 fallback comes right after Display
+
+- **Decision**: milestone 4 introduces the `Backend` and `LayoutDriver`
+  interfaces; the WebGL2 backend is milestone 7, before graph features,
+  search and export, which are then built and tested on both backends.
+- **Reason**: Chrome on Linux enables WebGPU by default only on Intel Gen12+
+  GPUs and Firefox only on Windows and Apple-silicon macOS (MDN
+  browser-compat-data), so many users get WebGL2; with WebGL2 in CI from
+  milestone 7, headless CI covers real rendering.
+- **Alternatives**: the WebGL2 backend last, as the old spec had it.
+
+## 2026-10-26: A sequence worker owns sequences
+
+- **Decision**: after parsing, the parse worker (renamed the graph worker in
+  milestone 4) hands the packed bases, or the `File` and offsets for plain
+  input, to a sequence worker that serves sequences, raw lines and FASTA, and
+  later the k-mer index and search.
+- **Reason**: building the index must not block info, find and filter
+  queries. The hand-off briefly holds the packed bases twice.
+- **Alternatives**: sequences and search in the parse worker; a search worker
+  that streams the file again.
+
+## 2026-10-26: zustand holds UI state
+
+- **Decision**: one zustand store (5.0.15) in `web/src/state`, sliced by
+  concern; `state/bridge.ts` alone sends engine commands and writes engine
+  events back. Owner's choice.
+- **Reason**: share links and session files need the view as one serialisable
+  object, and panels should not each hold engine handles.
+- **Alternatives**: a hand-written store on `useSyncExternalStore`; React
+  state lifted into `App`.
+
+## 2026-10-26: Box select runs on the GPU under WebGPU
+
+- **Decision**: shift-drag selection is a compute pass over ribbon pieces
+  that returns a segment bitset; the WebGL2 backend queries a CPU grid.
+- **Reason**: positions live on the GPU while the layout runs; reading back a
+  1M graph's points (about 28 MB) to build a grid would take a worker round
+  trip. The spec's CPU grid remains the WebGL2 path.
+
+## 2026-10-26: Sequences, raw lines and FASTA move into milestone 4
+
+- **Decision**: the info panel ships with the sequence preview, copy, FASTA
+  and the raw GFA line (plain files only; gzipped files cannot be read at an
+  offset). The parser stores each `S` line's offset for plain files.
+- **Reason**: owner's choice; the info panel is incomplete without them.
+
+## 2026-10-26: Bundled examples are real graphs under permissive licences
+
+- **Decision**: the Acacia chloroplast by Unicycler and the Acacia
+  mitochondrion by SPAdes (CC-BY-4.0), the LPA region and the human
+  mitochondrion from minigraph (MIT), credited in the menu.
+- **Reason**: the SPAdes bacterial sample is GPL-3.0 and cannot ship inside
+  the MIT site without care.
+- **Alternatives**: synthetic graphs from `gfa-gen`; a mix.
+
+## 2026-10-26: A Scale milestone owns the 1M targets
+
+- **Decision**: milestone 5 brings the 1M graph within its targets, accepted
+  on the development laptop (Intel UHD 620, below the spec's reference
+  class); a Ryzen 9 9950 desktop is a second benchmark machine when needed.
+- **Reason**: the first 1M run (`gfa-gen --segments 1000000`, headless on
+  the GPU) measured parse 14.5 s, first usable 133.6 s, settled 380 s, 49 fps
+  zoomed in, 16 fps zoomed out and 2,003 MB of tab memory: layout times miss
+  and memory is at the limit before milestone 4 adds anything.
+- **Alternatives**: memory in milestone 4 and speed in milestone 7; record
+  the miss and move on.

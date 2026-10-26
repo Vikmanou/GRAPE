@@ -6,14 +6,17 @@ WebGPU engine, thin React shell. Solo project: the owner and Claude.
 
 ## The spec
 
-The spec is a PDF the owner hands over with each milestone ("Assembly Graph
-Viewer: Build Spec"; it says Gauze, the project is GRAPE). It is the source of
-truth. Read the sections that matter for the milestone every time; don't work
-from memory of an older copy. If the spec and the code disagree, say so.
+The spec is the Claude Doc "GRAPE: Build Spec"
+(https://claude.ai/artifact/UnoFj61L4Ttvx8G8KhBDiX), read with the docs
+tools. It is the source of truth: status, architecture, code organisation,
+features, targets and the twelve milestones. Read the sections that matter for
+the milestone every time; don't work from memory of an older copy. If the spec
+and the code disagree, say so. When a milestone ends, update the doc's Status
+table and any section the milestone changed.
 
 ## Milestone loop
 
-Run it with `/milestone <n> <path to spec pdf>`, or follow it by hand:
+Run it with `/milestone <n>`, or follow it by hand:
 
 1. **Read** the milestone, its acceptance criteria and every spec section it
    touches. Read the current code and `docs/decisions.md`.
@@ -51,11 +54,14 @@ saying so.
   `docs/decisions.md`. `gfa-core` stays pure (bytes in, data out, tested
   natively); `gfa-wasm` only converts and maps errors.
 - **TypeScript**: strict, ESLint `strictTypeChecked`, no `any`. The engine owns
-  every GPU object; React talks to it only through `send`/`on`. The main thread
-  never blocks for more than a frame: heavy work goes to a worker or the GPU.
-  Worker messages are discriminated unions in `protocol.ts`; big data crosses
-  as transferable typed arrays.
-- **Files** under about 400 lines; split into modules before they grow.
+  every GPU object behind the `Backend` interface; React reaches the engine and
+  the workers only through the store (`state/`), which alone calls
+  `engine.send` and the worker clients. The main thread never blocks for more
+  than a frame: heavy work goes to a worker or the GPU. Worker messages are
+  discriminated unions in `workers/protocol/`; big data crosses as
+  transferable typed arrays.
+- **Files** under about 400 lines; split into modules before they grow. Place
+  code by the spec's Code organisation section.
 - **Comments**: rare. Code should read clearly without them; write one
   only when something is not obvious from the code itself (a non-obvious
   reason, a format rule, a source citation). No doc comments that restate a
@@ -78,7 +84,8 @@ view state and a fingerprint, never sequences.
 
 ## Environment notes
 
-- Development is on Windows (PowerShell); CI runs Linux and Windows.
+- Development is on Windows (PowerShell) and Fedora Linux; CI runs Linux and
+  Windows.
 - `npm run check` is the gate and is exactly what CI runs.
 - Headless Chromium has no WebGPU adapter: headless Playwright covers the
   fallback path only. Use `npm run check:headed` for the WebGPU path.

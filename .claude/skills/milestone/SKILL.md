@@ -1,21 +1,23 @@
 ---
 name: milestone
-description: Run one GRAPE milestone from the owner's spec PDF - read, plan and stop for approval, then build with gated commits and finish with a demo note. Use when the owner says to start, plan, continue or finish a milestone, or invokes /milestone.
-argument-hint: <milestone number> <path to spec pdf>
+description: Run one GRAPE milestone from the owner's spec doc - read, plan and stop for approval, then build with gated commits and finish with a demo note. Use when the owner says to start, plan, continue or finish a milestone, or invokes /milestone.
+argument-hint: <milestone number>
 ---
 
 # Run a GRAPE milestone
 
-Arguments: `$ARGUMENTS` (milestone number, then the spec PDF path). If the
-PDF path is missing, ask for it; don't plan from memory.
+Arguments: `$ARGUMENTS` (the milestone number). The spec is the Claude Doc
+"GRAPE: Build Spec" (https://claude.ai/artifact/UnoFj61L4Ttvx8G8KhBDiX); read
+it with the docs tools, never from memory. If it cannot be read, stop and say
+so.
 
 Follow the working agreement in `CLAUDE.md`. This is the procedure.
 
 ## Phase 1: Read (no code)
 
-1. Read the PDF pages for this milestone, its acceptance criteria, and every
-   section it depends on (data model, layout, rendering, features, testing,
-   performance targets, risks). Use the `pages` parameter; the PDF is long.
+1. Read the doc's outline, then this milestone, its acceptance criteria, and
+   every section it depends on (architecture, code organisation, data model,
+   layout, rendering, features, testing, performance targets, risks).
 2. Read `docs/decisions.md`, `git log --oneline -20`, and the code the
    milestone will touch.
 3. Run `npm run check:quick` so the plan starts from a known-green tree. If it is
@@ -74,4 +76,6 @@ End with:
 - **Decisions made** (also in `docs/decisions.md`).
 - **Commits**: `git log --oneline` for the milestone.
 
-Then stop. The next milestone waits for the owner's acceptance.
+Once the owner accepts, update the doc: the Status table row, and any section
+whose "(Mn)" plan became "(built)" or changed. Then stop. The next milestone
+waits for the owner's acceptance.
