@@ -1,5 +1,6 @@
-// Benchmarks the GPU layout in a headed browser (it needs the real GPU) and
-// compares each result with the CPU reference, then writes bench/results.md.
+// Benchmarks the GPU layout in Chromium on the real GPU (headless through
+// Vulkan, so a sleeping display cannot stall it) and compares each result
+// with the CPU reference, then writes bench/results.md.
 // CPU reference layouts are cached in target/bench/cpu, since the 200k graph
 // takes minutes.
 //
@@ -55,10 +56,11 @@ const pictured = ['mitochondrion-acacia-spades.gfa', 'brca2-cactus.gfa', 'lpa-13
 
 run('node', ['scripts/build-wasm.mjs']);
 run('npx', ['playwright', 'install', 'chromium']);
-run('npx', ['playwright', 'test', 'tests/e2e/layout-bench.spec.ts', '--headed', '--workers=1', '--reporter=list'], {
+run('npx', ['playwright', 'test', 'tests/e2e/layout-bench.spec.ts', '--workers=1', '--retries=1', '--reporter=list'], {
   cwd: join(root, 'web'),
   env: {
     ...process.env,
+    GRAPE_GPU_HEADLESS: '1',
     GRAPE_LAYOUT_BENCH: JSON.stringify({
       files,
       out,
@@ -119,7 +121,7 @@ const lines = [
   '# Benchmarks',
   '',
   `Written by \`npm run bench:layout\` on ${new Date().toISOString().slice(0, 10)}: ${cpus()[0]?.model ?? 'unknown CPU'},`,
-  `GPU ${adapter}, ${platform()} ${release()}, Playwright's Chromium, headed.`,
+  `GPU ${adapter}, ${platform()} ${release()}, Playwright's Chromium.`,
   '',
   '## GPU layout against the CPU reference',
   '',
@@ -148,8 +150,9 @@ if (target) {
     '',
     '`gfa-gen --segments 200000`, 191 MB. First usable: refined to level 3 and',
     'packed. Frame rates are what the GPU keeps up with while panning and',
-    'zooming every frame. Memory is the resident size of all Chromium processes',
-    'after the layout settled.',
+    "zooming every frame. Tab memory is the resident size of the page's",
+    'renderer process (the page and its workers) after the layout settled;',
+    "Chromium's GPU process, shared by all tabs, is listed apart.",
     '',
     '| Measure | Target | Measured |',
     '|---|---|---|',
@@ -158,7 +161,7 @@ if (target) {
     `| Settled layout | < 60 s | ${seconds(t.settledMs)} |`,
     `| Interaction, zoomed in | 60 fps | ${t.fpsZoomedIn ?? '–'} fps |`,
     `| Interaction, zoomed out | 30+ fps | ${t.fpsZoomedOut ?? '–'} fps |`,
-    `| Tab memory | < 1 GB | ${t.memoryMb ?? '–'} MB |`,
+    `| Tab memory | < 1 GB | ${t.tabMb ?? '–'} MB (GPU process ${t.gpuProcessMb ?? '–'} MB) |`,
   );
   if (target.quality?.cpuMs)
     lines.push('', `The CPU reference took ${seconds(target.quality.cpuMs)} natively on this graph.`);
@@ -167,11 +170,11 @@ lines.push(
   '',
   '## Every graph',
   '',
-  '| Graph | Parse | First usable | Settled | Memory |',
-  '|---|---:|---:|---:|---:|',
+  '| Graph | Parse | First usable | Settled | Tab memory | GPU process | Zoomed out | Zoomed in |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|',
   ...rows.map(
     ({ name, timing: t }) =>
-      `| ${name} | ${seconds(t.parseMs)} | ${seconds(t.usableMs)} | ${seconds(t.settledMs)} | ${t.memoryMb ?? '–'} MB |`,
+      `| ${name} | ${seconds(t.parseMs)} | ${seconds(t.usableMs)} | ${seconds(t.settledMs)} | ${t.tabMb ?? '–'} MB | ${t.gpuProcessMb ?? '–'} MB | ${t.fpsZoomedOut ?? '–'} | ${t.fpsZoomedIn ?? '–'} |`,
   ),
   '',
 );

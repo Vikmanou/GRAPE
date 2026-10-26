@@ -19,21 +19,30 @@ interface Job {
 const job = JSON.parse(process.env.GRAPE_LAYOUT_BENCH ?? 'null') as Job | null;
 const SETTLE_MS = 30 * 60_000;
 
-/** Resident memory of the processes of Playwright's Chromium, in MB; Linux only. */
-function browserMemoryMb(): number | undefined {
+/**
+ * Resident memory in MB of the page's renderer process, which holds the page
+ * and its workers, and of Chromium's GPU process, which holds GPU buffers on
+ * integrated graphics. Linux only.
+ */
+function memoryMb(): { tab: number; gpu: number } | undefined {
   if (process.platform !== 'linux') return undefined;
-  const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' }).split('\n');
-  const kb = rows
+  const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
+    .split('\n')
     .map((row) => row.trim())
-    .filter((row) => row.includes('ms-playwright/chromium'))
-    .reduce((sum, row) => sum + Number(row.split(/\s+/)[0]), 0);
-  return Math.round(kb / 1024);
+    .filter((row) => row.includes('ms-playwright/chromium'));
+  const sum = (match: (row: string) => boolean) =>
+    Math.round(rows.filter(match).reduce((kb, row) => kb + Number(row.split(/\s+/)[0]), 0) / 1024);
+  return {
+    tab: sum((row) => row.includes('--type=renderer') && !row.includes('--top-chrome-webui')),
+    gpu: sum((row) => row.includes('--type=gpu-process')),
+  };
 }
 
 async function openGraph(page: Page, path: string, query = ''): Promise<void> {
   await page.setViewportSize({ width: 1200, height: 800 });
   await page.goto(`/${query}`);
-  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  // A page loaded right after a large graph can take a while to come up.
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.getByTestId('status-renderer')).toHaveAttribute('data-renderer', 'webgpu');
   await page.getByTestId('open-input').setInputFiles(path);
   const settled = page.locator('[data-testid="status-layout"][data-state="done"], [data-testid="unsupported"]');
@@ -118,7 +127,8 @@ test.describe('layout benchmark', () => {
         parseMs: Number(await page.getByTestId('format').getAttribute('data-parse-ms')),
         settledMs: Number(await status.getAttribute('data-ms')),
         usableMs: Number(await status.getAttribute('data-usable-ms')),
-        memoryMb: browserMemoryMb(),
+        tabMb: memoryMb()?.tab,
+        gpuProcessMb: memoryMb()?.gpu,
       };
       const positions = await page.evaluate(() => {
         const layout = (window as unknown as { grapeLayout: { positions: Float32Array } }).grapeLayout;
