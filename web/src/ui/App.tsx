@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { detectBackend, type Backend } from '../engine/detect';
+import { detectBackend, type Backend } from '../engine/core/detect';
 import type { Engine } from '../engine/Engine';
 import { DEFAULT_OPTIONS, useLayout } from '../state/layout';
 import type { LayoutOptions } from '../workers/protocol';

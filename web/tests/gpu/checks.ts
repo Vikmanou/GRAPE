@@ -1,8 +1,8 @@
-import { Buffers, Passes, readBuffer } from '../../src/engine/layout/gpu';
-import { Grid, gridSizes } from '../../src/engine/layout/grid';
-import type { Kernels } from '../../src/engine/layout/kernels';
-import { encodeParams } from '../../src/engine/layout/params';
-import { Scan } from '../../src/engine/layout/scan';
+import { Buffers, Passes, readBuffer } from '../../src/engine/webgpu/layout/gpu';
+import { Grid, gridSizes } from '../../src/engine/webgpu/layout/grid';
+import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
+import { encodeParams } from '../../src/engine/webgpu/layout/params';
+import { Scan } from '../../src/engine/webgpu/layout/scan';
 import { culling } from './cull';
 import { forceIteration } from './forces';
 import { assert, cellHash, cellKey, random } from './reference';

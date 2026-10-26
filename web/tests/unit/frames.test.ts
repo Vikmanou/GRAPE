@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FrameCounter } from '../../src/engine/frames';
+import { FrameCounter } from '../../src/engine/core/frames';
 
 function run(counter: FrameCounter, frames: number, gapMs: number, gpuMs: number) {
   let stats;

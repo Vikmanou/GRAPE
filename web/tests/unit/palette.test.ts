@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hsl, randomColors } from '../../src/engine/palette';
+import { hsl, randomColors } from '../../src/engine/style/palette';
 
 function unpack(c: number): [number, number, number, number] {
   return [c & 0xff, (c >>> 8) & 0xff, (c >>> 16) & 0xff, c >>> 24];

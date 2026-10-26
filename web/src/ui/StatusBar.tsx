@@ -1,4 +1,4 @@
-import type { Backend } from '../engine/detect';
+import type { Backend } from '../engine/core/detect';
 import type { LayoutStatus } from '../state/layout';
 import type { CoreStatus, LoadState } from '../state/load';
 import { formatCount, formatPercent, formatSeconds } from './format';

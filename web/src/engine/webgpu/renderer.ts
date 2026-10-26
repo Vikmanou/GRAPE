@@ -1,8 +1,8 @@
-import type { Geometry } from '../workers/protocol';
+import type { Geometry } from '../../workers/protocol';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
-import type { Rgba } from './palette';
+import type { Rgba } from '../style/palette';
 import shader from './shaders/graph.wgsl?raw';
 
 /** Matches `View` in graph.wgsl: 12 floats. */

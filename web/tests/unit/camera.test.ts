@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundsOf, fit, MAX_ZOOM, pan, screenToWorld, worldToScreen, zoomAt } from '../../src/engine/camera';
+import { boundsOf, fit, MAX_ZOOM, pan, screenToWorld, worldToScreen, zoomAt } from '../../src/engine/core/camera';
 
 const view = { width: 800, height: 600 };
 

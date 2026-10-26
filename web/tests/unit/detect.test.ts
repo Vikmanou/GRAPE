@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectBackend, type DetectEnv } from '../../src/engine/detect';
+import { detectBackend, type DetectEnv } from '../../src/engine/core/detect';
 
 function fakeGpu(requestAdapter: () => Promise<GPUAdapter | null>): GPU {
   return { requestAdapter } as unknown as GPU;

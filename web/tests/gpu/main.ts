@@ -1,7 +1,7 @@
 // Runs each GPU kernel check and reports to the page, for gpu.spec.ts.
 
-import { browserEnv, requestAdapter } from '../../src/engine/detect';
-import { createKernels } from '../../src/engine/layout/kernels';
+import { browserEnv, requestAdapter } from '../../src/engine/core/detect';
+import { createKernels } from '../../src/engine/webgpu/layout/kernels';
 import { checks } from './checks';
 import { profile } from './profile';
 

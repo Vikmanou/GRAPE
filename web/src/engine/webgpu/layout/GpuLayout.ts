@@ -1,4 +1,4 @@
-import type { Hierarchy } from '../../workers/protocol';
+import type { Hierarchy } from '../../../workers/protocol';
 import { bind, Buffers, groups, Passes, type PassTiming, readBuffer } from './gpu';
 import type { Kernels } from './kernels';
 import { GpuLevel } from './level';

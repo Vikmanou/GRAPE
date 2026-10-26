@@ -1,4 +1,4 @@
-import type { Theme } from '../engine/palette';
+import type { Theme } from '../engine/style/palette';
 
 const query = '(prefers-color-scheme: dark)';
 

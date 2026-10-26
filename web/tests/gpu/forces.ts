@@ -1,8 +1,8 @@
 // One force iteration on the GPU against the same maths in f64 on the CPU.
 
-import { Buffers, Passes, readBuffer } from '../../src/engine/layout/gpu';
-import type { Kernels } from '../../src/engine/layout/kernels';
-import { COARSE_PER_CELL, FAR_REACH, GpuLevel, type LevelInput } from '../../src/engine/layout/level';
+import { Buffers, Passes, readBuffer } from '../../src/engine/webgpu/layout/gpu';
+import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
+import { COARSE_PER_CELL, FAR_REACH, GpuLevel, type LevelInput } from '../../src/engine/webgpu/layout/level';
 import { assert, floatBits, random } from './reference';
 
 const COLD = 0.4;

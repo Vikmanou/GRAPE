@@ -1,4 +1,4 @@
-import type { HierarchyLevel } from '../../workers/protocol';
+import type { HierarchyLevel } from '../../../workers/protocol';
 import { bind, Buffers, groups, type Passes } from './gpu';
 import { Grid, gridSizes, type IterationState } from './grid';
 import type { Kernels } from './kernels';

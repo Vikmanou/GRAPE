@@ -1,5 +1,5 @@
-import type { Hierarchy } from '../../workers/protocol';
-import type { Bounds } from '../camera';
+import type { Hierarchy } from '../../../workers/protocol';
+import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
 import type { Kernels } from './kernels';

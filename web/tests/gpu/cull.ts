@@ -1,8 +1,8 @@
 // The cull pass against the same test on the CPU: the same items, in order.
 
-import { Cull, type CullView } from '../../src/engine/cull';
-import { Buffers, readBuffer } from '../../src/engine/layout/gpu';
-import type { Kernels } from '../../src/engine/layout/kernels';
+import { Cull, type CullView } from '../../src/engine/webgpu/cull';
+import { Buffers, readBuffer } from '../../src/engine/webgpu/layout/gpu';
+import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
 import { assert, random } from './reference';
 
 export async function culling(device: GPUDevice, kernels: Kernels): Promise<void> {

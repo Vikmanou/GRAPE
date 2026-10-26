@@ -1,9 +1,9 @@
 // Times each pass of a force iteration with GPU timestamps on a lattice of
 // `count` nodes: open /tests/gpu/index.html?profile=400000.
 
-import { Buffers, Passes } from '../../src/engine/layout/gpu';
-import type { Kernels } from '../../src/engine/layout/kernels';
-import { GpuLevel } from '../../src/engine/layout/level';
+import { Buffers, Passes } from '../../src/engine/webgpu/layout/gpu';
+import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
+import { GpuLevel } from '../../src/engine/webgpu/layout/level';
 import { floatBits, random } from './reference';
 
 const ITERATIONS = 10;
