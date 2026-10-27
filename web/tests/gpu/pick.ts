@@ -45,7 +45,14 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
   const buffers = new Buffers(device);
   try {
     renderer.setGeometry(
-      { segments, points: pieceCount * 2, pieces, links: new Uint32Array(0) },
+      {
+        segments,
+        points: pieceCount * 2,
+        pieces,
+        links: new Uint32Array(0),
+        segmentStarts: new Uint32Array(segments),
+        segmentPieces: new Uint8Array(segments),
+      },
       new Uint32Array(segments).fill(0xffffffff),
     );
     renderer.setPositions(positions);

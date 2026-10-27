@@ -30,6 +30,8 @@ export type EngineCommand =
   | { type: 'clear-selection' }
   | { type: 'invert-selection' }
   | { type: 'zoom-to-selection' }
+  | { type: 'unpin-all' }
+  | { type: 'relayout-selection' }
   | { type: 'zoom-to-component'; component: number };
 
 export type EngineEvent =
@@ -45,6 +47,10 @@ export type EngineEvent =
   | { type: 'picked'; x: number; y: number; segment: number | undefined }
   /** The camera after it moved, at most `CAMERA_EVENT_MS` apart. */
   | { type: 'camera'; x: number; y: number; zoom: number }
+  /** A refinement after a drag or of the selection started or ended. */
+  | { type: 'refining'; active: boolean }
+  /** How many segments the user has pinned by dragging. */
+  | { type: 'pins'; count: number }
   /** The segment under the pointer changed. */
   | { type: 'hover'; segment: number | undefined }
   /** One bit per segment. `single` is the selected segment when exactly one is. */

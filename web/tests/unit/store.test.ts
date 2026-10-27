@@ -65,7 +65,14 @@ function deferred<T>() {
 const result = { topology: {} } as unknown as ParseResult;
 const parsed = { result, sequences: { kind: 'dropped' } as const };
 type Parsed = typeof parsed;
-const geometry = { segments: 1, points: 2, pieces: new Uint32Array(2), links: new Uint32Array(0) };
+const geometry = {
+  segments: 1,
+  points: 2,
+  pieces: new Uint32Array(2),
+  links: new Uint32Array(0),
+  segmentStarts: new Uint32Array(1),
+  segmentPieces: Uint8Array.of(1),
+};
 const progress = { iteration: 10, total: 10, level: 0, levels: 1, energy: 0, done: true };
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 

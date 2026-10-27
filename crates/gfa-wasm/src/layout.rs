@@ -74,6 +74,18 @@ impl Layout {
         self.inner.chains.pieces()
     }
 
+    /// First point of each segment's chain.
+    #[wasm_bindgen(js_name = segmentStarts)]
+    pub fn segment_starts(&self) -> Vec<u32> {
+        self.inner.chains.start.clone()
+    }
+
+    /// Pieces in each segment's chain; it has one more point.
+    #[wasm_bindgen(js_name = segmentPieces)]
+    pub fn segment_pieces(&self) -> Vec<u8> {
+        self.inner.chains.pieces.clone()
+    }
+
     /// `[end a, inner a, end b, inner b]` per link.
     pub fn links(&self) -> Vec<u32> {
         self.links.clone()

@@ -26,6 +26,7 @@ export class GpuLevel {
   private readonly moveGroups: GPUBindGroup[];
 
   private current = 0;
+  private readonly state: GPUBuffer;
 
   constructor(
     private readonly kernels: Kernels,
@@ -79,8 +80,14 @@ export class GpuLevel {
         11: shared.energy,
       }),
     );
-    // The first iteration's `begin` wraps this to 0.
-    device.queue.writeBuffer(shared.state, 0, new Uint32Array([0xffffffff]));
+    this.state = shared.state;
+    this.restart();
+  }
+
+  /** Runs the level's cooling schedule again from iteration `from`. */
+  restart(from = 0): void {
+    // The next iteration's `begin` adds one, wrapping 0xffffffff to 0.
+    this.buffers.device.queue.writeBuffer(this.state, 0, new Uint32Array([(from - 1) >>> 0]));
   }
 
   /** The buffer holding the latest positions, `x, y` per node. */

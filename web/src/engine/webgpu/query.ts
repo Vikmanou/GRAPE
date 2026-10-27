@@ -1,6 +1,8 @@
 import { bind, groups, readBuffer } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
-import type { Drawn } from './renderer';
+import type { Drawn as AllDrawn } from './renderer';
+
+type Drawn = Pick<AllDrawn, 'positions' | 'pieces' | 'pieceCount' | 'segments'>;
 
 /** Matches `Query` in query.wgsl. */
 const QUERY_BYTES = 32;

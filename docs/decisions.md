@@ -584,3 +584,21 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: the spec's picking. A centre test is what the CPU reference
   can reproduce exactly, so the GPU check compares every texel not within
   0.02 units of a capsule's edge.
+
+## 2026-10-26: Pins are step sizes on level 0
+
+- **Decision**: dragging a segment moves its points on level 0 of the GPU
+  layout and pins it by setting their step size to 0 (`Node.y`), so the
+  force kernels need no extra buffer (`pull_and_move` already binds the
+  default limit of 8 storage buffers). "Re-layout selection" sets the step
+  size of every point outside the selection to 0 for the length of one
+  refinement. A refinement runs the second half of level 0's cooling
+  schedule again; restarting from the first iteration's temperature shook the
+  whole bacterial graph after a single drag. Measurements during a
+  refinement do not repack components, so packing stays as it was. Before the
+  layout reaches level 0, dragging pans. A new layout clears the pins.
+- **Reason**: the spec's pinning; level 0 holds every point, and the
+  hierarchy's own step sizes give back each point's mobility when it is
+  unpinned.
+- **Alternatives**: a pinned bitset read by `pull_and_move` (a ninth storage
+  buffer); a separate refinement kernel with its own temperature.

@@ -54,6 +54,15 @@ export interface LayoutDriver {
   present(origin: Origin): void;
   /** `x, y` per point as packed. */
   readPositions(): Promise<Float32Array<ArrayBuffer> | undefined>;
+  /** Pinning and refinement need the layout at its finest level. */
+  readonly atLevelZero: boolean;
+  /** How many segments are pinned. */
+  readonly pinned: number;
+  /** Moves a segment by `dx, dy` world units and pins it; the rest follows in a short refinement. */
+  drag(segment: number, dx: number, dy: number): void;
+  unpinAll(): void;
+  /** Refines level 0 again, moving only the selected segments when `onlySelected`. */
+  refine(onlySelected: boolean): void;
 }
 
 export interface BackendEvents {
@@ -61,6 +70,8 @@ export interface BackendEvents {
   lost(message: string): void;
   /** `x0, y0, x1, y1` per component, unpacked, as the layout runs. */
   measured(boxes: Float32Array<ArrayBuffer>, progress: LayoutProgress): void;
+  /** A refinement after a drag or of the selection started or ended. */
+  refining(active: boolean): void;
 }
 
 /** Everything that touches the GPU. The engine above it never does. */

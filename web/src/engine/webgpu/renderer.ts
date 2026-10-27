@@ -39,6 +39,8 @@ export interface Drawn {
   pieces: GPUBuffer;
   pieceCount: number;
   segments: number;
+  /** One bit per selected segment. */
+  selected: GPUBuffer;
 }
 
 interface Graph extends Drawn {

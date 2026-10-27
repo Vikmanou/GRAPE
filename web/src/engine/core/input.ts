@@ -6,6 +6,11 @@ export interface InputHandler {
   leave(): void;
   /** A press and release that moved less than `CLICK_SLOP`. */
   click(x: number, y: number, shift: boolean): void;
+  /** A press at `x, y` that may grab a segment to drag; false lets the drag pan. */
+  grab(x: number, y: number): boolean;
+  /** A grabbed segment moved by `dx, dy` canvas pixels. */
+  dragSegment(dx: number, dy: number): void;
+  release(): void;
   /** A shift-drag from `x0, y0` now at `x1, y1`. */
   box(x0: number, y0: number, x1: number, y1: number, phase: 'drag' | 'end' | 'cancel'): void;
   zoom(x: number, y: number, factor: number): void;
@@ -45,7 +50,16 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
     return [(event.clientX - rect.left) * s, (event.clientY - rect.top) * s];
   };
   let press:
-    | { id: number; x: number; y: number; startX: number; startY: number; dragging: boolean; boxing: boolean }
+    | {
+        id: number;
+        x: number;
+        y: number;
+        startX: number;
+        startY: number;
+        dragging: boolean;
+        boxing: boolean;
+        grabbing: boolean;
+      }
     | undefined;
 
   const down = (event: PointerEvent) => {
@@ -57,7 +71,9 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
       // captured; the drag still works while the pointer stays on the canvas.
     }
     const { clientX: x, clientY: y } = event;
-    press = { id: event.pointerId, x, y, startX: x, startY: y, dragging: false, boxing: event.shiftKey };
+    const boxing = event.shiftKey;
+    const grabbing = !boxing && handler.grab(...local(event));
+    press = { id: event.pointerId, x, y, startX: x, startY: y, dragging: false, boxing, grabbing };
   };
   const move = (event: PointerEvent) => {
     if (!press) {
@@ -72,7 +88,9 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
       return;
     }
     const s = scale();
-    handler.pan((event.clientX - press.x) * s, (event.clientY - press.y) * s);
+    const [dx, dy] = [(event.clientX - press.x) * s, (event.clientY - press.y) * s];
+    if (press.grabbing) handler.dragSegment(dx, dy);
+    else handler.pan(dx, dy);
     press.x = event.clientX;
     press.y = event.clientY;
   };

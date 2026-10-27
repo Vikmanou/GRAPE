@@ -3,6 +3,7 @@ import type { Backend } from './core/backend';
 import { boundsOf, type Bounds } from './core/camera';
 import { Framing } from './core/Framing';
 import { FrameCounter } from './core/frames';
+import { gestures } from './core/gestures';
 import { attachInput } from './core/input';
 import { Pointer } from './core/Pointer';
 import { RubberBand } from './core/RubberBand';
@@ -88,7 +89,26 @@ export class Engine {
       // Safari rejects this box type; resize() falls back to CSS size × DPR.
       this.resizeObserver.observe(host);
     }
-    this.detachInput = this.listen();
+    this.detachInput = attachInput(
+      canvas,
+      gestures({
+        canvas,
+        framing: this.framing,
+        pointer: this.pointer,
+        band: this.band,
+        layout: () => this.backend.layout,
+        selectBox: (box) => this.backend.selectBox(box),
+        viewMoved: () => {
+          this.viewMoved();
+        },
+        fit: () => {
+          this.send({ type: 'fit' });
+        },
+        emit: (event) => {
+          this.emit(event);
+        },
+      }),
+    );
   }
 
   static async create(host: HTMLElement): Promise<Engine> {
@@ -108,6 +128,9 @@ export class Engine {
       },
       measured: (boxes, progress) => {
         emit({ type: 'layout-measured', boxes, progress });
+      },
+      refining: (active) => {
+        emit({ type: 'refining', active });
       },
     });
     relay.to = new Engine(host, canvas, backend);
@@ -173,6 +196,13 @@ export class Engine {
       case 'zoom-to-selection':
         void this.zoomTo(this.pointer.selection.snapshot());
         return;
+      case 'unpin-all':
+        layout.unpinAll();
+        this.emit({ type: 'pins', count: layout.pinned });
+        break;
+      case 'relayout-selection':
+        if (this.pointer.selection.count > 0) layout.refine(true);
+        break;
       case 'zoom-to-component':
         void this.zoomTo(this.pointer.componentBits(command.component));
         return;
@@ -203,56 +233,6 @@ export class Engine {
     this.band.remove();
     this.backend.destroy();
     this.canvas.remove();
-  }
-
-  private listen(): () => void {
-    const { canvas, framing, pointer } = this;
-    const coarse = () => !this.backend.layout.usable;
-    return attachInput(canvas, {
-      pan: (dx, dy) => {
-        framing.pan(dx, dy);
-        this.viewMoved();
-      },
-      zoom: (x, y, factor) => {
-        framing.zoomAt(x, y, factor, coarse());
-        this.viewMoved();
-      },
-      zoomCenter: (factor) => {
-        framing.zoomAt(canvas.width / 2, canvas.height / 2, factor, coarse());
-        this.viewMoved();
-      },
-      panView: (fx, fy) => {
-        framing.pan(fx * canvas.width, fy * canvas.height);
-        this.viewMoved();
-      },
-      fit: () => {
-        this.send({ type: 'fit' });
-      },
-      hover: (x, y) => {
-        pointer.moved(x, y);
-      },
-      leave: () => {
-        pointer.left();
-      },
-      click: (x, y, shift) => {
-        // Panels that open for the selection must not refit the view under the pointer.
-        framing.autoFit = false;
-        pointer.click(x, y, shift);
-      },
-      box: (x0, y0, x1, y1, phase) => {
-        if (phase === 'drag') {
-          this.band.show(x0, y0, x1, y1);
-          return;
-        }
-        this.band.hide();
-        if (phase === 'cancel') return;
-        framing.autoFit = false;
-        const box = { minX: Math.min(x0, x1), minY: Math.min(y0, y1), maxX: Math.max(x0, x1), maxY: Math.max(y0, y1) };
-        void this.backend.selectBox(box).then((bits) => {
-          pointer.addBits(bits);
-        });
-      },
-    });
   }
 
   /** Frames the drawn extent of the segments whose bit is set. */

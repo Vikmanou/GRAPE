@@ -45,6 +45,7 @@ export class WebGpuBackend implements Backend {
         this.positioned = true;
         this.picker.invalidate();
       },
+      () => this.renderer.drawn,
     );
     device.addEventListener('uncapturederror', (event) => {
       events.error(event.error.message);
@@ -74,6 +75,7 @@ export class WebGpuBackend implements Backend {
   setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
     this.layout.stop();
     this.renderer.setGeometry(geometry, colors);
+    this.layout.setSegments(geometry.segmentStarts, geometry.segmentPieces);
     this.positioned = false;
     this.picker.invalidate();
   }

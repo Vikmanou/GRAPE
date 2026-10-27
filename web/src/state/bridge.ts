@@ -74,6 +74,12 @@ export class Bridge {
       case 'camera':
         set({ camera: { x: event.x, y: event.y, zoom: event.zoom } });
         break;
+      case 'refining':
+        set({ refining: event.active });
+        break;
+      case 'pins':
+        set({ pinned: event.count });
+        break;
       case 'hover':
         set({ hovered: event.segment });
         break;

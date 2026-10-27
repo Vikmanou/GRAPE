@@ -2,6 +2,7 @@ import cull from '../shaders/cull.wgsl?raw';
 import forces from '../shaders/forces.wgsl?raw';
 import grid from '../shaders/grid.wgsl?raw';
 import common from '../shaders/layout-common.wgsl?raw';
+import pin from '../shaders/pin.wgsl?raw';
 import present from '../shaders/present.wgsl?raw';
 import prolong from '../shaders/prolong.wgsl?raw';
 import query from '../shaders/query.wgsl?raw';
@@ -15,6 +16,7 @@ const SOURCES = {
   prolong: common + prolong,
   present: common + present,
   query,
+  pin,
 };
 
 const ENTRY_POINTS = {
@@ -37,6 +39,8 @@ const ENTRY_POINTS = {
   compact: ['cull', 'compact'],
   selectBox: ['query', 'select_box'],
   boundPieces: ['query', 'bound_pieces'],
+  translate: ['pin', 'translate'],
+  setMobility: ['pin', 'set_mobility'],
 } as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
 
 export type Kernels = Record<keyof typeof ENTRY_POINTS, GPUComputePipeline>;

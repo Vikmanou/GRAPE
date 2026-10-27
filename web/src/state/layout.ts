@@ -23,6 +23,13 @@ export interface LayoutSlice {
   layoutOptions: LayoutOptions;
   layoutStatus: LayoutStatus;
   layoutPaused: boolean;
+  /** Segments pinned by dragging. */
+  pinned: number;
+  /** A refinement after a drag or of the selection is running. */
+  refining: boolean;
+  unpinAll: () => void;
+  /** Lays out the selection again on the finest level, holding everything else. */
+  relayoutSelection: () => void;
   setLayoutOptions: (options: LayoutOptions) => void;
   /** Pauses or resumes the GPU layout; the CPU layout cannot pause. */
   setLayoutPaused: (paused: boolean) => void;
@@ -123,6 +130,16 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
     layoutOptions: DEFAULT_OPTIONS,
     layoutStatus: { state: 'idle' },
     layoutPaused: false,
+    pinned: 0,
+    refining: false,
+
+    unpinAll() {
+      ctx.bridge.send({ type: 'unpin-all' });
+    },
+
+    relayoutSelection() {
+      ctx.bridge.send({ type: 'relayout-selection' });
+    },
 
     setLayoutOptions(layoutOptions) {
       set({ layoutOptions });
@@ -144,7 +161,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
     stopLayout() {
       stopRun?.();
       stopRun = undefined;
-      set({ layoutStatus: { state: 'idle' }, layoutPaused: false });
+      set({ layoutStatus: { state: 'idle' }, layoutPaused: false, pinned: 0, refining: false });
     },
   };
 }

@@ -54,6 +54,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const layout = useApp((s) => s.layoutStatus);
   const paused = useApp((s) => s.layoutPaused);
   const fps = useApp((s) => s.fps);
+  const refining = useApp((s) => s.refining);
   const onCancel = useApp((s) => s.cancelLoad);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
@@ -82,6 +83,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
           {layoutText}
         </span>
       )}
+      {refining && <span data-testid="status-refining">Refining layout…</span>}
       {warnings && warnings.total > 0 && (
         <button type="button" className="link warn" data-testid="status-warnings" onClick={onToggleWarnings}>
           {formatCount(warnings.total)} {warnings.total === 1 ? 'warning' : 'warnings'}

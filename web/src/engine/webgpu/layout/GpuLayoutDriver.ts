@@ -3,6 +3,7 @@ import { type LayoutDriver, type LayoutProgress, type Origin, USABLE_LEVEL } fro
 import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
+import { Pins, type Ribbons } from './Pins';
 import type { Kernels } from './kernels';
 
 /**
@@ -19,6 +20,8 @@ const MEASURE_INTERVAL_MS = 250;
 export interface DriverEvents {
   /** Unpacked boxes to pack, with the progress at the time they were measured. */
   measured(boxes: Float32Array<ArrayBuffer>, progress: LayoutProgress): void;
+  /** A level 0 refinement after a drag or for the selection started or ended. */
+  refining(active: boolean): void;
 }
 
 /**
@@ -42,6 +45,9 @@ export class GpuLayoutDriver implements LayoutDriver {
   private boxes: Float32Array | undefined;
   /** Whether positions changed since the last `present`. */
   private moved = false;
+  private pins: Pins | undefined;
+  /** A level 0 refinement is running; packing stays as it was. */
+  private refining: false | 'pinned' | 'selection' = false;
 
   constructor(
     private readonly device: GPUDevice,
@@ -50,7 +56,46 @@ export class GpuLayoutDriver implements LayoutDriver {
     /** Where presented positions go: the renderer's position buffer. */
     private readonly target: () => GPUBuffer | undefined,
     private readonly presented: () => void,
+    private readonly ribbons: () => Ribbons | undefined,
   ) {}
+
+  /** Each segment's first point and piece count, for dragging it. */
+  setSegments(starts: Uint32Array, pieces: Uint8Array): void {
+    this.pins?.destroy();
+    this.pins = new Pins(this.device, this.kernels, starts.length, starts, pieces);
+  }
+
+  get atLevelZero(): boolean {
+    return this.layout?.levelZero !== undefined;
+  }
+
+  get pinned(): number {
+    return this.pins?.count ?? 0;
+  }
+
+  drag(segment: number, dx: number, dy: number): void {
+    const level = this.layout?.levelZero;
+    const ribbons = this.ribbons();
+    if (!level || !ribbons || !this.pins) return;
+    this.pins.drag(level, segment, dx, dy);
+    this.pins.apply(level, ribbons, false);
+    this.refineAgain('pinned');
+  }
+
+  unpinAll(): void {
+    const level = this.layout?.levelZero;
+    const ribbons = this.ribbons();
+    this.pins?.clear();
+    if (level && ribbons && this.refining !== 'selection') this.pins?.apply(level, ribbons, false);
+  }
+
+  refine(onlySelected: boolean): void {
+    const level = this.layout?.levelZero;
+    const ribbons = this.ribbons();
+    if (!level || !ribbons || !this.pins) return;
+    this.pins.apply(level, ribbons, onlySelected);
+    this.refineAgain(onlySelected ? 'selection' : 'pinned');
+  }
 
   get active(): boolean {
     return this.layout !== undefined;
@@ -62,7 +107,7 @@ export class GpuLayoutDriver implements LayoutDriver {
 
   get busy(): boolean {
     if (!this.layout) return false;
-    return this.measuring || this.inFlight > 0 || (!this.reportedDone && !this.paused);
+    return this.measuring || this.inFlight > 0 || (!this.paused && (!this.reportedDone || this.refining !== false));
   }
 
   start(hierarchy: Hierarchy, seed: number): void {
@@ -76,6 +121,8 @@ export class GpuLayoutDriver implements LayoutDriver {
     this.offsets = undefined;
     this.boxes = undefined;
     this.moved = true;
+    this.pins?.clear();
+    this.endRefining();
   }
 
   stop(): void {
@@ -111,7 +158,9 @@ export class GpuLayoutDriver implements LayoutDriver {
     if (!layout) return false;
     if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) this.runBatch(layout, interactive);
     const finished = layout.done && this.inFlight === 0;
-    if (!this.measuring && !this.reportedDone && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) {
+    if (this.refining !== false) {
+      if (finished) this.endRefining();
+    } else if (!this.measuring && !this.reportedDone && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) {
       this.measure(layout, now);
     }
     const moved = this.moved;
@@ -133,6 +182,24 @@ export class GpuLayoutDriver implements LayoutDriver {
 
   destroy(): void {
     this.stop();
+    this.pins?.destroy();
+  }
+
+  private refineAgain(mode: 'pinned' | 'selection'): void {
+    if (!this.layout?.refineAgain()) return;
+    if (this.refining === false) this.events.refining(true);
+    this.refining = mode;
+    this.moved = true;
+  }
+
+  /** After a selection's refinement every unpinned point may move again. */
+  private endRefining(): void {
+    if (this.refining === false) return;
+    const level = this.layout?.levelZero;
+    const ribbons = this.ribbons();
+    if (this.refining === 'selection' && level && ribbons) this.pins?.apply(level, ribbons, false);
+    this.refining = false;
+    this.events.refining(false);
   }
 
   private shift(layout: GpuLayout, origin: Origin): Float32Array<ArrayBuffer> {

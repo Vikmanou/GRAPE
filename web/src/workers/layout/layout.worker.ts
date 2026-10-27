@@ -23,8 +23,15 @@ function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
 function postGeometry(id: number, layout: Layout, segments: number): void {
   const pieces = plain(layout.pieces());
   const links = plain(layout.links());
-  const geometry = { segments, points: layout.points(), pieces, links };
-  post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [pieces.buffer, links.buffer]);
+  const segmentStarts = plain(layout.segmentStarts());
+  const segmentPieces = plain(layout.segmentPieces());
+  const geometry = { segments, points: layout.points(), pieces, links, segmentStarts, segmentPieces };
+  post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [
+    pieces.buffer,
+    links.buffer,
+    segmentStarts.buffer,
+    segmentPieces.buffer,
+  ]);
 }
 
 function runCpu(id: number, layout: Layout): void {

@@ -2,6 +2,7 @@ import type { Hierarchy } from '../../../workers/protocol/layout';
 import { bind, Buffers, groups, Passes, type PassTiming, readBuffer } from './gpu';
 import type { Kernels } from './kernels';
 import { GpuLevel } from './level';
+import type { LevelZero } from './Pins';
 
 export interface Measured {
   /** `x0, y0, x1, y1` per component, before packing. */
@@ -101,6 +102,25 @@ export class GpuLayout {
 
   get levels(): number {
     return this.hierarchy.levels.length;
+  }
+
+  /** Level 0's buffers, once the layout has reached it. */
+  get levelZero(): LevelZero | undefined {
+    if (this.levelIndex !== 0) return undefined;
+    return { positions: this.level.latest, nodes: this.level.nodes, original: this.points };
+  }
+
+  /**
+   * Runs the second half of level 0's cooling schedule again, so the graph
+   * settles around a change without being shaken up. Nothing happens before
+   * the layout reaches level 0.
+   */
+  refineAgain(): boolean {
+    if (this.levelIndex !== 0) return false;
+    const from = Math.floor(this.budget(0) / 2);
+    this.levelIteration = from;
+    this.level.restart(from);
+    return true;
   }
 
   get done(): boolean {

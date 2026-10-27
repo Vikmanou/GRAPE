@@ -24,6 +24,10 @@ export interface Geometry {
   pieces: Uint32Array<ArrayBuffer>;
   /** `end a, inner a, end b, inner b` per link. */
   links: Uint32Array<ArrayBuffer>;
+  /** First point of each segment's chain. */
+  segmentStarts: Uint32Array<ArrayBuffer>;
+  /** Pieces in each segment's chain, which has one more point. */
+  segmentPieces: Uint8Array<ArrayBuffer>;
 }
 
 /** Floats inside `nodes`, `edges` and `children` are stored as their bits. */
