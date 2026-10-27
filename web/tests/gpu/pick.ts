@@ -5,7 +5,8 @@
 import { DEFAULT_DISPLAY } from '../../src/engine/style/display';
 import { Buffers, readBuffer } from '../../src/engine/webgpu/layout/gpu';
 import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
-import { idView, Picker } from '../../src/engine/webgpu/pick';
+import { idView } from '../../src/engine/core/idView';
+import { Picker } from '../../src/engine/webgpu/pick';
 import { ID_FORMAT, Renderer, type View } from '../../src/engine/webgpu/renderer';
 import { assert, plainSegments, random } from './reference';
 

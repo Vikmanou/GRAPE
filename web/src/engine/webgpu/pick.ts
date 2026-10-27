@@ -1,19 +1,8 @@
+import { idTexel, idView } from '../core/idView';
 import { ID_FORMAT, type Renderer, type View } from './renderer';
 
-/** Ids are drawn at this fraction of the canvas resolution. */
-const SCALE = 0.5;
 /** `copyTextureToBuffer` rows must be multiples of 256 bytes (WebGPU spec, GPUImageCopyBuffer). */
 const ROW_BYTES = 256;
-
-/** The view the id texture shows at half resolution. */
-export function idView(view: View): View {
-  return {
-    ...view,
-    zoom: view.zoom * SCALE,
-    width: Math.max(1, Math.ceil(view.width * SCALE)),
-    height: Math.max(1, Math.ceil(view.height * SCALE)),
-  };
-}
 
 /**
  * Segment ids drawn into an `r32uint` texture at half resolution. A pick reads
@@ -42,8 +31,7 @@ export class Picker {
    */
   encode(encoder: GPUCommandEncoder, renderer: Renderer, view: View, x: number, y: number, target: GPUBuffer): boolean {
     const ids = idView(view);
-    const tx = Math.floor(x * SCALE);
-    const ty = Math.floor(y * SCALE);
+    const [tx, ty] = idTexel(x, y);
     if (tx < 0 || ty < 0 || tx >= ids.width || ty >= ids.height) return false;
     const texture = this.ensure(ids.width, ids.height);
     if (this.stale(view)) {
