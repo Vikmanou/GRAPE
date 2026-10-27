@@ -629,3 +629,21 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: random order with unmatched nodes joining a neighbour's
   pair (triples, a new prolongation step); pairing chain points by hand on
   level 0 only.
+
+## 2026-10-27: Iteration budgets scale with level size
+
+- **Decision**: a level's iterations are its old budget (50 on level 0,
+  doubling per level up to 400, 500 on the coarsest) capped at
+  `400,000 × refine / nodes`, never below level 0's 50. Presets scale both.
+  The hierarchy carries the budgets, so the CPU reference and the GPU apply
+  the same rule. Quality is checked against the CPU reference and, on the
+  200k graph, also against the milestone 3 reference (edge CV 0.725, 1,059
+  overlaps), so both cannot get worse together. Owner's choice.
+- **Reason**: on the 1M graph, levels 1 to 4 (305k to 1.8M nodes) held most
+  of the work at 100 to 400 iterations each. The cap brings the whole layout
+  from about 1,059M to 454M node-iterations, and the work before it is usable
+  from 283M to about 109M. Levels under 50k nodes keep their budgets, so the
+  small standard graphs lay out as before.
+- **Alternatives**: stopping a level once its energy converges (needs a GPU
+  side flag to stay deterministic whatever the batch sizes); fewer passes per
+  iteration.
