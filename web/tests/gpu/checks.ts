@@ -4,7 +4,7 @@ import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
 import { encodeParams } from '../../src/engine/webgpu/layout/params';
 import { Scan } from '../../src/engine/webgpu/layout/scan';
 import { culling } from './cull';
-import { forceIteration } from './forces';
+import { allPairsIteration, forceIteration } from './forces';
 import { picking } from './pick';
 import { bounds, boxSelect } from './query';
 import { assert, cellHash, cellKey, random } from './reference';
@@ -137,6 +137,7 @@ export const checks: Record<string, Check> = {
   prefixSum,
   binning,
   forceIteration,
+  allPairsIteration,
   culling,
   picking,
   boxSelect,

@@ -9,6 +9,11 @@ const CELL_PER_REST = 2;
 export const COARSE_PER_CELL = 3;
 /** Coarse cells read on each side of a node's own; `FAR_REACH` in forces.wgsl. */
 export const FAR_REACH = 2;
+/**
+ * Levels this small repel every pair in one pass: cheaper than the seven
+ * passes of the grid, whose cost on small levels is mostly fixed.
+ */
+export const ALL_PAIRS_NODES = 2048;
 
 export type LevelInput = Pick<HierarchyLevel, 'nodes' | 'edges' | 'heat' | 'repulsion' | 'meanRest' | 'iterations'>;
 
@@ -22,7 +27,8 @@ export class GpuLevel {
   private readonly buffers: Buffers;
   private readonly positions: [GPUBuffer, GPUBuffer];
   private readonly grid: Grid;
-  private readonly repelGroup: GPUBindGroup;
+  private readonly repelGroups: GPUBindGroup[];
+  private readonly allPairs: boolean;
   private readonly moveGroups: GPUBindGroup[];
 
   private current = 0;
@@ -34,6 +40,7 @@ export class GpuLevel {
     input: LevelInput,
     shared: IterationState,
     seed: number,
+    allPairsUpTo = ALL_PAIRS_NODES,
   ) {
     this.buffers = new Buffers(device);
     const b = this.buffers;
@@ -59,14 +66,19 @@ export class GpuLevel {
     const force = b.storage('force', this.count * 8);
     this.positions = [b.storage('positions a', this.count * 8), b.storage('positions b', this.count * 8)];
     this.grid = new Grid(kernels, b, this.params, this.positions, this.nodes, this.count, shared);
-    this.repelGroup = bind(device, kernels.repel, {
-      0: this.params,
-      4: this.grid.coarse,
-      6: this.grid.starts,
-      7: force,
-      9: heat,
-      12: this.grid.packed,
-    });
+    this.allPairs = this.count <= allPairsUpTo;
+    this.repelGroups = this.positions.map((p) =>
+      this.allPairs
+        ? bind(device, kernels.repelAll, { 0: this.params, 1: p, 2: this.nodes, 7: force, 9: heat })
+        : bind(device, kernels.repel, {
+            0: this.params,
+            4: this.grid.coarse,
+            6: this.grid.starts,
+            7: force,
+            9: heat,
+            12: this.grid.packed,
+          }),
+    );
     this.moveGroups = this.positions.map((p, k) =>
       bind(device, kernels.pullAndMove, {
         0: this.params,
@@ -103,10 +115,11 @@ export class GpuLevel {
   encode(passes: Passes, iterations: number): void {
     const n = groups(this.count);
     for (let k = 0; k < iterations; k++) {
-      this.grid.encode(passes, this.current);
+      if (this.allPairs) this.grid.begin(passes, this.current);
+      else this.grid.encode(passes, this.current);
       const repelling = passes.section('repel');
-      repelling.setPipeline(this.kernels.repel);
-      repelling.setBindGroup(0, this.repelGroup);
+      repelling.setPipeline(this.allPairs ? this.kernels.repelAll : this.kernels.repel);
+      repelling.setBindGroup(0, this.repelGroups[this.current]);
       repelling.dispatchWorkgroups(n);
       const moving = passes.section('move');
       moving.setPipeline(this.kernels.pullAndMove);

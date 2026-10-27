@@ -1,8 +1,15 @@
-// One force iteration on the GPU against the same maths in f64 on the CPU.
+// One force iteration on the GPU against the same maths in f64 on the CPU,
+// with repulsion from the grid and, on a small level, from every pair.
 
 import { Buffers, Passes, readBuffer } from '../../src/engine/webgpu/layout/gpu';
 import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
-import { COARSE_PER_CELL, FAR_REACH, GpuLevel, type LevelInput } from '../../src/engine/webgpu/layout/level';
+import {
+  ALL_PAIRS_NODES,
+  COARSE_PER_CELL,
+  FAR_REACH,
+  GpuLevel,
+  type LevelInput,
+} from '../../src/engine/webgpu/layout/level';
 import { assert, floatBits, random } from './reference';
 
 const COLD = 0.4;
@@ -16,9 +23,8 @@ interface Graph {
   adjacency: { to: number; rest: number }[][];
 }
 
-function makeGraph(): Graph {
+function makeGraph(sizes: number[]): Graph {
   const next = random(3);
-  const sizes = [3000, 900, 100];
   const heatOf = [30, 15, 0];
   const component: number[] = [];
   sizes.forEach((size, c) => {
@@ -32,9 +38,10 @@ function makeGraph(): Graph {
     adjacency[b]?.push({ to: a, rest });
   };
   for (let i = 0; i + 1 < n; i++) if (component[i] === component[i + 1]) link(i, i + 1);
+  const first = sizes[0] ?? 0;
   for (let k = 0; k < 600; k++) {
-    const a = Math.floor(next() * 3000);
-    const b = Math.floor(next() * 3000);
+    const a = Math.floor(next() * first);
+    const b = Math.floor(next() * first);
     if (a !== b) link(a, b);
   }
   const positions = new Float32Array(n * 2);
@@ -67,7 +74,21 @@ function makeGraph(): Graph {
   return { input, positions, component, step, adjacency };
 }
 
-function cpuIteration(g: Graph, cell: number): Float64Array {
+/** Every other node of the component, as `repel_all` sums them. */
+function allPairs(g: Graph, i: number): [number, number] {
+  const p = g.positions;
+  let [fx, fy] = [0, 0];
+  for (let j = 0; j < g.component.length; j++) {
+    if (j === i || g.component[j] !== g.component[i]) continue;
+    const [dx, dy] = [(p[i * 2] ?? 0) - (p[j * 2] ?? 0), (p[i * 2 + 1] ?? 0) - (p[j * 2 + 1] ?? 0)];
+    const d2 = dx * dx + dy * dy;
+    fx += dx / d2;
+    fy += dy / d2;
+  }
+  return [fx, fy];
+}
+
+function cpuIteration(g: Graph, cell: number, pairs: boolean): Float64Array {
   const p = g.positions;
   const n = g.component.length;
   const coarseCell = cell * COARSE_PER_CELL;
@@ -102,10 +123,10 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
       out.set([x, y], i * 2);
       continue;
     }
-    let [fx, fy] = [0, 0];
+    let [fx, fy] = pairs ? allPairs(g, i) : [0, 0];
     const [hx, hy] = fine(i);
     const near = new Set<number>();
-    for (let j = 0; j < n; j++) {
+    for (let j = 0; j < n && !pairs; j++) {
       const [jx, jy] = fine(j);
       if (g.component[j] !== comp || Math.abs(jx - hx) > 1 || Math.abs(jy - hy) > 1) continue;
       near.add(j);
@@ -117,7 +138,7 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
       fy += dy / d2;
     }
     const [ox, oy] = coarseOf(i);
-    for (let cy = oy - FAR_REACH; cy <= oy + FAR_REACH; cy++) {
+    for (let cy = oy - FAR_REACH; cy <= oy + FAR_REACH && !pairs; cy++) {
       for (let cx = ox - FAR_REACH; cx <= ox + FAR_REACH; cx++) {
         const far = (members.get(`${comp},${cx},${cy}`) ?? []).filter((j) => !near.has(j));
         if (far.length === 0) continue;
@@ -152,12 +173,12 @@ function cpuIteration(g: Graph, cell: number): Float64Array {
   return out;
 }
 
-export async function forceIteration(device: GPUDevice, kernels: Kernels): Promise<void> {
-  const g = makeGraph();
+async function checkIteration(device: GPUDevice, kernels: Kernels, sizes: number[], pairs: boolean): Promise<void> {
+  const g = makeGraph(sizes);
   const shared = new Buffers(device);
   const state = shared.storage('state', 4);
   const energy = shared.storage('energy', 4);
-  const level = new GpuLevel(kernels, device, g.input, { state, energy }, 1);
+  const level = new GpuLevel(kernels, device, g.input, { state, energy }, 1, pairs ? ALL_PAIRS_NODES : 0);
   try {
     level.write(g.positions);
     const encoder = device.createCommandEncoder();
@@ -168,7 +189,7 @@ export async function forceIteration(device: GPUDevice, kernels: Kernels): Promi
     const gpu = new Float32Array(await readBuffer(device, level.latest), 0, g.positions.length);
     const iteration = new Uint32Array(await readBuffer(device, state))[0];
     assert(iteration === 0, `the first iteration counted as ${iteration}`);
-    const cpu = cpuIteration(g, level.cell);
+    const cpu = cpuIteration(g, level.cell, pairs);
     let [error, moved] = [0, 0];
     for (let i = 0; i < gpu.length; i += 2) {
       error += Math.hypot((gpu[i] ?? 0) - (cpu[i] ?? 0), (gpu[i + 1] ?? 0) - (cpu[i + 1] ?? 0));
@@ -176,11 +197,19 @@ export async function forceIteration(device: GPUDevice, kernels: Kernels): Promi
     }
     assert(moved > 0, 'nothing moved');
     assert(error <= moved * 1e-3, `GPU differs by ${error.toFixed(3)} over ${moved.toFixed(1)} of movement`);
-    for (let i = 3900; i < 4000; i++) {
+    for (let i = g.component.length - (sizes.at(-1) ?? 0); i < g.component.length; i++) {
       assert(gpu[i * 2] === g.positions[i * 2], `frozen node ${i} moved`);
     }
   } finally {
     level.destroy();
     shared.destroy();
   }
+}
+
+export function forceIteration(device: GPUDevice, kernels: Kernels): Promise<void> {
+  return checkIteration(device, kernels, [3000, 900, 100], false);
+}
+
+export function allPairsIteration(device: GPUDevice, kernels: Kernels): Promise<void> {
+  return checkIteration(device, kernels, [1500, 400, 100], true);
 }

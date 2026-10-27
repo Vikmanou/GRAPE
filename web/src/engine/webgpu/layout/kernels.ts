@@ -27,6 +27,7 @@ const ENTRY_POINTS = {
   scatter: ['grid', 'scatter'],
   sortBuckets: ['grid', 'sort_buckets'],
   repel: ['forces', 'repel'],
+  repelAll: ['forces', 'repel_all'],
   pullAndMove: ['forces', 'pull_and_move'],
   pullChildren: ['prolong', 'pull_children'],
   placeChildren: ['prolong', 'place_children'],

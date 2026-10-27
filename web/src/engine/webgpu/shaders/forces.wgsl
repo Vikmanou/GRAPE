@@ -4,7 +4,8 @@
 // Repulsion is `k^2 / d` from every node of the component within reach,
 // each counted once: exact pairs from the 3x3 fine cells around a node, and
 // the centroids of the 5x5 coarse cells around it with those fine cells'
-// nodes taken out.
+// nodes taken out. Small levels take every pair of the component instead,
+// in one pass.
 
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var<storage, read> positions: array<vec2f>;
@@ -121,6 +122,48 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
     }
   }
   force[i] = f * params.repulsion;
+}
+
+var<workgroup> tile_position: array<vec2f, WORKGROUP>;
+var<workgroup> tile_component: array<u32, WORKGROUP>;
+
+// Every other node of the component, read a tile at a time into workgroup
+// memory and summed in index order.
+@compute @workgroup_size(WORKGROUP)
+fn repel_all(@builtin(global_invocation_id) id: vec3u, @builtin(local_invocation_index) t: u32) {
+  let i = id.x;
+  let inside = i < params.count;
+  var p = vec2f(0.0);
+  var component = 0u;
+  var hot = false;
+  if (inside) {
+    p = positions[i];
+    component = nodes[i].x;
+    hot = heat[component] != 0.0;
+  }
+  var f = vec2f(0.0);
+  for (var base = 0u; base < params.count; base += WORKGROUP) {
+    let j = base + t;
+    if (j < params.count) {
+      tile_position[t] = positions[j];
+      tile_component[t] = nodes[j].x;
+    }
+    workgroupBarrier();
+    let end = min(WORKGROUP, params.count - base);
+    if (hot) {
+      for (var k = 0u; k < end; k++) {
+        let other = base + k;
+        if (tile_component[k] == component && other != i) {
+          let d = apart(p - tile_position[k], i, other);
+          f += d / dot(d, d);
+        }
+      }
+    }
+    workgroupBarrier();
+  }
+  if (inside) {
+    force[i] = f * params.repulsion;
+  }
 }
 
 var<workgroup> group_energy: atomic<u32>;

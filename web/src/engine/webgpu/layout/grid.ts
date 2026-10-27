@@ -74,14 +74,18 @@ export class Grid {
     }));
   }
 
-  /** Starts an iteration and bins the nodes at `positions[from]`. */
-  encode(passes: Passes, from: number): void {
-    const group = this.groups[from];
-    if (!group) throw new Error(`no position buffer ${from}`);
+  /** Starts an iteration: advances it and clears the energy and the tables. */
+  begin(passes: Passes, from: number): void {
     const starting = passes.section('begin');
     starting.setPipeline(this.kernels.begin);
-    starting.setBindGroup(0, group.begin);
+    starting.setBindGroup(0, this.group(from).begin);
     starting.dispatchWorkgroups(this.beginGroups);
+  }
+
+  /** Starts an iteration and bins the nodes at `positions[from]`. */
+  encode(passes: Passes, from: number): void {
+    this.begin(passes, from);
+    const group = this.group(from);
     const binning = passes.section('bin');
     binning.setPipeline(this.kernels.bin);
     binning.setBindGroup(0, group.bin);
@@ -95,5 +99,11 @@ export class Grid {
     sorting.setPipeline(this.kernels.sortBuckets);
     sorting.setBindGroup(0, group.sort);
     sorting.dispatchWorkgroups(groups(this.fine));
+  }
+
+  private group(from: number) {
+    const group = this.groups[from];
+    if (!group) throw new Error(`no position buffer ${from}`);
+    return group;
   }
 }
