@@ -5,7 +5,8 @@ import { LayoutClient } from '../workers/layout/LayoutClient';
 import { SequenceClient } from '../workers/sequence/SequenceClient';
 import { handleKey } from './shortcuts';
 import { createAppStore, installStore, type AppStore } from './store';
-import { onSystemThemeChange, systemTheme } from './theme';
+import { persistSettings } from './settings';
+import { onSystemThemeChange } from './theme';
 
 export function startApp(): AppStore {
   const store = installStore(
@@ -19,8 +20,10 @@ export function startApp(): AppStore {
     }),
   );
   const app = store.getState();
-  app.setTheme(systemTheme());
-  onSystemThemeChange(app.setTheme);
+  persistSettings(store);
+  onSystemThemeChange((theme) => {
+    if (store.getState().themeChoice === 'system') store.getState().setTheme(theme);
+  });
   app.startCore();
   window.addEventListener('keydown', (event) => {
     if (handleKey(event, store.getState())) event.preventDefault();

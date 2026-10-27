@@ -2,6 +2,7 @@ import { type Camera, type Insets, NO_INSETS } from '../engine/core/camera';
 import type { BackendKind } from '../engine/core/detect';
 import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
+import { resolveTheme, type ThemeChoice } from './theme';
 
 export type SidebarTab = 'overview' | 'display' | 'find';
 
@@ -10,6 +11,7 @@ export interface DisplaySlice {
   /** Set when the engine could not start or lost its device. */
   engineError: string | undefined;
   theme: Theme;
+  themeChoice: ThemeChoice;
   /** The GPU runs the layout; `?layout=cpu` draws the CPU reference instead. */
   gpuLayout: boolean;
   /** Frames per second over the last second of continuous drawing. */
@@ -39,6 +41,7 @@ export interface DisplaySlice {
   detachEngine: () => void;
   engineFailed: (message: string) => void;
   setTheme: (theme: Theme) => void;
+  setThemeChoice: (choice: ThemeChoice) => void;
   setInsets: (insets: Insets) => void;
 }
 
@@ -48,6 +51,7 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     renderer: 'detecting',
     engineError: undefined,
     theme: 'light',
+    themeChoice: 'system',
     gpuLayout: false,
     fps: undefined,
     insets: NO_INSETS,
@@ -119,6 +123,11 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     setTheme(theme) {
       set({ theme });
       ctx.bridge.send({ type: 'set-theme', theme });
+    },
+
+    setThemeChoice(themeChoice) {
+      set({ themeChoice });
+      get().setTheme(resolveTheme(themeChoice));
     },
 
     setInsets(insets) {

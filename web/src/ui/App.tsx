@@ -30,6 +30,13 @@ export function App() {
   const infoOpen = useApp((s) => s.infoOpen && s.selection.count > 0);
   usePanelInsets(`${load.state}:${String(sidebarOpen)}:${String(infoOpen)}`);
 
+  const themeChoice = useApp((s) => s.themeChoice);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themeChoice === 'system') delete root.dataset.theme;
+    else root.dataset.theme = themeChoice;
+  }, [themeChoice]);
+
   const unsupported = renderer === 'none' || engineError !== undefined;
   const file = load.state === 'idle' ? undefined : load.file;
 

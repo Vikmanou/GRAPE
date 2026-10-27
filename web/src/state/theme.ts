@@ -2,6 +2,9 @@ import type { Theme } from '../engine/style/palette';
 
 const query = '(prefers-color-scheme: dark)';
 
+/** The theme the user picked; `system` follows the OS. */
+export type ThemeChoice = 'system' | Theme;
+
 export function systemTheme(): Theme {
   return window.matchMedia(query).matches ? 'dark' : 'light';
 }
@@ -16,4 +19,8 @@ export function onSystemThemeChange(listener: (theme: Theme) => void): () => voi
   return () => {
     media.removeEventListener('change', handler);
   };
+}
+
+export function resolveTheme(choice: ThemeChoice): Theme {
+  return choice === 'system' ? systemTheme() : choice;
 }
