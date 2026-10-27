@@ -634,7 +634,8 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 
 - **Decision**: a level's iterations are its old budget (50 on level 0,
   doubling per level up to 400, 500 on the coarsest) capped at
-  `400,000 × refine / nodes`, never below level 0's 50. Presets scale both.
+  `400,000 × refine / nodes`, never below 100 (twice level 0's 50). Presets
+  scale both.
   The hierarchy carries the budgets, so the CPU reference and the GPU apply
   the same rule. Quality is checked against the CPU reference and, on the
   200k graph, also against the milestone 3 reference (edge CV 0.725, 1,059
@@ -643,7 +644,8 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   of the work at 100 to 400 iterations each. The cap brings the whole layout
   from about 1,059M to 454M node-iterations, and the work before it is usable
   from 283M to about 109M. Levels under 50k nodes keep their budgets, so the
-  small standard graphs lay out as before.
+  small standard graphs lay out as before. A floor of 50 left the 200k graph
+  with 1,784 overlaps, 15 over the milestone 3 guard; the floor is now 100.
 - **Alternatives**: stopping a level once its energy converges (needs a GPU
   side flag to stay deterministic whatever the batch sizes); fewer passes per
   iteration.

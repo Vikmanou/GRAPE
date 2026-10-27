@@ -157,8 +157,8 @@ impl Layout {
     /// Coarse levels decide the shape and cost little, so each level up
     /// gets twice the iterations of the one below, up to eight times. On
     /// large graphs the levels just above level 0 are not cheap: their work
-    /// is capped near `LEVEL_WORK` node-iterations, never below level 0's
-    /// iterations.
+    /// is capped near `LEVEL_WORK` node-iterations, never below twice level
+    /// 0's iterations.
     fn budget(&self, level: usize) -> u32 {
         let refine = self.options.refine_iterations;
         let base = if level == self.levels.len() - 1 {
@@ -168,7 +168,7 @@ impl Layout {
         };
         let nodes = self.levels[level].len().max(1) as u64;
         let capped = u64::from(refine) * LEVEL_WORK / nodes;
-        base.min(capped.max(u64::from(refine)) as u32)
+        base.min(capped.max(u64::from(refine) * 2) as u32)
     }
 
     /// Frozen components start straight; the rest at random in a square
