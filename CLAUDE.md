@@ -39,6 +39,26 @@ expected, or the plan turns out wrong. Explain with evidence, propose a revised
 plan, wait. Never work around it silently and never lower a target without
 saying so.
 
+## Building comes first, measuring second
+
+Most of the time and machine goes to writing the code, not to running it.
+Benchmarks and long browser runs are reference points, not a habit.
+
+- While building, run only what the change needs: `npm run check:quick`
+  before each commit, plus the one or two Playwright specs or GPU checks that
+  cover the code just touched. Not the whole suite, not after every edit.
+- Run a benchmark (`bench:*`, the 200k or 1M graphs, anything that takes
+  minutes) only when the milestone's acceptance criteria call for that
+  number, when the owner asks, or once to check a risk the plan named. Run it
+  once, at the end of the work it measures, on an otherwise idle machine; don't
+  rerun it to watch a number move.
+- Screenshots and throwaway debug specs are fine for looking at a problem; keep
+  them small (test graphs, not the 1M graph).
+- If the work truly needs many benchmark runs or long test runs (profiling a
+  missed target, comparing several approaches), say so to the owner first, with
+  roughly how many runs and how long, so they can free the machine or lend a
+  faster one. Don't start them unannounced.
+
 ## Commits
 
 - One plain sentence, no punctuation:
