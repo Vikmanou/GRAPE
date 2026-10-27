@@ -6,6 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { memoryMb, panAndZoom, zoomIn } from './benchHelpers';
+import { segmentsOnScreen } from './helpers';
 
 interface Job {
   files: string[];
@@ -51,12 +52,17 @@ test.describe('layout benchmark', () => {
       const name = basename(path);
       await openGraph(page, path);
       const status = page.getByTestId('status-layout');
-      const result: Record<string, number | string | undefined> = {
+      const result: Record<string, unknown> = {
         parseMs: Number(await page.getByTestId('format').getAttribute('data-parse-ms')),
         settledMs: Number(await status.getAttribute('data-ms')),
         usableMs: Number(await status.getAttribute('data-usable-ms')),
         tabMb: memoryMb()?.tab,
         gpuProcessMb: memoryMb()?.gpu,
+        ...(await page.evaluate(async () => {
+          type Hooks = { memory(): Promise<unknown>; layoutProfile(): Promise<unknown> };
+          const hooks = (window as unknown as { grapeTest: Hooks }).grapeTest;
+          return { memory: await hooks.memory(), levels: await hooks.layoutProfile() };
+        })),
       };
       const positions = await page.evaluate(() => {
         const layout = (window as unknown as { grapeLayout: { positions: Float32Array } }).grapeLayout;
@@ -69,8 +75,10 @@ test.describe('layout benchmark', () => {
 
       await page.screenshot({ path: join(job.screenshots, `${name}.png`) });
       result.fpsZoomedOut = await panAndZoom(page);
-      await zoomIn(page, 30);
-      result.fpsZoomedIn = await panAndZoom(page);
+      // Toward a segment: the canvas centre can be a gap between components.
+      const [anchor] = [...(await segmentsOnScreen(page, 1)).values()];
+      await zoomIn(page, 30, anchor);
+      result.fpsZoomedIn = await panAndZoom(page, anchor);
       writeFileSync(join(job.out, `${name}.json`), JSON.stringify(result));
     });
   }
