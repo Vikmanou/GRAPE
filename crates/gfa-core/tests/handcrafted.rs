@@ -374,3 +374,15 @@ fn packed_input_keeps_no_line_offsets() {
     let g = parse(&testdata("linear.gfa"), options).unwrap();
     assert!(g.segments.line.is_empty());
 }
+
+#[test]
+fn custom_colours_and_labels() {
+    let g = load("colour_tags.gfa");
+    let (red, blue, bad) = (id(&g, "red"), id(&g, "blue"), id(&g, "bad"));
+    let c = &g.custom;
+    assert_eq!(c.color, [(red, 0xff00_00ff), (blue, 0xffff_0000)]);
+    assert_eq!(c.color2, [(blue, 0x8000_ff00)]);
+    assert_eq!(c.label, [(red, "first".to_owned())]);
+    assert_eq!(c.label2, [(bad, "back\\nside".to_owned())]);
+    assert_eq!(warnings(&g), [(5, WarningKind::MalformedTag)]);
+}

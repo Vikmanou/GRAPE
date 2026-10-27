@@ -1,8 +1,9 @@
 //! GFA 1.0/1.1 records, per <https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md>.
-//! Depth tags follow Bandage's `buildDeBruijnGraphFromGfa`
+//! Depth, colour (CL, C2) and label (LB, L2) tags follow Bandage's `buildDeBruijnGraphFromGfa`
 //! (<https://github.com/rrwick/Bandage/blob/main/graph/assemblygraph.cpp>).
 
 use crate::parse::builder::Builder;
+use crate::parse::colors::parse_color;
 use crate::parse::fields::{self, Overlap};
 use crate::parse::warnings::{FatalError, WarningKind, show};
 use crate::store::paths::{PathKind, REVERSE, walk_steps};
@@ -53,12 +54,16 @@ fn header<'a>(b: &mut Builder, fields: impl Iterator<Item = &'a [u8]>, no: u64) 
 }
 
 #[derive(Default)]
-struct SegmentTags {
+struct SegmentTags<'a> {
     ln: Option<u64>,
     dp: Option<f64>,
     kc: Option<f64>,
     rc: Option<f64>,
     fc: Option<f64>,
+    cl: Option<u32>,
+    c2: Option<u32>,
+    lb: Option<&'a [u8]>,
+    l2: Option<&'a [u8]>,
 }
 
 fn segment<'a>(
@@ -90,6 +95,22 @@ fn segment<'a>(
                 }
                 continue;
             }
+            [b'C', b'L'] => {
+                tags.cl = color_tag(b, no, field, tag.value);
+                continue;
+            }
+            [b'C', b'2'] => {
+                tags.c2 = color_tag(b, no, field, tag.value);
+                continue;
+            }
+            [b'L', b'B'] => {
+                tags.lb = Some(tag.value);
+                continue;
+            }
+            [b'L', b'2'] => {
+                tags.l2 = Some(tag.value);
+                continue;
+            }
             [b'D', b'P'] => &mut tags.dp,
             [b'K', b'C'] => &mut tags.kc,
             [b'R', b'C'] => &mut tags.rc,
@@ -106,6 +127,7 @@ fn segment<'a>(
         return;
     };
     b.segments.set_line(id, offset);
+    custom_tags(b, id, &tags);
     let i = id as usize;
 
     let length = if seq == b"*" {
@@ -148,6 +170,34 @@ fn segment<'a>(
     };
     b.segments.length[i] = clamp_length(b, length, name, no);
     b.segments.depth[i] = depth(&tags, length);
+}
+
+fn color_tag(b: &mut Builder, no: u64, field: &[u8], value: &[u8]) -> Option<u32> {
+    let color = parse_color(value);
+    if color.is_none() {
+        malformed_tag(b, no, "Tag is not a colour", field);
+    }
+    color
+}
+
+fn custom_tags(b: &mut Builder, id: u32, tags: &SegmentTags) {
+    let custom = &mut b.custom;
+    if let Some(c) = tags.cl {
+        custom.color.push((id, c));
+    }
+    if let Some(c) = tags.c2 {
+        custom.color2.push((id, c));
+    }
+    if let Some(l) = tags.lb {
+        custom
+            .label
+            .push((id, String::from_utf8_lossy(l).into_owned()));
+    }
+    if let Some(l) = tags.l2 {
+        custom
+            .label2
+            .push((id, String::from_utf8_lossy(l).into_owned()));
+    }
 }
 
 pub(crate) fn sequences_dropped(b: &mut Builder, no: u64) {

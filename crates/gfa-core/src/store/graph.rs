@@ -7,7 +7,7 @@ use crate::store::csr::Adjacency;
 use crate::store::names::Names;
 use crate::store::paths::Paths;
 use crate::store::seq::{Packed, SeqMode};
-use crate::store::{Links, NO_SEQ, Segments};
+use crate::store::{CustomTags, Links, NO_SEQ, Segments};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
@@ -24,6 +24,7 @@ pub struct Graph {
     pub segments: Segments,
     pub links: Links,
     pub paths: Paths,
+    pub custom: CustomTags,
     pub packed: Option<Packed>,
     pub adjacency: Adjacency,
     pub components: Components,
@@ -67,6 +68,7 @@ impl Graph {
             segments: b.segments,
             links: b.links,
             paths: b.paths,
+            custom: b.custom,
             packed: b.packed,
             adjacency,
             components,

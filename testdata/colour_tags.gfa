@@ -1,0 +1,7 @@
+H	VN:Z:1.0
+S	red	ACGT	CL:Z:#ff0000	LB:Z:first
+S	blue	*	LN:i:4	cl:Z:blue	C2:Z:#8000ff00
+S	plain	ACGT
+S	bad	ACGT	CL:Z:nope	L2:Z:back\nside
+L	red	+	blue	+	0M
+L	blue	+	plain	-	0M

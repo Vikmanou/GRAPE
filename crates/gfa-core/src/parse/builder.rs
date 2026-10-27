@@ -3,7 +3,7 @@ use crate::parse::warnings::{FatalError, WarningKind, Warnings, show};
 use crate::store::names::{MAX_ID, Names};
 use crate::store::paths::Paths;
 use crate::store::seq::{Packed, SeqMode};
-use crate::store::{LinkInsert, Links, Segments, seg_flags};
+use crate::store::{CustomTags, LinkInsert, Links, Segments, seg_flags};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct RecordCounts {
@@ -39,6 +39,7 @@ pub(crate) struct Builder {
     pub segments: Segments,
     pub links: Links,
     pub paths: Paths,
+    pub custom: CustomTags,
     pub packed: Option<Packed>,
     pub warnings: Warnings,
     pub counts: RecordCounts,
@@ -62,6 +63,7 @@ impl Builder {
             segments: Segments::new(mode == SeqMode::FileOffsets),
             links: Links::default(),
             paths: Paths::default(),
+            custom: CustomTags::default(),
             packed: match mode {
                 SeqMode::FileOffsets => None,
                 SeqMode::Packed { budget_bytes } => Some(Packed::new(budget_bytes)),
@@ -203,6 +205,7 @@ impl Builder {
         }
         self.warnings.list.sort_by_key(|w| w.line);
         self.links.seal();
+        self.custom.seal();
     }
 }
 
