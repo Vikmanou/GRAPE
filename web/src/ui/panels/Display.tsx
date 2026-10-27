@@ -1,6 +1,7 @@
 import { useApp } from '../../state/store';
 import { formatCount } from '../format';
 import { ColorControls } from './ColorControls';
+import { DetailControls } from './DetailControls';
 import { LayoutControls } from './LayoutControls';
 
 export function Display() {
@@ -14,6 +15,7 @@ export function Display() {
   return (
     <>
       <ColorControls />
+      <DetailControls />
       <LayoutControls />
       <section className="controls" aria-label="Pins">
         <h3>Pins</h3>

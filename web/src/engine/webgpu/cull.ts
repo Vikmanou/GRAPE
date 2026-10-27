@@ -2,7 +2,7 @@ import { bind, Buffers, groups } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
 import { Scan } from './layout/scan';
 
-/** Matches `Cull` in cull.wgsl: 9 words, padded to 12. */
+/** Matches `Cull` in cull.wgsl: 11 words, padded to 12. */
 const CULL_BYTES = 48;
 const NO_SEGMENT = 0xffffffff;
 
@@ -17,6 +17,8 @@ export interface CullView {
   ribbonHalf: number;
   /** Highlight only: the hovered segment. */
   hover?: number | undefined;
+  /** Segments shorter than this, in world units, draw as one dot. */
+  spriteWorld: number;
 }
 
 /**
@@ -31,16 +33,20 @@ export class Cull {
   private readonly scan: Scan;
   private readonly mark: GPUBindGroup;
   private readonly compactGroup: GPUBindGroup;
+  private readonly segments: number;
 
   constructor(
     private readonly kernels: Kernels,
     buffers: Buffers,
     private readonly kind: CullKind,
     private readonly count: number,
+    segments: number,
     positions: GPUBuffer,
     items: GPUBuffer,
     indirect: GPUBuffer,
     slot: number,
+    /** Pieces only: the segment table of segments.ts. */
+    table?: GPUBuffer,
     /** Highlight only: one bit per selected segment. */
     selected?: GPUBuffer,
   ) {
@@ -48,6 +54,7 @@ export class Cull {
     this.visible = buffers.storage(`visible ${kind}`, count * 4);
     this.uniform = buffers.uniform(`${kind} cull`, this.data);
     new Uint32Array(this.data).set([count, slot], 6);
+    this.segments = segments;
     this.scan = new Scan(kernels, buffers, marks, count + 1);
     const device = buffers.device;
     const entries: Record<number, GPUBuffer> = {
@@ -57,6 +64,7 @@ export class Cull {
       4: marks,
     };
     if (selected) entries[7] = selected;
+    if (table) entries[8] = table;
     this.mark = bind(device, this.pipeline(), entries);
     this.compactGroup = bind(device, kernels.compact, { 0: this.uniform, 4: marks, 5: this.visible, 6: indirect });
   }
@@ -76,6 +84,8 @@ export class Cull {
       view.ribbonHalf,
     ]);
     new Uint32Array(this.data)[8] = view.hover ?? NO_SEGMENT;
+    new Float32Array(this.data)[9] = view.spriteWorld;
+    new Uint32Array(this.data)[10] = this.segments;
     device.queue.writeBuffer(this.uniform, 0, this.data);
     pass.setPipeline(this.pipeline());
     pass.setBindGroup(0, this.mark);

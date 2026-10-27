@@ -9,8 +9,9 @@ import type { Buffers } from './layout/gpu';
 /** The fields of graph.wgsl's segment table, each a run of one u32 per segment. */
 const FIELDS = ['depth', 'gc', 'length', 'component', 'tag', 'tag2', 'start', 'pieces'] as const;
 
-/** Matches `Style` in graph.wgsl: 12 words, then the ramp. */
-const STYLE_WORDS = 12 + RAMP_SIZE;
+/** Matches `Style` in graph.wgsl: 16 words, then the ramp. */
+const HEADER_WORDS = 16;
+const STYLE_WORDS = HEADER_WORDS + RAMP_SIZE;
 
 function dense(segments: number, tags: SegmentData['tagColors']): Uint32Array<ArrayBuffer> {
   const out = new Uint32Array(segments);
@@ -79,7 +80,8 @@ export class StyleUniform {
     u[9] = packRgba(palettes[style.theme].unknown);
     u[10] = NO_TAG_COLOR;
     u[11] = dim ? 1 : 0;
-    u.set(ramp, 12);
+    f[12] = display.spritePx;
+    u.set(ramp, HEADER_WORDS);
     device.queue.writeBuffer(this.buffer, 0, this.data);
   }
 }

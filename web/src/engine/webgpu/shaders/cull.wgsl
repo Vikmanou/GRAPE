@@ -15,6 +15,9 @@ struct Cull {
   slot: u32,
   // The segment under the pointer, or 0xffffffff.
   hover: u32,
+  // Segments shorter than this draw as one dot, from their first piece.
+  sprite_world: f32,
+  segments: u32,
 }
 
 @group(0) @binding(0) var<uniform> cull: Cull;
@@ -28,6 +31,19 @@ struct Cull {
 @group(0) @binding(6) var<storage, read_write> indirect: array<u32>;
 // One bit per segment.
 @group(0) @binding(7) var<storage, read> selected: array<u32>;
+// The segment table of graph.wgsl.
+@group(0) @binding(8) var<storage, read> segment_table: array<u32>;
+
+const START = 6u;
+const PIECES = 7u;
+
+// Mirrors `sprite_center` in graph.wgsl.
+fn sprite_extent(segment: u32) -> f32 {
+  let start = segment_table[START * cull.segments + segment];
+  let pieces = segment_table[PIECES * cull.segments + segment];
+  let mid = start + pieces / 2u;
+  return max(length(positions[mid] - positions[start]), length(positions[start + pieces] - positions[mid]));
+}
 
 fn touches(lo: vec2f, hi: vec2f) -> u32 {
   let inside = all(hi >= cull.center - cull.half) && all(lo <= cull.center + cull.half);
@@ -41,6 +57,12 @@ fn mark_pieces(@builtin(global_invocation_id) id: vec3u) {
     if (i == cull.count) {
       marks[i] = 0u;
     }
+    return;
+  }
+  let segment = pieces[i].y;
+  let start = segment_table[START * cull.segments + segment];
+  if sprite_extent(segment) < cull.sprite_world && pieces[i].x != start {
+    marks[i] = 0u;
     return;
   }
   let a = positions[pieces[i].x];

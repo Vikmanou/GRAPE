@@ -146,10 +146,12 @@ export class Renderer {
             b,
             kind,
             count,
+            geometry.segments,
             positions,
             items,
             indirect,
             slot,
+            kind === 'pieces' ? table : undefined,
             kind === 'highlight' ? selected : undefined,
           )
         : undefined;
@@ -250,6 +252,7 @@ export class Renderer {
       pad: ribbonHalf + view.outlineWidth + 2 * worldPerPixel,
       ribbonHalf: view.ribbonHalf,
       hover: view.hover,
+      spriteWorld: this.style.display.spritePx * worldPerPixel,
     };
     const pass = encoder.beginComputePass({ label: 'cull' });
     graph.pieceCull?.encode(this.device, pass, area);

@@ -2,6 +2,7 @@
 // whose centre is clearly inside or outside every capsule holds the id of the
 // last piece drawn over it. Picker reads single texels of the same texture.
 
+import { DEFAULT_DISPLAY } from '../../src/engine/style/display';
 import { Buffers, readBuffer } from '../../src/engine/webgpu/layout/gpu';
 import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
 import { idView, Picker } from '../../src/engine/webgpu/pick';
@@ -57,6 +58,8 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
       plainSegments(segments),
       1,
     );
+    // The capsules have no chains to measure, so none may turn into a dot.
+    renderer.setStyle({ theme: 'light', display: { ...DEFAULT_DISPLAY, spritePx: 0 } });
     renderer.setPositions(positions);
     const texture = device.createTexture({
       size: { width: ids.width, height: ids.height },

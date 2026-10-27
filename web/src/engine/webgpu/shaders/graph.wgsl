@@ -36,6 +36,8 @@ struct Style {
   no_tag_color: u32,
   // Unselected segments fade.
   dim: u32,
+  // Segments shorter than this draw as a dot.
+  sprite_px: f32,
   // 256 RGBA8 colours, four to an entry.
   ramp: array<vec4u, 64>,
 }
@@ -62,6 +64,8 @@ const LENGTH = 2u;
 const COMPONENT = 3u;
 const TAG = 4u;
 const TAG2 = 5u;
+const START = 6u;
+const PIECES = 7u;
 
 fn field(f: u32, segment: u32) -> u32 {
   return segment_table[f * style.segments + segment];
@@ -150,6 +154,17 @@ fn ribbon_half(segment: u32) -> f32 {
   return view.ribbon_half * clamp(relative, 0.5, 4.0);
 }
 
+// Where a segment shorter than `sprite_world` draws its dot; mirrors
+// `sprite_center` in cull.wgsl, which keeps only such a segment's first piece.
+fn sprite_center(segment: u32, sprite_world: f32) -> vec3f {
+  let start = field(START, segment);
+  let pieces = field(PIECES, segment);
+  let mid = start + pieces / 2u;
+  let extent = max(length(positions[mid] - positions[start]), length(positions[start + pieces] - positions[mid]));
+  let center = 0.5 * (positions[mid] + positions[mid + pieces % 2u]);
+  return vec3f(center, select(0.0, 1.0, extent < sprite_world));
+}
+
 // Faded unselected segments keep this much of their colour.
 const DIMMED = 0.25;
 
@@ -182,8 +197,13 @@ struct Ribbon {
 @vertex
 fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Ribbon {
   let piece = pieces[visible_pieces[i]];
-  let a = positions[piece.x];
-  let b = positions[piece.x + 1u];
+  var a = positions[piece.x];
+  var b = positions[piece.x + 1u];
+  let sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);
+  if sprite.z > 0.0 {
+    a = sprite.xy;
+    b = sprite.xy;
+  }
   let length_ab = length(b - a);
   let along = select(vec2f(1.0, 0.0), (b - a) / length_ab, length_ab > 1e-6);
   let across = vec2f(-along.y, along.x);
