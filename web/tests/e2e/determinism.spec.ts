@@ -1,10 +1,9 @@
 // The spec's determinism rule: the same file, seed and settings give the same
-// layout on the same machine. Needs a WebGPU adapter, so it runs under
-// `npm run check:headed` and skips elsewhere.
+// layout on the same machine.
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, repo, showTab, skipWithoutWebGpu } from './helpers';
+import { failOnPageError, gotoApp, repo, showTab, skipUnlessBackend } from './helpers';
 
 const GRAPHS = ['testdata/tangle.gfa', 'testdata/two_components.gfa', 'samples/bacterial-spades.gfa'];
 
@@ -34,8 +33,8 @@ for (const graph of GRAPHS) {
   test(`same seed gives the same layout: ${graph}`, async ({ page }) => {
     test.skip(!existsSync(repo(graph)), 'run `npm run samples` first');
     failOnPageError(page);
-    await page.goto('/');
-    await skipWithoutWebGpu(page);
+    await gotoApp(page);
+    await skipUnlessBackend(page);
 
     await page.getByTestId('open-input').setInputFiles(repo(graph));
     const first = await settledHash(page, 0);

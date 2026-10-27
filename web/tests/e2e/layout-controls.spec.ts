@@ -1,16 +1,15 @@
-// Layout controls on the GPU layout. Needs a WebGPU adapter, so it runs under
-// `npm run check:headed` and skips elsewhere.
+// Layout controls: pause, resume, restart and quality presets.
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, repo, showTab, skipWithoutWebGpu } from './helpers';
+import { failOnPageError, gotoApp, repo, showTab, skipUnlessBackend } from './helpers';
 
 const PANGENOME = repo('samples/brca2-cactus.gfa');
 
 async function open(page: Page): Promise<void> {
   failOnPageError(page);
-  await page.goto('/');
-  await skipWithoutWebGpu(page);
+  await gotoApp(page);
+  await skipUnlessBackend(page);
   test.skip(!existsSync(PANGENOME), 'run `npm run samples` first');
   await page.getByTestId('open-input').setInputFiles(PANGENOME);
   await showTab(page, 'display');

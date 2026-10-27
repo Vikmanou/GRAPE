@@ -1,6 +1,5 @@
 // Sequences, copy and FASTA as Bandage writes them, from plain, gzipped and
-// FASTG input. Needs a WebGPU adapter, so it runs under `npm run check:headed`
-// and skips elsewhere.
+// FASTG input.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

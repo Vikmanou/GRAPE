@@ -11,13 +11,29 @@ export function failOnPageError(page: Page): void {
   });
 }
 
-/** Skips the test unless the page picked WebGPU, which needs `npm run check:headed`. */
-export async function skipWithoutWebGpu(page: Page): Promise<void> {
+/** The backend this Playwright project runs the flows on (playwright.config.ts). */
+export function backend(): 'webgpu' | 'webgl2' {
+  return test.info().project.metadata.renderer === 'webgl2' ? 'webgl2' : 'webgpu';
+}
+
+/** Opens the app on this project's backend; `query` adds parameters such as `layout=cpu`. */
+export async function gotoApp(page: Page, query = ''): Promise<void> {
+  const params = new URLSearchParams(query);
+  if (backend() === 'webgl2') params.set('renderer', 'webgl2');
+  const search = params.toString();
+  await page.goto(search ? `/?${search}` : '/');
+}
+
+/**
+ * Skips the test unless the page runs this project's backend: the WebGPU
+ * project needs an adapter, which only `npm run check:headed` has.
+ */
+export async function skipUnlessBackend(page: Page): Promise<void> {
   // Detection can finish after the core is ready, especially on a busy GPU.
   const status = page.getByTestId('status-renderer');
   await expect(status).not.toHaveAttribute('data-renderer', 'detecting');
   const renderer = await status.getAttribute('data-renderer');
-  test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
+  test.skip(renderer !== backend(), `needs ${backend()} (WebGPU needs npm run check:headed)`);
 }
 
 export async function showTab(page: Page, tab: 'overview' | 'display' | 'find'): Promise<void> {
@@ -44,20 +60,21 @@ export function appState(page: Page): Promise<AppSnapshot> {
   });
 }
 
-/** Opens a file and waits for its layout to settle. Needs WebGPU. */
+/** Opens a file on this project's backend and waits for its layout to settle. */
 export async function openSettled(page: Page, path: string): Promise<void> {
   failOnPageError(page);
   await page.setViewportSize({ width: 1200, height: 750 });
-  await page.goto('/');
+  await gotoApp(page);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  await skipWithoutWebGpu(page);
+  await skipUnlessBackend(page);
   await page.getByTestId('open-input').setInputFiles(path);
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 120_000 });
 }
 
 /**
  * Page coordinates of up to `count` different segments, found by picking a
- * grid of the canvas pixels no panel covers.
+ * grid of the canvas pixels no panel covers. Each is the hit nearest the
+ * middle of that segment's hits, away from its ends, where links meet it.
  */
 export async function segmentsOnScreen(page: Page, count: number): Promise<Map<number, { x: number; y: number }>> {
   const box = await page.getByTestId('engine-canvas').boundingBox();
@@ -88,18 +105,25 @@ export async function segmentsOnScreen(page: Page, count: number): Promise<Map<n
     for (let y = step; y < canvas.height; y += step) {
       for (let x = step; x < canvas.width; x += step) if (reachable(x, y)) pixels.push([x, y]);
     }
-    const out: [number, number, number][] = [];
-    for (let i = 0; i < pixels.length && out.length < count; i += 256) {
+    const hits = new Map<number, [number, number][]>();
+    for (let i = 0; i < pixels.length; i += 256) {
       const batch = pixels.slice(i, i + 256);
       const picked = await Promise.all(batch.map(([x, y]) => pick(x, y)));
       for (const [k, segment] of picked.entries()) {
         const [x = 0, y = 0] = batch[k] ?? [];
-        if (segment !== undefined && out.length < count && !out.some(([s]) => s === segment)) {
-          out.push([segment, x / scale, y / scale]);
-        }
+        if (segment === undefined) continue;
+        const list = hits.get(segment) ?? [];
+        list.push([x, y]);
+        hits.set(segment, list);
       }
     }
-    return out;
+    return [...hits.entries()].slice(0, count).map(([segment, list]): [number, number, number] => {
+      const mx = list.reduce((sum, [x]) => sum + x, 0) / list.length;
+      const my = list.reduce((sum, [, y]) => sum + y, 0) / list.length;
+      const distance = ([x, y]: [number, number]) => Math.hypot(x - mx, y - my);
+      const [x, y] = list.reduce((best, hit) => (distance(hit) < distance(best) ? hit : best));
+      return [segment, x / scale, y / scale];
+    });
   }, count);
   return new Map(found.map(([segment, x, y]) => [segment, { x: box.x + x, y: box.y + y }]));
 }

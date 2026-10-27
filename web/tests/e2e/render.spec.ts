@@ -1,9 +1,8 @@
-// WebGPU rendering checks. Headless Chromium has no adapter, so these run
-// under `npm run check:headed` and skip elsewhere.
+// Rendering checks.
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, repo, skipWithoutWebGpu } from './helpers';
+import { backend, failOnPageError, gotoApp, repo, skipUnlessBackend } from './helpers';
 
 const BACTERIAL = repo('samples/bacterial-spades.gfa');
 
@@ -14,9 +13,9 @@ async function start(page: Page): Promise<string[]> {
   });
   failOnPageError(page);
   await page.setViewportSize({ width: 1000, height: 700 });
-  await page.goto('/');
+  await gotoApp(page);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  await skipWithoutWebGpu(page);
+  await skipUnlessBackend(page);
   return gpuErrors;
 }
 
@@ -57,8 +56,10 @@ test('draws every test graph without GPU errors', async ({ page }) => {
   expect(gpuErrors).toEqual([]);
 });
 
-test('pans and zooms a bacterial graph at 60 fps', async ({ page }) => {
+test('pans and zooms a bacterial graph at 60 fps', async ({ page, headless }) => {
   test.skip(!existsSync(BACTERIAL), 'run `npm run samples` first');
+  // Headless Chromium draws WebGL2 in software (SwiftShader) unless it runs on the GPU.
+  test.skip(backend() === 'webgl2' && headless && process.env.GRAPE_GPU_HEADLESS !== '1', 'needs a real GPU');
   const gpuErrors = await start(page);
   await open(page, BACTERIAL);
   // Synthetic wheel and drag events every frame for three seconds, timing

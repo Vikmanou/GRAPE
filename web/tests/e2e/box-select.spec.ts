@@ -1,5 +1,4 @@
-// Shift-drag selects every segment whose ribbon touches the box. Needs a
-// WebGPU adapter, so it runs under `npm run check:headed` and skips elsewhere.
+// Shift-drag selects every segment whose ribbon touches the box.
 
 import { expect, type Page, test } from '@playwright/test';
 import { appState, openSettled, repo, segmentsOnScreen } from './helpers';
@@ -27,7 +26,9 @@ test('a box around the whole graph selects every segment', async ({ page }) => {
 
 test('a small box selects the segment under it and adds to the selection', async ({ page }) => {
   await openSettled(page, repo('testdata/two_components.gfa'));
-  const [[a, at] = [], [b, bt] = []] = [...(await segmentsOnScreen(page, 2)).entries()];
+  // Left of where the info panel opens on the first selection.
+  const segments = [...(await segmentsOnScreen(page, 20)).entries()].filter(([, at]) => at.x < 800);
+  const [[a, at] = [], [b, bt] = []] = segments;
   if (a === undefined || b === undefined || !at || !bt) throw new Error('fewer than two segments on screen');
   await shiftDrag(page, { x: at.x - 6, y: at.y - 6 }, { x: at.x + 6, y: at.y + 6 });
   await expect.poll(async () => (await appState(page)).selection.count).toBeGreaterThanOrEqual(1);

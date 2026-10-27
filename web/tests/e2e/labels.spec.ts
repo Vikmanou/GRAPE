@@ -1,4 +1,4 @@
-// Labels: shown, sized by their content, hidden. Needs a WebGPU adapter.
+// Labels: shown, sized by their content, hidden.
 
 import { expect, test } from '@playwright/test';
 import { openSettled, repo, showTab } from './helpers';

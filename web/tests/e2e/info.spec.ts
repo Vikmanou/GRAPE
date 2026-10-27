@@ -1,5 +1,4 @@
-// The info panel for one segment and for several. Needs a WebGPU adapter, so
-// it runs under `npm run check:headed` and skips elsewhere.
+// The info panel for one segment and for several.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

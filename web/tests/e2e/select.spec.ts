@@ -1,5 +1,4 @@
-// Selecting with the pointer. Needs a WebGPU adapter, so it runs under
-// `npm run check:headed` and skips elsewhere.
+// Selecting with the pointer.
 
 import { expect, test } from '@playwright/test';
 import { appState, openSettled, repo, segmentsOnScreen } from './helpers';

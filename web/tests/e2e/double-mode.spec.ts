@@ -1,5 +1,4 @@
 // Double mode draws both strands; picking still finds each segment.
-// Needs a WebGPU adapter.
 
 import { expect, test } from '@playwright/test';
 import { openSettled, repo, segmentsOnScreen } from './helpers';

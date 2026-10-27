@@ -1,5 +1,4 @@
 // Colour modes, their legends and settings that last across a reload.
-// Needs a WebGPU adapter, so it runs under `npm run check:headed`.
 
 import { expect, test } from '@playwright/test';
 import { near, openSettled, ribbonColor, repo, segmentsOnScreen, showTab } from './helpers';

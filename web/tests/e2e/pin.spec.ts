@@ -1,6 +1,5 @@
 // Dragging pins a segment where it is dropped; the rest of the graph refines
-// around it. Needs a WebGPU adapter, so it runs under `npm run check:headed`
-// and skips elsewhere.
+// around it.
 
 import { expect, type Page, test } from '@playwright/test';
 import { appState, openSettled, repo, segmentsOnScreen, showTab } from './helpers';

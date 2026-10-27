@@ -1,5 +1,4 @@
-// Find by name, list or regex. Needs a WebGPU adapter, so it runs under
-// `npm run check:headed` and skips elsewhere.
+// Find by name, list or regex.
 
 import { expect, type Page, test } from '@playwright/test';
 import { appState, openSettled, repo, showTab } from './helpers';

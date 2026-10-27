@@ -1,5 +1,4 @@
-// Keyboard shortcuts and the overlay listing them. Needs a WebGPU adapter, so
-// it runs under `npm run check:headed` and skips elsewhere.
+// Keyboard shortcuts and the overlay listing them.
 
 import { expect, test } from '@playwright/test';
 import { appState, openSettled, repo } from './helpers';
