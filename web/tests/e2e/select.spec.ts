@@ -65,7 +65,10 @@ test('components select and frame, the selection grows to its components and inv
   await page.getByTestId('select-components').click();
   await expect.poll(async () => (await appState(page)).selection.count).toBeGreaterThan(1);
 
-  const before = (await appState(page)).zoom ?? 0;
+  // The view may already frame the selection; zooming out first makes the frame move it.
+  const framed = (await appState(page)).zoom ?? 0;
+  await page.keyboard.press('-');
+  await expect.poll(async () => (await appState(page)).zoom).toBeLessThan(framed);
   await page.getByTestId('zoom-selection').click();
-  await expect.poll(async () => (await appState(page)).zoom).not.toBe(before);
+  await expect.poll(async () => (await appState(page)).zoom).toBeCloseTo(framed, 3);
 });
