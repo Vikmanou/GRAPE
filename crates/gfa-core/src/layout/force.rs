@@ -16,7 +16,7 @@ pub(crate) fn repulsion(level: &Level) -> f32 {
 pub(crate) struct Forces {
     fx: Vec<f32>,
     fy: Vec<f32>,
-    step: Vec<f32>,
+    pub step: Vec<f32>,
     k2: f32,
     tree: QuadTree,
 }

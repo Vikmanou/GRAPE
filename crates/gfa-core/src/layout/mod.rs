@@ -5,6 +5,7 @@ mod force;
 mod hierarchy;
 mod level;
 mod pack;
+mod pins;
 mod points;
 mod quadtree;
 mod quality;
@@ -19,6 +20,7 @@ use force::Forces;
 pub use hierarchy::{Hierarchy, HierarchyLevel};
 use level::{Level, NONE, Split};
 pub use pack::pack;
+use pins::Refining;
 use points::{NODE_SEGMENT_LENGTH, Springs};
 use rng::Rng;
 
@@ -66,6 +68,13 @@ pub struct Layout {
     forces: Forces,
     /// `x, y` per coarsest node before the first step.
     start: Vec<f32>,
+    /// One bit per pinned segment.
+    pins: Vec<u32>,
+    pin_count: usize,
+    refining: Refining,
+    /// Component offsets, fixed once the layout settled or was first
+    /// refined, so dragging never repacks components.
+    packed: Option<Vec<f32>>,
 }
 
 impl Layout {
@@ -118,6 +127,10 @@ impl Layout {
             heat: Vec::new(),
             forces: Forces::default(),
             start: Vec::new(),
+            pins: vec![0; t.lengths.len().div_ceil(32)],
+            pin_count: 0,
+            refining: Refining::No,
+            packed: None,
         };
         layout.scatter(&mut rng);
         layout.start = layout
@@ -295,21 +308,35 @@ impl Layout {
                 &mut self.ys,
             );
             self.level_iteration += 1;
-            self.iteration += 1;
+            if self.refining == Refining::No {
+                self.iteration += 1;
+            }
+        }
+        if self.done() {
+            if self.packed.is_none() {
+                self.packed = Some(self.pack_shift());
+            }
+            if self.refining != Refining::No {
+                self.end_refining();
+            }
         }
         self.done()
     }
 
-    /// `x, y` per point. While a coarser level runs, points take their
-    /// ancestor's position.
-    pub fn write_positions(&self, out: &mut Vec<f32>) {
-        let n = self.chains.points();
-        let mut node: Vec<u32> = (0..n as u32).collect();
+    /// Each point's node on the current level.
+    fn nodes(&self) -> Vec<u32> {
+        let mut node: Vec<u32> = (0..self.chains.points() as u32).collect();
         for split in &self.splits[..self.level] {
             for v in &mut node {
                 *v = split.parent[*v as usize];
             }
         }
+        node
+    }
+
+    /// `dx, dy` per component, packing the current boxes.
+    fn pack_shift(&self) -> Vec<f32> {
+        let node = self.nodes();
         let starts = &self.chains.component_start;
         let mut boxes = Vec::with_capacity(self.frozen.len() * 4);
         for c in 0..self.frozen.len() {
@@ -323,9 +350,20 @@ impl Layout {
             }
             boxes.extend([x0, y0, x1, y1]);
         }
-        let shift = pack(&boxes, &self.frozen);
+        pack(&boxes, &self.frozen)
+    }
+
+    /// `x, y` per point. While a coarser level runs, points take their
+    /// ancestor's position.
+    pub fn write_positions(&self, out: &mut Vec<f32>) {
+        let node = self.nodes();
+        let starts = &self.chains.component_start;
+        let shift = match &self.packed {
+            Some(packed) => packed.clone(),
+            None => self.pack_shift(),
+        };
         out.clear();
-        out.reserve(n * 2);
+        out.reserve(node.len() * 2);
         for c in 0..self.frozen.len() {
             let (dx, dy) = (shift[c * 2], shift[c * 2 + 1]);
             for &v in &node[starts[c] as usize..starts[c + 1] as usize] {

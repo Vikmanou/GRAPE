@@ -272,3 +272,95 @@ fn hierarchy_follows_the_seed() {
         hierarchy("tangle.gfa", 4).start
     );
 }
+
+fn settled(name: &str) -> Layout {
+    let graph = load(name);
+    let mut layout = Layout::new(graph.topology(), LayoutOptions::default()).unwrap();
+    while !layout.step(64) {}
+    layout
+}
+
+fn positions(layout: &Layout) -> Vec<f32> {
+    let mut p = Vec::new();
+    layout.write_positions(&mut p);
+    p
+}
+
+fn segment_points(layout: &Layout, segment: u32) -> std::ops::RangeInclusive<u32> {
+    layout.chains.first(segment)..=layout.chains.last(segment)
+}
+
+#[test]
+fn a_dragged_segment_stays_where_it_was_dropped() {
+    let mut layout = settled("tangle.gfa");
+    let before = positions(&layout);
+    assert!(layout.drag(0, 40.0, -25.0));
+    assert_eq!(layout.pinned(), 1);
+    assert!(layout.refining());
+    let dropped = positions(&layout);
+    for p in segment_points(&layout, 0) {
+        let (x, y) = point(&before, p);
+        assert_eq!(point(&dropped, p), (x + 40.0, y - 25.0));
+    }
+    while !layout.step(16) {}
+    assert!(!layout.refining());
+    let after = positions(&layout);
+    for p in segment_points(&layout, 0) {
+        assert_eq!(point(&after, p), point(&dropped, p));
+    }
+    assert_ne!(after, dropped, "the rest follows the drag");
+    assert_eq!(layout.iteration(), layout.total_iterations());
+}
+
+#[test]
+fn refining_the_selection_moves_only_the_selection() {
+    let mut layout = settled("tangle.gfa");
+    let before = positions(&layout);
+    let selected = [0b10u32];
+    assert!(layout.refine(Some(&selected)));
+    layout.drag(1, 30.0, 0.0);
+    layout.unpin_all();
+    assert!(layout.refine(Some(&selected)));
+    while !layout.step(16) {}
+    let after = positions(&layout);
+    let moved: Vec<u32> = (0..layout.chains.start.len() as u32)
+        .filter(|&s| segment_points(&layout, s).any(|p| point(&before, p) != point(&after, p)))
+        .collect();
+    assert_eq!(moved, [1]);
+}
+
+#[test]
+fn nothing_is_pinned_before_level_zero() {
+    let graph = load("tangle.gfa");
+    let mut layout = Layout::new(graph.topology(), LayoutOptions::default()).unwrap();
+    assert!(!layout.at_level_zero());
+    assert!(!layout.drag(0, 1.0, 1.0));
+    assert!(!layout.refine(None));
+    assert_eq!(layout.pinned(), 0);
+}
+
+#[test]
+fn dragging_never_repacks_components() {
+    let mut layout = settled("two_components.gfa");
+    let before = positions(&layout);
+    layout.drag(0, 500.0, 500.0);
+    while !layout.step(16) {}
+    let after = positions(&layout);
+    let other = layout.chains.component_start[1]..layout.chains.component_start[2];
+    let first = layout.chains.first(0);
+    let other: Vec<u32> = if other.contains(&first) {
+        (layout.chains.component_start[0]..layout.chains.component_start[1]).collect()
+    } else {
+        other.collect()
+    };
+    let centre = |q: &[f32]| {
+        let sum = other.iter().fold((0.0, 0.0), |(x, y), &p| {
+            let (px, py) = point(q, p);
+            (x + px, y + py)
+        });
+        (sum.0 / other.len() as f32, sum.1 / other.len() as f32)
+    };
+    let ((bx, by), (ax, ay)) = (centre(&before), centre(&after));
+    // A repack would move the other component by hundreds of units.
+    assert!((ax - bx).hypot(ay - by) < 20.0, "{bx},{by} -> {ax},{ay}");
+}

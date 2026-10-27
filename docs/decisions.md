@@ -219,7 +219,7 @@ decision, reason, alternatives considered.
   every 100 ms until the layout settles.
 - **Reason**: the parse worker stays free for later queries (info panel,
   sequences), a new layout can be cancelled by ending its worker, and the
-  same worker is the WebGL2 fallback's layout in milestone 8. Computing link
+  same worker is the WebGL2 fallback's layout in milestone 7. Computing link
   geometry in Rust keeps per-link loops off the main thread.
 - **Alternatives**: running the layout in the parse worker (blocks it for
   the whole layout); computing link geometry in TypeScript on the main
@@ -726,3 +726,16 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a label per strand in double mode, as Bandage's names
   carry their sign; the name arena on the main thread (the spec's
   Architecture text, a second copy of every name).
+
+## 2026-10-27: The CPU layout pins and refines as the GPU layout does
+
+- **Decision**: the CPU layout (the WebGL2 backend's layout) pins a dragged
+  segment by giving its level 0 points step size 0, and a refinement runs
+  the second half of level 0's cooling schedule again, moving only the
+  selection for "Re-layout selection". Component offsets are fixed once the
+  layout settles or is first refined, so a drag never repacks components.
+  Refinement iterations do not count towards the layout's progress.
+- **Reason**: both backends behave alike; the decisions of 2026-10-25 (pins
+  are step sizes on level 0) carry over without a second scheme.
+- **Alternatives**: a separate pinned bitset read by the force loop; repacking
+  after each refinement (components jump while dragging).
