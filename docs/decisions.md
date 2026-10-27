@@ -789,3 +789,17 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: a fifth of the plain size; the menu is a same-origin request
   with no user data, within the privacy rules.
 - **Alternatives**: plain files (2.6 MB); importing them into the bundle.
+
+## 2026-10-27: Screenshot tests compare the backends and WebGL2 baselines
+
+- **Decision**: `screenshots.spec.ts` draws each bundled example on WebGPU
+  with `?layout=cpu` and on WebGL2 from the same seed, so both draw the
+  same CPU layout, and fails when more than 1% of the canvas pixels differ by
+  more than 48 summed over the channels (measured on this laptop: 0.000% on
+  all four). That comparison needs WebGPU and runs under `check:headed`; CI
+  checks the WebGL2 pictures against committed baselines
+  (`screenshots.spec.ts-snapshots/*-webgl2-linux.png`, made with
+  Playwright's headless Chromium and SwiftShader) with the same 1% tolerance.
+- **Reason**: chosen by the owner; the GPU layout and the CPU layout differ,
+  so only a shared layout compares renderers; CI has no WebGPU.
+- **Alternatives**: only the headed comparison; baselines for both backends.
