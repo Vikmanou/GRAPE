@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import type { FileInfo } from '../../state/load';
 import { useApp } from '../../state/store';
 import type { ThemeChoice } from '../../state/theme';
+import { ExampleMenu } from '../controls/ExampleMenu';
 import { formatBytes } from '../format';
 
 const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz';
@@ -26,6 +27,7 @@ export function TopBar({ file, onOpen }: Props) {
       <button type="button" onClick={() => input.current?.click()}>
         Open…
       </button>
+      <ExampleMenu />
       <span className="spacer" />
       <ThemeButton />
       <button

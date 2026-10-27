@@ -43,3 +43,28 @@
 .spacer {
   flex: 1;
 }
+
+.example-menu {
+  position: relative;
+}
+
+.example-menu summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.example-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 4;
+  width: max-content;
+  max-width: min(28rem, calc(100vw - 32px));
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}

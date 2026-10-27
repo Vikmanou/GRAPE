@@ -777,3 +777,15 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: chosen by the owner; one path for every control.
 - **Alternatives**: a production-ignored parameter; a settings toggle; store
   actions calling the worker directly for the CPU layout.
+
+## 2026-10-27: The examples ship gzipped from public/examples
+
+- **Decision**: the four example graphs are stored gzipped (`gzip -9n`,
+  470 KB in all) in `web/public/examples/` with a `CREDITS.md` that carries
+  the CC-BY-4.0 attribution (Anna Syme 2020, Zenodo 5722622) and the MIT
+  notices of odgi and minigraph, checked at their sources. The menu shows
+  each credit and licence. Loading fetches the file from the site itself and
+  opens it as any other file, so the parser's gzip path serves it.
+- **Reason**: a fifth of the plain size; the menu is a same-origin request
+  with no user data, within the privacy rules.
+- **Alternatives**: plain files (2.6 MB); importing them into the bundle.

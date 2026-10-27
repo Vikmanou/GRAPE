@@ -178,3 +178,30 @@ kbd {
   border: 1px solid var(--border);
   border-radius: 3px;
 }
+
+.empty-examples {
+  pointer-events: auto;
+  text-align: left;
+  margin-top: 16px;
+}
+
+.examples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.examples li {
+  display: grid;
+}
+
+.examples button {
+  text-align: left;
+}
+
+.example-credit {
+  font-size: 12px;
+  padding-left: 8px;
+}

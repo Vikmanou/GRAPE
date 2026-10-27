@@ -1,5 +1,6 @@
 import type { ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
+import { EXAMPLES, fetchExample } from './examples';
 import type { Context } from './store';
 
 /** The v1 ceiling (spec, Overview); larger graphs load with a warning. */
@@ -28,6 +29,8 @@ export interface FileSlice {
   startCore: () => void;
   /** A newer file replaces one still parsing. */
   open: (file: File) => void;
+  /** Opens one of the bundled examples, by id. */
+  openExample: (id: string) => void;
   cancelLoad: () => void;
 }
 
@@ -50,6 +53,19 @@ export function createFileSlice(ctx: Context): FileSlice {
         },
         (error: unknown) => {
           if (!(error instanceof WorkerTerminatedError)) set({ core: { state: 'error', message: message(error) } });
+        },
+      );
+    },
+
+    openExample(id) {
+      const example = EXAMPLES.find((e) => e.id === id);
+      if (!example) return;
+      fetchExample(example, import.meta.env.BASE_URL).then(
+        (file) => {
+          get().open(file);
+        },
+        (error: unknown) => {
+          get().toast(`Could not load the ${example.title} example`, message(error));
         },
       );
     },
