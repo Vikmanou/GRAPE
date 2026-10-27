@@ -21,7 +21,8 @@
     "samples": "node scripts/fetch-samples.mjs",
     "fuzz": "node scripts/fuzz.mjs",
     "bench:parse": "node scripts/bench-parse.mjs",
-    "bench:layout": "node scripts/bench-layout.mjs"
+    "bench:layout": "node scripts/bench-layout.mjs",
+    "bench:interaction": "node scripts/bench-interaction.mjs"
   },
   "devDependencies": {
     "prettier": "3.6.2"

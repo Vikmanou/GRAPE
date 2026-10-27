@@ -22,6 +22,15 @@ all run on your machine.
   Fast, Balanced and Best presets. A 200k-segment graph settles in under a
   minute on integrated graphics; see [bench/results.md](bench/results.md).
 - Drag to pan, scroll or pinch to zoom, arrow keys and +/-, F to fit.
+- Click a segment to see its length, depth, GC, component, neighbours, its
+  line in the file and the ends of its sequence; shift-click to add or
+  remove, shift-drag to select by box, select whole components, invert and
+  zoom to the selection.
+- Copy sequences or save them as FASTA exactly as Bandage writes them.
+- Find segments by a list of names or a regular expression.
+- Drag a segment to pin it while the rest of the graph follows; unpin, or lay
+  out just the selection again.
+- Keyboard shortcuts for all of the above; press `?` for the list.
 
 GRAPE needs WebGPU: current desktop Chrome or Edge.
 
@@ -40,6 +49,7 @@ npm run samples        # download real sample graphs (see samples/README.md)
 npm run fuzz           # fuzz the parser
 npm run bench:parse    # time parsing a synthetic 200k-segment graph
 npm run bench:layout   # GPU layout timings and quality against the CPU reference
+npm run bench:interaction  # frame rates and pointer latency on the 200k and 1M graphs
 ```
 
 Native tools for the Rust core, run with

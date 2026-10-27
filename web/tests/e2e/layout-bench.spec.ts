@@ -2,10 +2,10 @@
 // job: graphs to lay out on the GPU, where to write their positions and
 // timings, and where to put a screenshot of each.
 
-import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { memoryMb, panAndZoom, zoomIn } from './benchHelpers';
 
 interface Job {
   files: string[];
@@ -15,25 +15,6 @@ interface Job {
 
 const job = JSON.parse(process.env.GRAPE_LAYOUT_BENCH ?? 'null') as Job | null;
 const SETTLE_MS = 30 * 60_000;
-
-/**
- * Resident memory in MB of the page's renderer process, which holds the page
- * and its workers, and of Chromium's GPU process, which holds GPU buffers on
- * integrated graphics. Linux only.
- */
-function memoryMb(): { tab: number; gpu: number } | undefined {
-  if (process.platform !== 'linux') return undefined;
-  const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
-    .split('\n')
-    .map((row) => row.trim())
-    .filter((row) => row.includes('ms-playwright/chromium'));
-  const sum = (match: (row: string) => boolean) =>
-    Math.round(rows.filter(match).reduce((kb, row) => kb + Number(row.split(/\s+/)[0]), 0) / 1024);
-  return {
-    tab: sum((row) => row.includes('--type=renderer') && !row.includes('--top-chrome-webui')),
-    gpu: sum((row) => row.includes('--type=gpu-process')),
-  };
-}
 
 async function openGraph(page: Page, path: string): Promise<void> {
   await page.setViewportSize({ width: 1200, height: 800 });
@@ -49,56 +30,6 @@ async function openGraph(page: Page, path: string): Promise<void> {
   await page.waitForFunction(() => (window as { grapeLayout?: unknown }).grapeLayout !== undefined, undefined, {
     timeout: SETTLE_MS,
   });
-}
-
-/**
- * Drags and wheels the view every frame for three seconds. Returns the
- * status bar's frame rate, or the animation frame rate when frames came too
- * far apart for the status bar to count them.
- */
-async function panAndZoom(page: Page): Promise<number> {
-  const animationFps = await page.evaluate(async () => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) throw new Error('no canvas');
-    const rect = canvas.getBoundingClientRect();
-    const [cx, cy] = [rect.left + rect.width / 2, rect.top + rect.height / 2];
-    const at = { clientX: cx, clientY: cy, bubbles: true, cancelable: true };
-    canvas.dispatchEvent(new PointerEvent('pointerdown', { ...at, pointerId: 1, button: 0 }));
-    const started = performance.now();
-    let frames = 0;
-    await new Promise<void>((done) => {
-      const frame = (now: number) => {
-        frames++;
-        const t = now - started;
-        canvas.dispatchEvent(new WheelEvent('wheel', { ...at, deltaY: Math.sin(t / 300) * 20 }));
-        canvas.dispatchEvent(
-          new PointerEvent('pointermove', { ...at, pointerId: 1, clientX: cx + Math.sin(t / 250) * 150 }),
-        );
-        if (t < 3000) requestAnimationFrame(frame);
-        else done();
-      };
-      requestAnimationFrame(frame);
-    });
-    canvas.dispatchEvent(new PointerEvent('pointerup', { ...at, pointerId: 1 }));
-    return (frames * 1000) / (performance.now() - started);
-  });
-  const shown = await page
-    .getByTestId('status-fps')
-    .textContent({ timeout: 1000 })
-    .catch(() => null);
-  const status = shown === null ? Infinity : Number(shown.replace(/\D+/g, ''));
-  return Math.round(Math.min(status, animationFps));
-}
-
-async function zoomIn(page: Page, steps: number): Promise<void> {
-  await page.evaluate((n) => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) throw new Error('no canvas');
-    const rect = canvas.getBoundingClientRect();
-    const at = { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true };
-    for (let i = 0; i < n; i++)
-      canvas.dispatchEvent(new WheelEvent('wheel', { ...at, cancelable: true, deltaY: -100 }));
-  }, steps);
 }
 
 test.describe('layout benchmark', () => {

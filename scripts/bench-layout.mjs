@@ -11,7 +11,7 @@ import { cpus, platform, release } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { root, run } from './lib.mjs';
+import { root, run, syntheticGraph } from './lib.mjs';
 
 const bench = join(root, 'target', 'bench');
 const out = join(bench, 'layout');
@@ -29,17 +29,10 @@ const STANDARD = [
 ];
 const SYNTHETIC_SEGMENTS = 200_000;
 
-function synthetic(segments) {
-  const path = join(bench, `${segments}.gfa`);
-  if (!existsSync(path)) {
-    run('cargo', ['run', '-q', '-p', 'gfa-gen', '--release', '--', '--segments', String(segments), '--out', path]);
-  }
-  return path;
-}
-
 const given = process.argv.slice(2).map((path) => resolve(path));
 for (const dir of [out, cpuCache]) mkdirSync(dir, { recursive: true });
-const files = given.length > 0 ? given : [...STANDARD.map((path) => join(root, path)), synthetic(SYNTHETIC_SEGMENTS)];
+const files =
+  given.length > 0 ? given : [...STANDARD.map((path) => join(root, path)), syntheticGraph(SYNTHETIC_SEGMENTS)];
 const missing = files.filter((path) => !existsSync(path));
 if (missing.length > 0) {
   console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples -- --large\` for the standard set`);
