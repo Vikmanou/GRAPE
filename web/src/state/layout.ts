@@ -98,6 +98,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
             seed,
             segments: { ...load.result.attributes, ...load.result.topology, meanDepth: load.result.stats.meanDepth },
           });
+          get().refreshLabels();
           status({ state: 'running', iteration: 0, total });
           break;
         case 'hierarchy':

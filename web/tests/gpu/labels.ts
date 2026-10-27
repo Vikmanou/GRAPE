@@ -77,7 +77,14 @@ export async function labelPlacement(device: GPUDevice, kernels: Kernels): Promi
       positions: buffers.upload('positions', positions),
       table: buffers.upload('segments', table),
     };
-    const got = Array.from(await placer.place(source, at)).sort((a, b) => a - b);
+    const placed = await placer.place(source, at);
+    const ranked = Array.from(placed.ranks);
+    assert(
+      ranked.every((r, i) => i === 0 || r > (ranked[i - 1] ?? 0)) &&
+        ranked.every((r, i) => r === ranks[placed.segments[i] ?? 0]),
+      'winners should come best rank first, with their ranks',
+    );
+    const got = Array.from(placed.segments).sort((a, b) => a - b);
     assert(want.length > 50 && want.length < segments / 2, `${want.length} labels kept; the check needs crowding`);
     assert(got.join() === want.join(), `${got.length} labels kept, expected ${want.length}`);
     for (let i = 0; i < got.length; i++) {

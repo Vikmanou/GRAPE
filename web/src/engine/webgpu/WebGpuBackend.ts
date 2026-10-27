@@ -1,11 +1,14 @@
 import type { Geometry } from '../../workers/protocol/layout';
-import type { Backend, BackendEvents, SegmentData, Style, View } from '../core/backend';
+import type { Backend, BackendEvents, LabelMetrics, PlacedLabels, SegmentData, Style, View } from '../core/backend';
 import type { Bounds } from '../core/camera';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
 import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import { createGpuContext } from './device';
-import { gpuBytes, PassTiming } from './layout/gpu';
+import type { Atlas } from '../text/Atlas';
+import { GlyphRenderer } from './glyphs';
+import { LabelPlacer } from './labels';
+import { Buffers, gpuBytes, PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
 import { createKernels, type Kernels } from './layout/kernels';
 import { Picker } from './pick';
@@ -18,6 +21,10 @@ export class WebGpuBackend implements Backend {
   private readonly renderer: Renderer;
   private readonly picker: Picker;
   private readonly queries: Queries;
+  private readonly labelBuffers: Buffers;
+  private readonly placer: LabelPlacer;
+  private readonly glyphs: GlyphRenderer;
+  private fontPx = 0;
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
   private lastView: View | undefined;
   private hover: number | undefined;
@@ -37,6 +44,9 @@ export class WebGpuBackend implements Backend {
     this.renderer = new Renderer(device, format, kernels);
     this.picker = new Picker(device);
     this.queries = new Queries(device, kernels);
+    this.labelBuffers = new Buffers(device);
+    this.placer = new LabelPlacer(device, kernels);
+    this.glyphs = new GlyphRenderer(device, format, this.labelBuffers);
     this.layout = new GpuLayoutDriver(
       device,
       kernels,
@@ -80,6 +90,8 @@ export class WebGpuBackend implements Backend {
   setGraph(geometry: Geometry, segments: SegmentData, seed: number): void {
     this.layout.stop();
     this.renderer.setGeometry(geometry, segments, seed);
+    this.placer.setSizes(undefined);
+    this.glyphs.setSource(this.renderer.drawn);
     this.layout.setSegments(geometry.segmentStarts, geometry.segmentPieces);
     this.positioned = false;
     this.picker.invalidate();
@@ -128,7 +140,10 @@ export class WebGpuBackend implements Backend {
         },
       ],
     });
-    if (this.positioned) this.renderer.draw(pass, drawn);
+    if (this.positioned) {
+      this.renderer.draw(pass, drawn);
+      this.glyphs.draw(pass, view, { color: palette.label, halo: palette.background }, this.fontPx);
+    }
     pass.end();
     timing?.resolve(encoder);
     this.device.queue.submit([encoder.finish()]);
@@ -172,6 +187,28 @@ export class WebGpuBackend implements Backend {
     return this.queries.bounds(drawn, of);
   }
 
+  setAtlas(atlas: Atlas): void {
+    this.glyphs.setAtlas(atlas);
+  }
+
+  setLabelSizes(sizes: Uint32Array<ArrayBuffer> | undefined): void {
+    this.placer.setSizes(sizes);
+  }
+
+  async placeLabels(metrics: LabelMetrics): Promise<PlacedLabels> {
+    const view = this.lastView;
+    const drawn = this.renderer.drawn;
+    if (!view || !drawn || !this.positioned || this.destroyed) {
+      return { segments: new Uint32Array(0), ranks: new Uint32Array(0) };
+    }
+    return this.placer.place(drawn, { ...view, ...metrics });
+  }
+
+  setLabels(glyphs: Float32Array<ArrayBuffer>, fontPx: number): void {
+    this.glyphs.setGlyphs(glyphs);
+    this.fontPx = fontPx;
+  }
+
   private drawn(view: View): DrawnView {
     const palette = palettes[this.style.theme];
     return {
@@ -191,6 +228,9 @@ export class WebGpuBackend implements Backend {
     if (this.destroyed) return;
     this.destroyed = true;
     this.layout.destroy();
+    this.placer.destroy();
+    this.glyphs.destroy();
+    this.labelBuffers.destroy();
     this.picker.destroy();
     this.renderer.destroy();
     this.context.unconfigure();

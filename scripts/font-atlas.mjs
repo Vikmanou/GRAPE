@@ -34,7 +34,7 @@ const options = {
   filename: 'label-atlas',
   charset: CHARSET,
   fontSize: 42,
-  distanceRange: 4,
+  distanceRange: 8,
   fieldType: 'msdf',
   textureSize: [512, 512],
   smartSize: true,

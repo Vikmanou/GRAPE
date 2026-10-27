@@ -45,6 +45,8 @@ export interface Drawn {
   segments: number;
   /** One bit per selected segment. */
   selected: GPUBuffer;
+  /** The segment table of segments.ts. */
+  table: GPUBuffer;
 }
 
 interface Graph extends Drawn {
@@ -195,6 +197,7 @@ export class Renderer {
       pieceCount,
       segments: geometry.segments,
       selected,
+      table,
       indirect,
       pieceCull,
       links: linkCull,

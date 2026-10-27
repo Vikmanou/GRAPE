@@ -39,9 +39,11 @@ export class Bridge {
     engine.on((event) => {
       this.receive(event);
     });
-    const { theme, insets, displayOptions } = this.ctx.get();
+    const { theme, insets, displayOptions, labels } = this.ctx.get();
     engine.send({ type: 'set-theme', theme });
     engine.send({ type: 'set-display', display: displayOptions });
+    const { max, minRibbonPx, fontPx } = labels;
+    engine.send({ type: 'set-label-options', options: { max, minRibbonPx, fontPx } });
     engine.send({ type: 'set-insets', insets });
     return true;
   }
@@ -83,6 +85,12 @@ export class Bridge {
         break;
       case 'hover':
         set({ hovered: event.segment });
+        break;
+      case 'labels-needed':
+        get().fetchLabelText(event.generation, event.segments);
+        break;
+      case 'labels':
+        set({ labelCount: event.segments.length });
         break;
       case 'selection':
         set({ selection: { count: event.count, single: event.single, bits: event.bits } });

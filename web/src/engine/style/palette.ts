@@ -14,6 +14,8 @@ export interface Palette {
   hover: Rgba;
   /** Segments whose depth or GC is unknown, in the modes colouring by them. */
   unknown: Rgba;
+  /** Label text; its halo is the background. */
+  label: Rgba;
 }
 
 function hex(value: string): Rgba {
@@ -37,6 +39,7 @@ export const palettes: Record<Theme, Palette> = {
     selection: LIGHT_SELECTION,
     hover: faded(LIGHT_SELECTION, 0.45),
     unknown: hex('#a3a3a0'),
+    label: hex('#1f1f1d'),
   },
   dark: {
     background: hex('#17161a'),
@@ -44,6 +47,7 @@ export const palettes: Record<Theme, Palette> = {
     selection: DARK_SELECTION,
     hover: faded(DARK_SELECTION, 0.5),
     unknown: hex('#6b6a72'),
+    label: hex('#ececf1'),
   },
 };
 

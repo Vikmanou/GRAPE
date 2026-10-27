@@ -26,7 +26,7 @@ struct Place {
 // characters and its line count, `chars | lines << 16`; 0 for no label.
 @group(0) @binding(3) var<storage, read> label_sizes: array<u32>;
 @group(0) @binding(4) var<storage, read_write> cells: array<atomic<u32>>;
-// The number of winners, then their segment ids.
+// The number of winners, then each one's segment id and rank.
 @group(0) @binding(5) var<storage, read_write> winners: array<atomic<u32>>;
 
 const START = 6u;
@@ -103,6 +103,7 @@ fn keep_winners(@builtin(global_invocation_id) id: vec3u) {
   }
   let slot = atomicAdd(&winners[0], 1u);
   if slot < place.capacity {
-    atomicStore(&winners[slot + 1u], id.x);
+    atomicStore(&winners[slot * 2u + 1u], id.x);
+    atomicStore(&winners[slot * 2u + 2u], label_sizes[id.x]);
   }
 }

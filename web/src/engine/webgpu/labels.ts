@@ -1,3 +1,4 @@
+import type { PlacedLabels } from '../core/backend';
 import { bind, Buffers, groups } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
 
@@ -25,10 +26,7 @@ export interface LabelSource {
   table: GPUBuffer;
 }
 
-/**
- * Places labels on the GPU (labels.wgsl) and reads back the segments whose
- * labels won their cells, in no particular order.
- */
+/** Places labels on the GPU (labels.wgsl) and reads back the winners. */
 export class LabelPlacer {
   private readonly buffers: Buffers;
   private readonly uniform: GPUBuffer;
@@ -54,9 +52,9 @@ export class LabelPlacer {
     return this.sizes !== undefined;
   }
 
-  async place(source: LabelSource, at: Placement): Promise<Uint32Array<ArrayBuffer>> {
+  async place(source: LabelSource, at: Placement): Promise<PlacedLabels> {
     const sizes = this.sizes;
-    if (!sizes || source.segments === 0) return new Uint32Array(0);
+    if (!sizes || source.segments === 0) return { segments: new Uint32Array(0), ranks: new Uint32Array(0) };
     const columns = Math.max(1, Math.ceil(at.width / at.cell));
     const rows = Math.max(1, Math.ceil(at.height / at.cell));
     const { cells, winners, capacity } = this.gridFor(columns * rows);
@@ -91,7 +89,13 @@ export class LabelPlacer {
       await staging.mapAsync(GPUMapMode.READ);
       const words = new Uint32Array(staging.getMappedRange());
       const count = Math.min(words[0] ?? 0, capacity);
-      return words.slice(1, 1 + count);
+      const order = Array.from({ length: count }, (_, i) => i).sort(
+        (a, b) => (words[a * 2 + 2] ?? 0) - (words[b * 2 + 2] ?? 0),
+      );
+      return {
+        segments: Uint32Array.from(order, (i) => words[i * 2 + 1] ?? 0),
+        ranks: Uint32Array.from(order, (i) => words[i * 2 + 2] ?? 0),
+      };
     } finally {
       staging.destroy();
     }
@@ -105,7 +109,7 @@ export class LabelPlacer {
     const capacity = cellCount;
     this.grid = {
       cells: this.buffers.storage('label cells', capacity * 4),
-      winners: this.buffers.storage('label winners', (capacity + 1) * 4, GPUBufferUsage.COPY_SRC),
+      winners: this.buffers.storage('label winners', (capacity * 2 + 1) * 4, GPUBufferUsage.COPY_SRC),
       capacity,
     };
     return this.grid;

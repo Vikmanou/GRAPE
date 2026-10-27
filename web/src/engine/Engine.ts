@@ -10,6 +10,8 @@ import { RubberBand } from './core/RubberBand';
 import { throttle } from './core/throttle';
 import { DEFAULT_DISPLAY } from './style/display';
 import { RIBBON_WIDTH } from './style/widths';
+import { Atlas } from './text/Atlas';
+import { Labels } from './text/Labels';
 import { WebGpuBackend } from './webgpu/WebGpuBackend';
 
 type Listener = (event: EngineEvent) => void;
@@ -55,6 +57,7 @@ export class Engine {
   private stale = false;
   private reported = { x: NaN, y: NaN, zoom: NaN };
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
+  private readonly labels: Labels;
   private readonly cameraReport = throttle(() => {
     const camera = this.framing.camera;
     const last = this.reported;
@@ -67,8 +70,19 @@ export class Engine {
     host: HTMLElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly backend: Backend,
+    atlas: Atlas | undefined,
   ) {
     this.framing = new Framing(canvas);
+    this.labels = new Labels(
+      backend,
+      atlas,
+      (event) => {
+        this.emit(event);
+      },
+      () => {
+        this.requestFrame();
+      },
+    );
     this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
@@ -130,7 +144,9 @@ export class Engine {
         emit({ type: 'refining', active });
       },
     });
-    relay.to = new Engine(host, canvas, backend);
+    const atlas = await Atlas.load(import.meta.env.BASE_URL);
+    if (atlas) backend.setAtlas(atlas);
+    relay.to = new Engine(host, canvas, backend, atlas);
     host.appendChild(canvas);
     relay.to.band.attach(host);
     return relay.to;
@@ -149,9 +165,19 @@ export class Engine {
         this.style = { ...this.style, display: command.display };
         this.backend.setStyle(this.style);
         break;
+      case 'set-label-sizes':
+        this.labels.setSizes(command.generation, command.sizes);
+        return;
+      case 'set-label-text':
+        this.labels.setText(command.generation, command.segments, command.texts);
+        return;
+      case 'set-label-options':
+        this.labels.setOptions(command.options);
+        return;
       case 'set-graph':
         this.backend.setGraph(command.geometry, command.segments, command.seed);
         this.pointer.reset(command.segments.components);
+        this.labels.clear();
         this.positions = undefined;
         framing.autoFit = true;
         framing.setBounds(undefined);
@@ -242,6 +268,7 @@ export class Engine {
     if (this.destroyed) return;
     this.destroyed = true;
     this.cameraReport.cancel();
+    this.labels.destroy();
     this.resizeObserver.disconnect();
     this.detachInput();
     this.listeners.clear();
@@ -349,17 +376,20 @@ export class Engine {
     this.dirty = false;
     this.lastDraw = now;
     const c = this.framing.camera;
+    const moved = this.stale;
     if (this.stale || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) {
       this.stale = false;
       this.upload();
     }
-    this.backend.draw({
+    const view = {
       centerX: c.x - this.origin.x,
       centerY: c.y - this.origin.y,
       zoom: c.zoom,
       width: this.canvas.width,
       height: this.canvas.height,
-    });
+    };
+    this.backend.draw(view);
+    this.labels.drawn(view, moved, now);
     const stats = this.frames.record(now, performance.now() - started, this.backend.drawMs);
     if (stats) this.emit({ type: 'frame-stats', ...stats });
     this.cameraReport.request();

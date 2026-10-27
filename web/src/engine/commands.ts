@@ -3,11 +3,17 @@ import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { DisplayOptions } from './style/display';
 import type { Theme } from './style/palette';
+import type { LabelOptions } from './text/Labels';
 import type { LayoutProgress, LevelRecord, SegmentData } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
   | { type: 'set-display'; display: DisplayOptions }
+  /** Labels for a new content or graph, numbered so late text for older ones is dropped; undefined hides them. */
+  | { type: 'set-label-sizes'; generation: number; sizes: Uint32Array<ArrayBuffer> | undefined }
+  /** Answers `labels-needed`. */
+  | { type: 'set-label-text'; generation: number; segments: Uint32Array; texts: string[] }
+  | { type: 'set-label-options'; options: LabelOptions }
   | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
   /** `x, y` per point, in layout units, from a layout run elsewhere. */
   | { type: 'set-positions'; positions: Float32Array }
@@ -65,5 +71,9 @@ export type EngineEvent =
   | { type: 'pins'; count: number }
   /** The segment under the pointer changed. */
   | { type: 'hover'; segment: number | undefined }
+  /** Placed labels lack their text. */
+  | { type: 'labels-needed'; generation: number; segments: Uint32Array<ArrayBuffer> }
+  /** The segments whose labels show. */
+  | { type: 'labels'; segments: Uint32Array<ArrayBuffer> }
   /** One bit per segment. `single` is the selected segment when exactly one is. */
   | { type: 'selection'; count: number; single: number | undefined; bits: Uint32Array<ArrayBuffer> };

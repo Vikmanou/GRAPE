@@ -1,6 +1,7 @@
 import type { SegmentAttributes } from '../../workers/protocol/graph';
 import type { Geometry, Hierarchy } from '../../workers/protocol/layout';
 import type { DisplayOptions } from '../style/display';
+import type { Atlas } from '../text/Atlas';
 import type { Theme } from '../style/palette';
 import type { Bounds } from './camera';
 
@@ -99,6 +100,19 @@ export interface LevelRecord {
   wallMs: number;
 }
 
+/** Segments whose labels won their screen cells, best rank first, and their ranks. */
+export interface PlacedLabels {
+  segments: Uint32Array<ArrayBuffer>;
+  ranks: Uint32Array<ArrayBuffer>;
+}
+
+/** A label's box per character and per line, and the side of a screen grid cell, in canvas pixels. */
+export interface LabelMetrics {
+  advance: number;
+  lineHeight: number;
+  cell: number;
+}
+
 /** Everything that touches the GPU. The engine above it never does. */
 export interface Backend {
   readonly kind: 'webgpu' | 'webgl2';
@@ -123,5 +137,12 @@ export interface Backend {
   selectBox(box: Bounds): Promise<Uint32Array<ArrayBuffer>>;
   /** The drawn extent, relative to the view's origin, of segments whose bit is set. */
   bounds(of: Uint32Array<ArrayBuffer>): Promise<Bounds | undefined>;
+  setAtlas(atlas: Atlas): void;
+  /** Per segment its placing rank, then its label's box (labels.wgsl); undefined drops labels. */
+  setLabelSizes(sizes: Uint32Array<ArrayBuffer> | undefined): void;
+  /** Places labels in the last drawn view so none overlap. */
+  placeLabels(metrics: LabelMetrics): Promise<PlacedLabels>;
+  /** Glyph instances from `layoutLabels` at `fontPx` canvas pixels, drawn over the graph. */
+  setLabels(glyphs: Float32Array<ArrayBuffer>, fontPx: number): void;
   destroy(): void;
 }

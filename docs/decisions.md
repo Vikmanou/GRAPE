@@ -698,7 +698,9 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 
 - **Decision**: `npm run font-atlas` builds a multi-channel signed distance
   field atlas of JetBrains Mono Regular 2.304 (SIL OFL 1.1, fetched at a
-  pinned tag and SHA-256) for ASCII 32 to 126 with msdf-bmfont-xml 2.8.0, a
+  pinned tag and SHA-256) for ASCII 32 to 126, at size 42 with a distance
+  range of 8 so a 12 px label still has room for its 1 px halo, with
+  msdf-bmfont-xml 2.8.0, a
   pinned devDependency. The 512x256 atlas, its glyph metrics and the font's
   licence are committed in web/public/fonts; nothing of the tool ships.
 - **Reason**: owner's choice of a true MSDF, as the spec asks; the tool runs
@@ -707,3 +709,20 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a single-channel SDF rendered in Playwright's Chromium
   (no dependency, softer corners); msdf-atlas-gen's binary (needs building
   on Linux).
+
+## 2026-10-27: Labels are placed on the GPU and their text comes from the graph worker
+
+- **Decision**: label text follows Bandage's `getNodeText` (LB and L2, then
+  name, length as `1,234 bp`, depth as `formatDepthForDisplay` writes it),
+  built in gfa-core; an unknown depth shows no line. The graph worker sends
+  per segment a placing rank (longest first) and the label's box, and later
+  the text of the labels that win. Placement runs on the GPU over a screen
+  grid of 6 CSS px cells, once the view rests for 150 ms and at least every
+  600 ms while it moves; the best 2,000 winners by rank show, each centred
+  on its chain's midpoint in both display modes. Names stay in the graph
+  worker; the engine caches the text of up to 20,000 labels.
+- **Reason**: the spec's placement rule; one copy of the names; a label per
+  segment keeps double mode readable.
+- **Alternatives**: a label per strand in double mode, as Bandage's names
+  carry their sign; the name arena on the main thread (the spec's
+  Architecture text, a second copy of every name).

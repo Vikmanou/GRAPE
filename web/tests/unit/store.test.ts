@@ -162,9 +162,11 @@ describe('store', () => {
     expect(engine.types()).toEqual([
       'set-theme',
       'set-display',
+      'set-label-options',
       'set-insets',
       'set-display',
       'set-graph',
+      'set-label-sizes',
       'start-layout',
     ]);
     expect(store.getState().layoutStatus).toEqual({ state: 'running', iteration: 0, total: 10 });
