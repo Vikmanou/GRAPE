@@ -1,4 +1,5 @@
 use crate::parse::Loaded;
+use gfa_core::analysis::labels::{self, LabelContent};
 use gfa_core::analysis::query::{self, SegmentInfo};
 use wasm_bindgen::prelude::*;
 
@@ -127,5 +128,47 @@ impl Loaded {
     #[wasm_bindgen(js_name = nameEnds)]
     pub fn name_ends(&self) -> Vec<u32> {
         self.graph().names.arena.ends().to_vec()
+    }
+}
+
+fn content(custom: bool, name: bool, length: bool, depth: bool) -> LabelContent {
+    LabelContent {
+        custom,
+        name,
+        length,
+        depth,
+    }
+}
+
+#[wasm_bindgen]
+impl Loaded {
+    /// Per segment its placing rank, then its label's box (labels.wgsl).
+    #[wasm_bindgen(js_name = labelSizes)]
+    pub fn label_sizes(&self, custom: bool, name: bool, length: bool, depth: bool) -> Vec<u32> {
+        labels::label_sizes(self.graph(), content(custom, name, length, depth))
+    }
+
+    /// Each segment's label, lines joined by newlines.
+    #[wasm_bindgen(js_name = labelText)]
+    pub fn label_text(
+        &self,
+        segments: &[u32],
+        custom: bool,
+        name: bool,
+        length: bool,
+        depth: bool,
+    ) -> Vec<String> {
+        let c = content(custom, name, length, depth);
+        let g = self.graph();
+        segments
+            .iter()
+            .map(|&s| {
+                if (s as usize) < g.segments.len() {
+                    labels::label_lines(g, s, c).join("\n")
+                } else {
+                    String::new()
+                }
+            })
+            .collect()
     }
 }

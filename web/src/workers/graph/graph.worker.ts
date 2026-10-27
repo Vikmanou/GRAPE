@@ -195,6 +195,17 @@ async function handle(request: GraphRequest): Promise<void> {
         post({ type: 'found', id, ...found }, [found.segments.buffer]);
         return;
       }
+      case 'label-sizes': {
+        const { custom, name, length, depth } = request.content;
+        const sizes = plain(loaded().labelSizes(custom, name, length, depth));
+        post({ type: 'label-sizes', id, sizes }, [sizes.buffer]);
+        return;
+      }
+      case 'label-text': {
+        const { custom, name, length, depth } = request.content;
+        post({ type: 'label-text', id, texts: loaded().labelText(request.segments, custom, name, length, depth) });
+        return;
+      }
       case 'export': {
         const records = exportRecords(loaded(), request.segments);
         post({ type: 'export', id, records }, [records.segments.buffer, records.depths.buffer]);

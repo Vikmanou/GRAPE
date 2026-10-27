@@ -19,7 +19,7 @@ import { createToastSlice, type ToastSlice } from './toasts';
 
 export type GraphService = Pick<
   GraphClient,
-  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords' | 'memory'
+  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords' | 'labelSizes' | 'labelText' | 'memory'
 >;
 
 export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta' | 'memory'>;

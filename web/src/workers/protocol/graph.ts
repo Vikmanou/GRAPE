@@ -12,7 +12,9 @@ export type GraphRequest =
   | { type: 'summary'; id: number; bits: Uint32Array<ArrayBuffer> }
   | { type: 'find'; id: number; query: FindQuery }
   /** Names and depths for a FASTA export, in Bandage's order. */
-  | { type: 'export'; id: number; segments: Uint32Array<ArrayBuffer> };
+  | { type: 'export'; id: number; segments: Uint32Array<ArrayBuffer> }
+  | { type: 'label-sizes'; id: number; content: LabelContent }
+  | { type: 'label-text'; id: number; segments: Uint32Array<ArrayBuffer>; content: LabelContent };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -23,7 +25,20 @@ export type GraphResponse =
   | { type: 'summary'; id: number; summary: SelectionSummary }
   | { type: 'found'; id: number; segments: Uint32Array<ArrayBuffer>; missing: string[] }
   | { type: 'export'; id: number; records: FastaRecords }
+  /** Per segment its placing rank, then its label's box, as labels.wgsl reads them. */
+  | { type: 'label-sizes'; id: number; sizes: Uint32Array<ArrayBuffer> }
+  /** Each segment's label, lines joined by newlines. */
+  | { type: 'label-text'; id: number; texts: string[] }
   | ErrorResponse;
+
+/** Which lines a label shows, in Bandage's order (`getNodeText`). */
+export interface LabelContent {
+  /** The LB and L2 tags. */
+  custom: boolean;
+  name: boolean;
+  length: boolean;
+  depth: boolean;
+}
 
 /** A link at one of the segment's ends: `from` leaves its end into `to`. */
 export interface SegmentLink {

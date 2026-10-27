@@ -386,3 +386,35 @@ fn custom_colours_and_labels() {
     assert_eq!(c.label2, [(bad, "back\\nside".to_owned())]);
     assert_eq!(warnings(&g), [(5, WarningKind::MalformedTag)]);
 }
+
+#[test]
+fn labels_follow_bandage_order() {
+    use gfa_core::analysis::labels::{LabelContent, label_lines, label_sizes};
+    let g = load("colour_tags.gfa");
+    let all = LabelContent {
+        custom: true,
+        name: true,
+        length: true,
+        depth: true,
+    };
+    assert_eq!(
+        label_lines(&g, id(&g, "red"), all),
+        ["first", "red", "4 bp"]
+    );
+    assert_eq!(
+        label_lines(&g, id(&g, "bad"), all),
+        ["back\\nside", "bad", "4 bp"]
+    );
+    let names = LabelContent {
+        name: true,
+        ..LabelContent::default()
+    };
+    let sizes = label_sizes(&g, names);
+    let n = g.segments.len();
+    let (red, blue) = (id(&g, "red") as usize, id(&g, "blue") as usize);
+    assert_eq!(sizes[n + red], 3 | 1 << 16);
+    assert_eq!(sizes[n + blue], 4 | 1 << 16);
+    let mut ranks = sizes[..n].to_vec();
+    ranks.sort_unstable();
+    assert_eq!(ranks, (0..n as u32).collect::<Vec<_>>());
+}

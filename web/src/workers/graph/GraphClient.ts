@@ -1,4 +1,11 @@
-import type { GraphRequest, GraphResponse, ParseResult, SegmentInfo, SelectionSummary } from '../protocol/graph';
+import type {
+  GraphRequest,
+  GraphResponse,
+  LabelContent,
+  ParseResult,
+  SegmentInfo,
+  SelectionSummary,
+} from '../protocol/graph';
 import type { FastaRecords, SequenceSource } from '../protocol/sequence';
 import type { FindQuery } from './findQuery';
 import { expect, RpcClient, type WorkerMemory } from '../rpc';
@@ -46,6 +53,14 @@ export class GraphClient {
 
   async exportRecords(segments: Uint32Array<ArrayBuffer>): Promise<FastaRecords> {
     return expect(await this.rpc.request({ type: 'export', segments }), 'export').records;
+  }
+
+  async labelSizes(content: LabelContent): Promise<Uint32Array<ArrayBuffer>> {
+    return expect(await this.rpc.request({ type: 'label-sizes', content }), 'label-sizes').sizes;
+  }
+
+  async labelText(segments: Uint32Array<ArrayBuffer>, content: LabelContent): Promise<string[]> {
+    return expect(await this.rpc.request({ type: 'label-text', segments, content }), 'label-text').texts;
   }
 
   async memory(): Promise<WorkerMemory> {
