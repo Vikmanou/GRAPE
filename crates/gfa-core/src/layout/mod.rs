@@ -2,6 +2,7 @@
 //! correctness reference for the GPU layout and the WebGL2 fallback's layout.
 
 mod force;
+mod grid;
 mod hierarchy;
 mod level;
 mod pack;
@@ -17,6 +18,7 @@ pub use quality::{Quality, measure};
 pub use topology::{Topology, TopologyError};
 
 use force::Forces;
+pub use grid::{CellLists, Grid};
 pub use hierarchy::{Hierarchy, HierarchyLevel};
 use level::{Level, NONE, Split};
 pub use pack::pack;
