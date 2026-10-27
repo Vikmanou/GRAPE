@@ -20,6 +20,8 @@ export class CpuLayoutDriver implements LayoutDriver {
     private readonly control: (request: WithoutId<LayoutControl>) => void,
     /** One bit per selected segment. */
     private readonly selection: () => Uint32Array | undefined,
+    /** A refinement after a drag or of the selection started or ended. */
+    private readonly refining: (active: boolean) => void,
   ) {}
 
   /** A new graph: nothing is known about its layout yet. */
@@ -28,7 +30,9 @@ export class CpuLayoutDriver implements LayoutDriver {
   }
 
   setProgress(progress: CpuProgress): void {
+    const was = this.progress?.refining ?? false;
     this.progress = progress;
+    if (progress.refining !== was) this.refining(progress.refining);
   }
 
   get usable(): boolean {

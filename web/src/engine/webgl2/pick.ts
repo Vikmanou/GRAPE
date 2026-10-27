@@ -13,16 +13,24 @@ function sameView(a: DrawnView | undefined, b: DrawnView): boolean {
   );
 }
 
+interface Pending {
+  x: number;
+  y: number;
+  resolve: (segment: number | undefined) => void;
+}
+
 /**
  * Segment ids drawn into an `R32UI` texture at half resolution, as the WebGPU
- * picker does. A pick reads back the one texel under the cursor through a
- * pixel buffer and a fence, so the main thread never waits on the GPU.
+ * picker does. Picks asked for in the same task share one read of the texels
+ * around them, through a pixel buffer and a fence, so the main thread never
+ * waits on the GPU.
  */
 export class Picker {
   private texture: WebGLTexture | undefined;
   private framebuffer: WebGLFramebuffer | undefined;
   private size = { width: 0, height: 0 };
   private drawnFor: DrawnView | undefined;
+  private pending: Pending[] = [];
 
   constructor(private readonly gl: WebGL2RenderingContext) {}
 
@@ -30,39 +38,75 @@ export class Picker {
     this.drawnFor = undefined;
   }
 
-  async pick(renderer: Renderer, view: DrawnView, x: number, y: number): Promise<number | undefined> {
+  pick(renderer: Renderer, view: DrawnView, x: number, y: number): Promise<number | undefined> {
     const gl = this.gl;
     const ids = idView(view);
     const [tx, ty] = idTexel(x, y);
-    if (tx < 0 || ty < 0 || tx >= ids.width || ty >= ids.height) return undefined;
-    const framebuffer = this.ensure(ids.width, ids.height);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    if (!sameView(this.drawnFor, view)) {
+    if (tx < 0 || ty < 0 || tx >= ids.width || ty >= ids.height) return Promise.resolve(undefined);
+    if (!sameView(this.drawnFor, view) || this.size.width !== ids.width || this.size.height !== ids.height) {
+      // Picks waiting on the old ids read them before they are redrawn.
+      this.flush();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.ensure(ids.width, ids.height));
       gl.viewport(0, 0, ids.width, ids.height);
       gl.clearBufferuiv(gl.COLOR, 0, new Uint32Array(4));
       renderer.drawIds(ids);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       this.drawnFor = view;
     }
+    return new Promise((resolve) => {
+      if (this.pending.length === 0)
+        queueMicrotask(() => {
+          this.flush();
+        });
+      // GL counts rows from the bottom; canvas pixels from the top.
+      this.pending.push({ x: tx, y: ids.height - 1 - ty, resolve });
+    });
+  }
+
+  /** Reads the texels of every waiting pick in one go, and answers them once the GPU is done. */
+  private flush(): void {
+    const picks = this.pending;
+    this.pending = [];
+    if (picks.length === 0 || !this.framebuffer) return;
+    const gl = this.gl;
+    const x0 = Math.min(...picks.map((p) => p.x));
+    const y0 = Math.min(...picks.map((p) => p.y));
+    const width = Math.max(...picks.map((p) => p.x)) - x0 + 1;
+    const height = Math.max(...picks.map((p) => p.y)) - y0 + 1;
     const staging = gl.createBuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, staging);
-    gl.bufferData(gl.PIXEL_PACK_BUFFER, 16, gl.STREAM_READ);
-    // GL counts rows from the bottom; canvas pixels from the top.
-    gl.readPixels(tx, ids.height - 1 - ty, 1, 1, gl.RGBA_INTEGER, gl.UNSIGNED_INT, 0);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, width * height * 16, gl.STREAM_READ);
+    gl.readPixels(x0, y0, width, height, gl.RGBA_INTEGER, gl.UNSIGNED_INT, 0);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
+    void this.answer(sync, staging, picks, { x0, y0, width, height });
+  }
+
+  private async answer(
+    sync: WebGLSync | null,
+    staging: WebGLBuffer,
+    picks: Pending[],
+    rect: { x0: number; y0: number; width: number; height: number },
+  ): Promise<void> {
+    const gl = this.gl;
     try {
       while (sync && gl.clientWaitSync(sync, 0, 0) === gl.TIMEOUT_EXPIRED) {
         await new Promise((resolve) => setTimeout(resolve, 1));
       }
-      if (gl.isContextLost()) return undefined;
-      const out = new Uint32Array(4);
+      if (gl.isContextLost()) throw new Error('context lost');
+      const texels = new Uint32Array(rect.width * rect.height * 4);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, staging);
-      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, out);
+      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, texels);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-      const id = out[0] ?? 0;
-      return id === 0 ? undefined : id - 1;
+      for (const p of picks) {
+        const id = texels[((p.y - rect.y0) * rect.width + (p.x - rect.x0)) * 4] ?? 0;
+        p.resolve(id === 0 ? undefined : id - 1);
+      }
+    } catch {
+      for (const p of picks) p.resolve(undefined);
     } finally {
       gl.deleteSync(sync);
       gl.deleteBuffer(staging);

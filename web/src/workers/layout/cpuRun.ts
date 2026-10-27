@@ -64,13 +64,13 @@ export class CpuRun {
   /** Runs until the worker ends. */
   async run(): Promise<never> {
     for (;;) {
+      // A request's effect, such as a drag or a refinement starting, shows before the next steps.
+      if (this.changed) this.postPositions(performance.now());
       if (!this.paused && !this.finished) this.slice();
       const finished = this.finished;
       const now = performance.now();
       const interval = this.layout.refining() ? REFINING_POST_INTERVAL_MS : POST_INTERVAL_MS;
-      if (this.changed || (finished ? !this.postedDone : !this.paused && now - this.lastPost >= interval)) {
-        this.postPositions(now);
-      }
+      if (finished ? !this.postedDone : !this.paused && now - this.lastPost >= interval) this.postPositions(now);
       if (this.paused || finished) await new Promise<void>((resolve) => (this.wake = resolve));
       else await this.yieldToRequests();
     }

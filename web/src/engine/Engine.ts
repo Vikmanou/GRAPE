@@ -50,6 +50,8 @@ export class Engine {
   private readonly band: RubberBand;
   private positions: Float32Array | undefined;
   private grid: PositionGrid | undefined;
+  /** Positions from the worker settled once: like the GPU layout's packing, the bounds stay as they were. */
+  private positionsSettled = false;
   private origin = { x: 0, y: 0 };
   private readonly frames = new FrameCounter();
   private lastDraw = -Infinity;
@@ -188,6 +190,7 @@ export class Engine {
         this.labels.clear();
         this.positions = undefined;
         this.grid = undefined;
+        this.positionsSettled = false;
         framing.autoFit = true;
         framing.setBounds(undefined);
         break;
@@ -196,7 +199,8 @@ export class Engine {
         if (command.progress) layout.setProgress(command.progress);
         this.positions = command.positions;
         this.grid = command.grid;
-        framing.setBounds(boundsOf(command.positions));
+        if (!this.positionsSettled) framing.setBounds(boundsOf(command.positions));
+        this.positionsSettled ||= command.progress?.done ?? false;
         this.upload();
         break;
       case 'start-layout':

@@ -53,6 +53,9 @@ export class WebGl2Backend implements Backend {
         events.control?.(request);
       },
       () => this.renderer.current?.selected,
+      (active) => {
+        events.refining(active);
+      },
     );
     const canvas = gl.canvas as HTMLCanvasElement;
     canvas.addEventListener('webglcontextlost', (event) => {
