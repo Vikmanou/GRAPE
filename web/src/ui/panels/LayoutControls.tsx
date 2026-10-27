@@ -21,7 +21,7 @@ export function LayoutControls() {
   const onOptions = useApp((s) => s.setLayoutOptions);
   const onPause = useApp((s) => s.setLayoutPaused);
   return (
-    <section className="layout-controls" aria-label="Layout">
+    <section className="controls" aria-label="Layout">
       <h3>Layout</h3>
       <div className="row">
         <button

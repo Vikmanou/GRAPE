@@ -83,7 +83,7 @@
   color: var(--warn);
 }
 
-.layout-controls .row {
+.controls .row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -91,12 +91,12 @@
   margin: 6px 0;
 }
 
-.layout-controls input.seed {
+.controls input.seed {
   width: 7.5em;
 }
 
-.layout-controls input,
-.layout-controls select {
+.controls input,
+.controls select {
   font: inherit;
   color: var(--fg);
   background: transparent;
@@ -201,4 +201,42 @@
   margin: 0;
   padding-left: 1.2em;
   font-size: 12px;
+}
+
+.controls input.number {
+  width: 6em;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.legend .ramp {
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend .range {
+  margin: 0;
+}
+
+.legend .range input.number {
+  width: 5em;
+}
+
+.swatch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
 }

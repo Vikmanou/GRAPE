@@ -157,7 +157,14 @@ describe('store', () => {
       id: 1,
       hierarchy: { levels: [], start: new Float32Array(), frozen: new Uint8Array() },
     });
-    expect(engine.types()).toEqual(['set-theme', 'set-insets', 'set-graph', 'start-layout']);
+    expect(engine.types()).toEqual([
+      'set-theme',
+      'set-display',
+      'set-insets',
+      'set-display',
+      'set-graph',
+      'start-layout',
+    ]);
     expect(store.getState().layoutStatus).toEqual({ state: 'running', iteration: 0, total: 10 });
 
     engine.emit({ type: 'layout-measured', boxes: new Float32Array(4), progress });

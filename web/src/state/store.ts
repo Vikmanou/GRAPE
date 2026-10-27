@@ -9,6 +9,7 @@ import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
 import { createDetailsSlice, type DetailsSlice } from './details';
 import { createDisplaySlice, type DisplaySlice } from './display';
+import { createDisplayOptionsSlice, type DisplayOptionsSlice } from './displayOptions';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFindSlice, type FindSlice } from './find';
 import { createFileSlice, type FileSlice } from './load';
@@ -46,7 +47,14 @@ export interface Services {
   search: string;
 }
 
-export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice & DetailsSlice & FindSlice;
+export type AppState = FileSlice &
+  LayoutSlice &
+  DisplaySlice &
+  DisplayOptionsSlice &
+  ToastSlice &
+  SelectionSlice &
+  DetailsSlice &
+  FindSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -68,6 +76,7 @@ export function createAppStore(services: Services): AppStore {
       ...createFileSlice(ctx),
       ...createLayoutSlice(ctx),
       ...createDisplaySlice(ctx),
+      ...createDisplayOptionsSlice(ctx),
       ...createToastSlice(ctx),
       ...createSelectionSlice(ctx),
       ...createDetailsSlice(ctx),

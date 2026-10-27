@@ -105,3 +105,9 @@ export function segmentColor(style: ColorStyle, data: SegmentData, segment: numb
       return ramped(data.lengths[segment] ?? NaN);
   }
 }
+
+/** `#rrggbb` for an RGBA8 colour, for CSS. */
+export function cssColor(color: number): string {
+  const rgb = ((color & 0xff) << 16) | (color & 0xff00) | ((color >>> 16) & 0xff);
+  return `#${rgb.toString(16).padStart(6, '0')}`;
+}

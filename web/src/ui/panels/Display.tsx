@@ -1,5 +1,6 @@
 import { useApp } from '../../state/store';
 import { formatCount } from '../format';
+import { ColorControls } from './ColorControls';
 import { LayoutControls } from './LayoutControls';
 
 export function Display() {
@@ -12,8 +13,9 @@ export function Display() {
   const relayout = useApp((s) => s.relayoutSelection);
   return (
     <>
+      <ColorControls />
       <LayoutControls />
-      <section className="layout-controls" aria-label="Pins">
+      <section className="controls" aria-label="Pins">
         <h3>Pins</h3>
         <p className="muted small">Drag a segment to pin it; the rest of the graph follows.</p>
         <div className="row">
