@@ -103,3 +103,48 @@ export async function segmentsOnScreen(page: Page, count: number): Promise<Map<n
   }, count);
   return new Map(found.map(([segment, x, y]) => [segment, { x: box.x + x, y: box.y + y }]));
 }
+
+/**
+ * The colour of the ribbon at page coordinates `x, y`: of the pixels around
+ * it, the one least like the background, so an antialiased edge does not count.
+ */
+export async function ribbonColor(page: Page, x: number, y: number): Promise<[number, number, number]> {
+  const r = 3;
+  const png = await page.screenshot({
+    clip: { x: Math.floor(x) - r, y: Math.floor(y) - r, width: 2 * r + 1, height: 2 * r + 1 },
+  });
+  return page.evaluate(async (data) => {
+    const image = await createImageBitmap(await (await fetch(`data:image/png;base64,${data}`)).blob());
+    const canvas = new OffscreenCanvas(image.width, image.height);
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('no 2d context');
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, image.width, image.height).data;
+    const background = getComputedStyle(document.body).backgroundColor.match(/\d+/g)?.map(Number) ?? [];
+    let best: [number, number, number] = [0, 0, 0];
+    let farthest = -1;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const rgb: [number, number, number] = [pixels[i] ?? 0, pixels[i + 1] ?? 0, pixels[i + 2] ?? 0];
+      const distance = rgb.reduce((sum, v, k) => sum + Math.abs(v - (background[k] ?? 0)), 0);
+      if (distance > farthest) [best, farthest] = [rgb, distance];
+    }
+    return best;
+  }, png.toString('base64'));
+}
+
+/** Within a few levels per channel, for colours read off antialiased ribbons. */
+export function near(got: number[], want: number[], tolerance = 24): boolean {
+  return got.every((v, i) => Math.abs(v - (want[i] ?? 0)) <= tolerance);
+}
+
+/** Calls an action of the store, for flows that set state the UI reaches in several steps. */
+export async function storeAction(page: Page, action: string, ...args: unknown[]): Promise<void> {
+  await page.evaluate(
+    ([name, rest]) => {
+      type Store = { getState(): Record<string, (...a: unknown[]) => void> };
+      const store = (window as unknown as { grapeTest: { store: Store } }).grapeTest.store;
+      store.getState()[name]?.(...rest);
+    },
+    [action, args] as const,
+  );
+}
