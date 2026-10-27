@@ -5,6 +5,9 @@ export default defineConfig({
   // Relative base so the static build works from a GitHub Pages subpath.
   base: './',
   plugins: [react()],
+  // Fixed and strict so GRAPE never drifts onto another project's port.
+  server: { port: 5190, strictPort: true },
+  preview: { port: 5190, strictPort: true },
   worker: {
     format: 'es',
   },

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const port = 5174;
+const port = 5191;
 const gpuHeadless = process.env.GRAPE_GPU_HEADLESS === '1';
 
 export default defineConfig({
