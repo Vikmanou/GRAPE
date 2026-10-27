@@ -33,7 +33,9 @@ export interface DriverEvents {
 
 /**
  * Drives a `GpuLayout` from the frame loop: a batch of iterations per frame,
- * with at most three in flight so the queue never backs up. Each batch is sized
+ * with at most three in flight so the queue never backs up. A finished batch
+ * queues the next at once: with long iterations Chrome holds animation
+ * frames until the queue drains, which left the GPU idle between frames. Each batch is sized
  * from the GPU time of the last one: timestamps where the adapter has them,
  * otherwise the time until the queue reports it done, which runs long.
  */
@@ -56,6 +58,7 @@ export class GpuLayoutDriver implements LayoutDriver {
   /** A level 0 refinement is running; packing stays as it was. */
   private refining: false | 'pinned' | 'selection' = false;
   private profile = new LevelProfile();
+  private interactive = false;
 
   constructor(
     private readonly device: GPUDevice,
@@ -165,7 +168,8 @@ export class GpuLayoutDriver implements LayoutDriver {
   tick(now: number, interactive: boolean): boolean {
     const layout = this.layout;
     if (!layout) return false;
-    if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) this.runBatch(layout, interactive);
+    this.interactive = interactive;
+    this.fill(layout);
     const finished = layout.done && this.inFlight === 0;
     if (finished && this.refining === false) this.profile.leave(now);
     if (this.refining !== false) {
@@ -226,7 +230,12 @@ export class GpuLayoutDriver implements LayoutDriver {
     return shift;
   }
 
-  private runBatch(layout: GpuLayout, interactive: boolean): void {
+  private fill(layout: GpuLayout): void {
+    while (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) this.runBatch(layout);
+  }
+
+  private runBatch(layout: GpuLayout): void {
+    const interactive = this.interactive;
     layout.advance();
     this.enterLevel(layout.currentLevel, layout.levelNodes);
     const level = layout.currentLevel;
@@ -249,6 +258,7 @@ export class GpuLayoutDriver implements LayoutDriver {
       .catch(() => undefined)
       .finally(() => {
         this.inFlight--;
+        if (this.layout === layout) this.fill(layout);
       });
   }
 
