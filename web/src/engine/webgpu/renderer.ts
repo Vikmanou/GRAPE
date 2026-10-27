@@ -1,6 +1,7 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
 import { DEFAULT_DISPLAY } from '../style/display';
+import { MAX_RIBBON_WIDTH } from '../style/widths';
 import type { Rgba } from '../style/palette';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
@@ -239,7 +240,8 @@ export class Renderer {
     const graph = this.graph;
     if (!graph || (!graph.pieceCull && !graph.links)) return;
     const worldPerPixel = 1 / view.zoom;
-    const ribbonHalf = Math.max(view.ribbonHalf, worldPerPixel / 2);
+    const widest = this.style.display.widthByDepth ? MAX_RIBBON_WIDTH / 2 : view.ribbonHalf;
+    const ribbonHalf = Math.max(widest, worldPerPixel / 2);
     const area: CullView = {
       centerX: view.centerX,
       centerY: view.centerY,

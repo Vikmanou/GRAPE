@@ -139,6 +139,17 @@ fn segment_color(segment: u32, strand: f32) -> vec4f {
   }
 }
 
+// Bandage's `getNodeWidth` with its default depth power and effect of 0.5,
+// clamped to 0.5 to 4 times the average; mirrors `depthWidth` in widths.ts.
+fn ribbon_half(segment: u32) -> f32 {
+  let depth = bitcast<f32>(field(DEPTH, segment));
+  if style.width_by_depth == 0u || depth != depth || !(style.mean_depth > 0.0) {
+    return view.ribbon_half;
+  }
+  let relative = (sqrt(max(depth / style.mean_depth, 0.0)) - 1.0) * 0.5 + 1.0;
+  return view.ribbon_half * clamp(relative, 0.5, 4.0);
+}
+
 // Faded unselected segments keep this much of their colour.
 const DIMMED = 0.25;
 
@@ -176,7 +187,7 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   let length_ab = length(b - a);
   let along = select(vec2f(1.0, 0.0), (b - a) / length_ab, length_ab > 1e-6);
   let across = vec2f(-along.y, along.x);
-  let half = max(max(view.ribbon_half, view.world_per_pixel * 0.5) + view.grow, 0.0);
+  let half = max(max(ribbon_half(piece.y), view.world_per_pixel * 0.5) + view.grow, 0.0);
   let pad = half + view.world_per_pixel;
   let corner = QUAD[v];
   let local = vec2f(mix(-pad, length_ab + pad, corner.x), corner.y * pad);
