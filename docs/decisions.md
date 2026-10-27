@@ -649,3 +649,16 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: stopping a level once its energy converges (needs a GPU
   side flag to stay deterministic whatever the batch sizes); fewer passes per
   iteration.
+
+## 2026-10-27: Pages deploys from CI with the Actions source
+
+- **Decision**: CI builds `web/dist` and deploys it with
+  `actions/deploy-pages` on every push to `main`, after the gate passes on
+  Linux and Windows. Pages is set to the "GitHub Actions" source. This comes
+  before milestone 11 so the live site can be tried early; the offline
+  service worker still lands in milestone 11.
+- **Reason**: no `gh-pages` branch full of build output, and a broken `main`
+  never reaches the site. The relative Vite base already serves the build from
+  `/GRAPE/`.
+- **Alternatives**: a `gh-pages` branch pushed by a workflow; a separate
+  workflow chained with `workflow_run` (harder to follow).
