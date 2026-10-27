@@ -1,13 +1,15 @@
-# GRAPE
+<p align="center">
+  <img src="assets/grape-logo.png" alt="GRAPE: GPU-Rendered Assembly Path Explorer" width="600">
+</p>
 
 [![CI](https://github.com/Vikmanou/GRAPE/actions/workflows/ci.yml/badge.svg)](https://github.com/Vikmanou/GRAPE/actions/workflows/ci.yml)
 
-**GPU-Rendered Assembly Path Explorer**: a browser viewer for genome assembly
-graphs. Drop a GFA file on the page and see it laid out and drawn on the GPU.
+**GRAPE** (GPU-Rendered Assembly Path Explorer) is a browser viewer for genome
+assembly graphs. Drop a GFA file on the page and see it laid out and drawn on the GPU.
 Nothing is installed and nothing is uploaded: parsing, layout and rendering
 all run on your machine.
 
-![GRAPE showing an Acacia mitochondrion assembly graph](docs/screenshot.png)
+![GRAPE showing an Acacia mitochondrion assembly graph](assets/acacia-mitochondrion.png)
 
 <sub>Acacia mitochondrion assembled by SPAdes, from
 [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622) (CC-BY-4.0).</sub>
