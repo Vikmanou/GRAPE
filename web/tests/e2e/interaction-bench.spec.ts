@@ -78,7 +78,7 @@ test.describe('interaction benchmark', () => {
     test(path, async ({ page }) => {
       if (!job) return;
       page.on('crash', () => {
-        console.log(`page crashed; tab memory ${String(memoryMb()?.tab)} MB`);
+        console.log(`page crashed; tab memory ${memoryMb().tab} MB`);
       });
       await page.setViewportSize({ width: 1200, height: 800 });
       await page.goto('/');
@@ -86,10 +86,11 @@ test.describe('interaction benchmark', () => {
       await expect(page.getByTestId('status-renderer')).toHaveAttribute('data-renderer', 'webgpu');
       await page.getByTestId('open-input').setInputFiles(path);
       await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: SETTLE_MS });
+      const memory = memoryMb();
       const result: Record<string, unknown> = {
         segments: Number((await page.getByTestId('stat-segments').textContent())?.replace(/\D/g, '')),
-        tabMb: memoryMb()?.tab,
-        gpuProcessMb: memoryMb()?.gpu,
+        tabMb: memory.tab,
+        gpuProcessMb: memory.gpu,
       };
 
       // Zoomed in on a segment, not on whatever lies at the canvas centre,
@@ -158,7 +159,7 @@ test.describe('interaction benchmark', () => {
       await page.getByTestId('engine-canvas').press('f');
       await page.waitForTimeout(500);
       result.fpsZoomedOut = await panAndZoom(page, anchor);
-      result.tabMbAfter = memoryMb()?.tab;
+      result.tabMbAfter = memoryMb().tab;
       writeFileSync(join(job.out, `${basename(path)}.json`), JSON.stringify(result));
     });
   }

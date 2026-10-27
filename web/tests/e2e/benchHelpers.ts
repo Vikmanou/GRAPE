@@ -11,10 +11,9 @@ export interface Point {
 /**
  * Resident memory in MB of the page's renderer process, which holds the page
  * and its workers, and of Chromium's GPU process, which holds GPU buffers on
- * integrated graphics. Linux only.
+ * integrated graphics.
  */
-export function memoryMb(): { tab: number; gpu: number } | undefined {
-  if (process.platform !== 'linux') return undefined;
+export function memoryMb(): { tab: number; gpu: number } {
   const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
     .split('\n')
     .map((row) => row.trim())

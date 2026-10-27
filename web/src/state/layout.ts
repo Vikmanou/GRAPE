@@ -3,7 +3,7 @@ import type { LayoutOptions } from '../workers/protocol/layout';
 import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
 
-export const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
+const DEFAULT_OPTIONS: LayoutOptions = { seed: 1, quality: 'balanced' };
 
 export type LayoutStatus =
   | { state: 'idle' }

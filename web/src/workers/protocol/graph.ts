@@ -47,7 +47,7 @@ export interface SegmentInfo {
   component: number;
   degreeStart: number;
   degreeEnd: number;
-  /** At most `MAX_LINKS` of `totalLinks`. */
+  /** At most `INFO_LINKS` of `totalLinks`. */
   links: SegmentLink[];
   totalLinks: number;
 }

@@ -3,7 +3,7 @@ import type { Preview } from '../workers/sequence/SequenceClient';
 import type { Context } from './store';
 
 /** Bases shown at each end of a sequence and of a raw line. */
-export const PREVIEW_BASES = 100;
+const PREVIEW_BASES = 100;
 
 export type Details =
   | { state: 'none' }
@@ -35,7 +35,7 @@ function message(error: unknown): string {
 }
 
 /** Ids of the set bits, ascending. */
-export function setBits(bits: Uint32Array): Uint32Array<ArrayBuffer> {
+function setBits(bits: Uint32Array): Uint32Array<ArrayBuffer> {
   const ids: number[] = [];
   for (const [w, word] of bits.entries()) {
     for (let b = 0, rest = word; rest !== 0; b++, rest >>>= 1) if (rest & 1) ids.push(w * 32 + b);

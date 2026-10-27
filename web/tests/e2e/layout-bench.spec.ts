@@ -52,12 +52,13 @@ test.describe('layout benchmark', () => {
       const name = basename(path);
       await openGraph(page, path);
       const status = page.getByTestId('status-layout');
+      const memory = memoryMb();
       const result: Record<string, unknown> = {
         parseMs: Number(await page.getByTestId('format').getAttribute('data-parse-ms')),
         settledMs: Number(await status.getAttribute('data-ms')),
         usableMs: Number(await status.getAttribute('data-usable-ms')),
-        tabMb: memoryMb()?.tab,
-        gpuProcessMb: memoryMb()?.gpu,
+        tabMb: memory.tab,
+        gpuProcessMb: memory.gpu,
       };
       // The JS heap counts garbage until a collection runs.
       const cdp = await page.context().newCDPSession(page);

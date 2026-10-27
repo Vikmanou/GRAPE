@@ -154,7 +154,7 @@ for (const [segments, goal] of Object.entries(TARGETS)) {
     `| Settled layout | < ${goal.settled} s | ${seconds(t.parseMs + t.settledMs)} (${seconds(t.settledMs)} after parsing) |`,
     `| Interaction, zoomed in | ${goal.zoomedIn} fps | ${t.fpsZoomedIn ?? '–'} fps |`,
     `| Interaction, zoomed out | ${goal.zoomedOut} fps | ${t.fpsZoomedOut ?? '–'} fps |`,
-    `| Tab memory | < ${goal.tab} | ${t.tabMb ?? '–'} MB (GPU process ${t.gpuProcessMb ?? '–'} MB) |`,
+    `| Tab memory | < ${goal.tab} | ${t.tabMb} MB (GPU process ${t.gpuProcessMb} MB) |`,
     '',
     'Per level: GPU time from timestamp queries, wall time from the',
     "level's first batch to the next level's.",
@@ -175,7 +175,7 @@ lines.push(
   '|---|---:|---:|---:|---:|---:|---:|---:|',
   ...rows.map(
     ({ name, timing: t }) =>
-      `| ${name} | ${seconds(t.parseMs)} | ${seconds(t.usableMs)} | ${seconds(t.settledMs)} | ${t.tabMb ?? '–'} MB | ${t.gpuProcessMb ?? '–'} MB | ${t.fpsZoomedOut ?? '–'} | ${t.fpsZoomedIn ?? '–'} |`,
+      `| ${name} | ${seconds(t.parseMs)} | ${seconds(t.usableMs)} | ${seconds(t.settledMs)} | ${t.tabMb} MB | ${t.gpuProcessMb} MB | ${t.fpsZoomedOut ?? '–'} | ${t.fpsZoomedIn ?? '–'} |`,
   ),
   '',
 );
@@ -194,13 +194,13 @@ lines.push(
 for (const { name, timing: t, quality: q } of rows) {
   if (!t.memory) continue;
   const parts = checkMemory(t.memory, q.segments);
-  const tabOk = t.tabMb === undefined || t.tabMb <= tabTargetMb(q.segments);
+  const tabOk = t.tabMb <= tabTargetMb(q.segments);
   if (!tabOk) over.push(`${name}: tab ${t.tabMb} MB`);
   for (const p of parts)
     if (!p.ok) over.push(`${name}: ${p.name} ${p.mb.toFixed(0)} MB over ${p.budget.toFixed(0)} MB`);
   const cell = (p) => `${p.mb.toFixed(0)} / ${p.budget.toFixed(0)}${p.ok ? '' : ' **over**'}`;
   lines.push(
-    `| ${name} | ${t.tabMb ?? '–'} / ${tabTargetMb(q.segments)}${tabOk ? '' : ' **over**'} | ${parts.map(cell).join(' | ')} |`,
+    `| ${name} | ${t.tabMb} / ${tabTargetMb(q.segments)}${tabOk ? '' : ' **over**'} | ${parts.map(cell).join(' | ')} |`,
   );
 }
 lines.push('');

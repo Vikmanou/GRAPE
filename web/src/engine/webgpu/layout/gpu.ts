@@ -1,4 +1,4 @@
-export const WORKGROUP = 256;
+const WORKGROUP = 256;
 
 /** Timestamp writes for a named pass, when profiling. */
 export type PassTimer = (label: string) => GPUComputePassTimestampWrites | undefined;

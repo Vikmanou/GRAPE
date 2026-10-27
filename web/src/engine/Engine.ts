@@ -29,7 +29,7 @@ const LAYOUT_DRAW_SHARE = 10;
 /** The view counts as moving for this long after the last pan or zoom. */
 const INTERACTION_MS = 250;
 /** The store mirrors the camera at most ten times a second (spec, Architecture). */
-export const CAMERA_EVENT_MS = 100;
+const CAMERA_EVENT_MS = 100;
 
 /**
  * Owns the canvas, the camera and the frame loop, and draws through a

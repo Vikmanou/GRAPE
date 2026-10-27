@@ -38,7 +38,7 @@ const lines = [
 for (const path of files) {
   const r = JSON.parse(readFileSync(join(out, `${basename(path)}.json`), 'utf8'));
   lines.push(
-    `| ${basename(path)} | ${r.segments.toLocaleString('en')} | ${r.fpsZoomedOut} fps | ${r.fpsZoomedIn} fps | ${ms(r.hoverMs)} | ${ms(r.clickMs)} | ${ms(r.boxSelectMs)} | ${r.findRegexMs} ms | ${r.tabMb ?? '–'} → ${r.tabMbAfter ?? '–'} MB |`,
+    `| ${basename(path)} | ${r.segments.toLocaleString('en')} | ${r.fpsZoomedOut} fps | ${r.fpsZoomedIn} fps | ${ms(r.hoverMs)} | ${ms(r.clickMs)} | ${ms(r.boxSelectMs)} | ${r.findRegexMs} ms | ${r.tabMb} → ${r.tabMbAfter} MB |`,
   );
 }
 lines.push('');

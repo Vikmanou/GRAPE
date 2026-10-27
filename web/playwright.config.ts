@@ -18,10 +18,8 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         // GRAPE_GPU_HEADLESS=1 runs full Chromium headless on the real GPU
-        // through Vulkan (Linux), so GPU runs need no display that stays awake.
+        // through Vulkan, so GPU runs need no display that stays awake.
         ...(gpuHeadless && { channel: 'chromium', headless: true }),
-        // Headless WebGPU support varies by machine; tests accept either a
-        // WebGPU canvas or a clean fallback message.
         // Chrome on Linux exposes the real GPU to WebGPU only through Vulkan.
         // Headed runs keep drawing when the window is covered: Chrome otherwise
         // stops animation frames and screenshots for occluded windows.
@@ -31,7 +29,7 @@ export default defineConfig({
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
             '--disable-background-timer-throttling',
-            ...(process.platform === 'linux' ? ['--enable-features=Vulkan'] : []),
+            '--enable-features=Vulkan',
             ...(gpuHeadless ? ['--use-angle=vulkan', '--use-vulkan'] : []),
           ],
         },

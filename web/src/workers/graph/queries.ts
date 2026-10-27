@@ -5,12 +5,12 @@ import type { FastaRecords } from '../protocol/sequence';
 import { compileFindRegex, type FindQuery } from './findQuery';
 
 /** Links listed in the info panel; a tangle can have thousands. */
-export const MAX_LINKS = 100;
+const INFO_LINKS = 100;
 /** `seg_flags::DEFINED` in gfa-core store/segments.rs. */
 const DEFINED = 1;
 
 export function segmentInfo(loaded: Loaded, segment: number): SegmentInfo | undefined {
-  const info = loaded.info(segment, MAX_LINKS);
+  const info = loaded.info(segment, INFO_LINKS);
   if (!info) return undefined;
   const raw = info.links();
   const others = Uint32Array.from({ length: raw.length / 5 }, (_, i) => raw[i * 5] ?? 0);

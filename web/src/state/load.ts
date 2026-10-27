@@ -3,8 +3,8 @@ import { WorkerTerminatedError } from '../workers/rpc';
 import type { Context } from './store';
 
 /** The v1 ceiling (spec, Overview); larger graphs load with a warning. */
-export const MAX_SEGMENTS = 1_000_000;
-export const MAX_LINKS = 1_500_000;
+const MAX_SEGMENTS = 1_000_000;
+const MAX_LINKS = 1_500_000;
 
 export interface FileInfo {
   name: string;

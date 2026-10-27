@@ -36,7 +36,8 @@ all run on your machine.
   out just the selection again.
 - Keyboard shortcuts for all of the above; press `?` for the list.
 
-GRAPE needs WebGPU: current desktop Chrome or Edge.
+GRAPE needs WebGPU: current desktop Chrome or Edge. Try it at
+[vikmanou.github.io/GRAPE](https://vikmanou.github.io/GRAPE/).
 
 ## Development
 
