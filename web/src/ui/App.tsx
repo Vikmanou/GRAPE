@@ -8,6 +8,7 @@ import { Sidebar } from './panels/Sidebar';
 import { StatusBar } from './bars/StatusBar';
 import { TopBar } from './bars/TopBar';
 import { Unsupported } from './overlays/Unsupported';
+import { Shortcuts } from './overlays/Shortcuts';
 import { Toasts } from './overlays/Toasts';
 import { Warnings } from './overlays/Warnings';
 
@@ -26,7 +27,7 @@ export function App() {
   );
   const dragging = useFileDrop(openFile);
   const sidebarOpen = useApp((s) => s.sidebar.open);
-  const infoOpen = useApp((s) => s.selection.count > 0);
+  const infoOpen = useApp((s) => s.infoOpen && s.selection.count > 0);
   usePanelInsets(`${load.state}:${String(sidebarOpen)}:${String(infoOpen)}`);
 
   const unsupported = renderer === 'none' || engineError !== undefined;
@@ -54,6 +55,7 @@ export function App() {
           }}
         />
       )}
+      <Shortcuts />
       <Toasts />
       <StatusBar
         onToggleWarnings={() => {

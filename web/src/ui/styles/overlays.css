@@ -144,3 +144,37 @@
   word-break: break-word;
   font-size: 12px;
 }
+
+.shortcuts {
+  top: 56px;
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(440px, calc(100% - 16px));
+}
+
+.shortcuts header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shortcuts h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.shortcuts td {
+  padding: 3px 8px 3px 0;
+  vertical-align: top;
+}
+
+kbd {
+  font:
+    12px ui-monospace,
+    monospace;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}

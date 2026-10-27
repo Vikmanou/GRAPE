@@ -3,6 +3,7 @@ import { detectBackend } from '../engine/core/detect';
 import { GraphClient } from '../workers/graph/GraphClient';
 import { LayoutClient } from '../workers/layout/LayoutClient';
 import { SequenceClient } from '../workers/sequence/SequenceClient';
+import { handleKey } from './shortcuts';
 import { createAppStore, installStore, type AppStore } from './store';
 import { onSystemThemeChange, systemTheme } from './theme';
 
@@ -21,6 +22,9 @@ export function startApp(): AppStore {
   app.setTheme(systemTheme());
   onSystemThemeChange(app.setTheme);
   app.startCore();
+  window.addEventListener('keydown', (event) => {
+    if (handleKey(event, store.getState())) event.preventDefault();
+  });
   void app.detectRenderer();
   return store;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../state/store';
 import { formatCount } from '../format';
 
@@ -10,6 +10,14 @@ export function Find() {
   const [regex, setRegex] = useState(false);
   const find = useApp((s) => s.find);
   const result = useApp((s) => s.findResult);
+  const focus = useApp((s) => s.findFocus);
+  const focused = useApp((s) => s.findFocused);
+  const input = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!focus) return;
+    input.current?.focus();
+    focused();
+  }, [focus, focused]);
   const submit = () => {
     find(text, regex);
   };
@@ -17,6 +25,7 @@ export function Find() {
     <section className="find" aria-label="Find">
       <label htmlFor="find-names">{regex ? 'Regular expression' : 'Names, separated by commas or spaces'}</label>
       <textarea
+        ref={input}
         id="find-names"
         data-testid="find-input"
         rows={3}

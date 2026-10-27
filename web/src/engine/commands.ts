@@ -18,6 +18,10 @@ export type EngineCommand =
   /** Answered by a `positions` event. */
   | { type: 'read-positions' }
   | { type: 'fit' }
+  /** Pans by fractions of the view's width and height. */
+  | { type: 'pan-view'; fx: number; fy: number }
+  /** Zooms about the view's centre. */
+  | { type: 'zoom-view'; factor: number }
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets }
   /** Answered by a `picked` event: the segment drawn at canvas pixel `x, y`. */

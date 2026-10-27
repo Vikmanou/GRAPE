@@ -21,6 +21,19 @@ export interface DisplaySlice {
   sidebar: { open: boolean; tab: SidebarTab };
   showSidebar: (tab: SidebarTab) => void;
   toggleSidebar: () => void;
+  /** Whether the info panel shows while something is selected. */
+  infoOpen: boolean;
+  toggleInfo: () => void;
+  /** The Find panel should take focus when it next renders. */
+  findFocus: boolean;
+  focusFind: () => void;
+  findFocused: () => void;
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
+  fit: () => void;
+  /** Pans by fractions of the view. */
+  panView: (fx: number, fy: number) => void;
+  zoomView: (factor: number) => void;
   detectRenderer: () => Promise<void>;
   attachEngine: (host: HTMLElement) => Promise<void>;
   detachEngine: () => void;
@@ -48,6 +61,34 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     toggleSidebar() {
       const { sidebar } = get();
       set({ sidebar: { ...sidebar, open: !sidebar.open } });
+    },
+
+    infoOpen: true,
+    toggleInfo() {
+      set({ infoOpen: !get().infoOpen });
+    },
+
+    findFocus: false,
+    focusFind() {
+      set({ sidebar: { open: true, tab: 'find' }, findFocus: true });
+    },
+    findFocused() {
+      set({ findFocus: false });
+    },
+
+    shortcutsOpen: false,
+    setShortcutsOpen(shortcutsOpen) {
+      set({ shortcutsOpen });
+    },
+
+    fit() {
+      ctx.bridge.send({ type: 'fit' });
+    },
+    panView(fx, fy) {
+      ctx.bridge.send({ type: 'pan-view', fx, fy });
+    },
+    zoomView(factor) {
+      ctx.bridge.send({ type: 'zoom-view', factor });
     },
 
     async detectRenderer() {

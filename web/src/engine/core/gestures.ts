@@ -7,20 +7,18 @@ import type { Pointer } from './Pointer';
 import type { RubberBand } from './RubberBand';
 
 export interface GestureTargets {
-  canvas: HTMLCanvasElement;
   framing: Framing;
   pointer: Pointer;
   band: RubberBand;
   layout: () => LayoutDriver;
   selectBox: (box: Bounds) => Promise<Uint32Array>;
   viewMoved: () => void;
-  fit: () => void;
   emit: (event: EngineEvent) => void;
 }
 
-/** What each pointer, wheel and key gesture does to the view, the selection and the layout. */
+/** What each pointer and wheel gesture does to the view, the selection and the layout. */
 export function gestures(t: GestureTargets): InputHandler {
-  const { canvas, framing, pointer, band } = t;
+  const { framing, pointer, band } = t;
   const coarse = () => !t.layout().usable;
   /** The segment being dragged, which pins it. */
   let grabbed: number | undefined;
@@ -33,15 +31,6 @@ export function gestures(t: GestureTargets): InputHandler {
       framing.zoomAt(x, y, factor, coarse());
       t.viewMoved();
     },
-    zoomCenter: (factor) => {
-      framing.zoomAt(canvas.width / 2, canvas.height / 2, factor, coarse());
-      t.viewMoved();
-    },
-    panView: (fx, fy) => {
-      framing.pan(fx * canvas.width, fy * canvas.height);
-      t.viewMoved();
-    },
-    fit: t.fit,
     hover: (x, y) => {
       pointer.moved(x, y);
     },

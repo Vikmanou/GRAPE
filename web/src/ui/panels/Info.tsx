@@ -16,7 +16,8 @@ export function Info() {
   const sequences = useApp((s) => s.selectedSequences);
   const fasta = useApp((s) => s.selectedFasta);
   const toast = useApp((s) => s.toast);
-  if (selection.count === 0) return null;
+  const open = useApp((s) => s.infoOpen);
+  if (selection.count === 0 || !open) return null;
   const plural = selection.count > 1;
   const failed = (what: string) => (error: unknown) => {
     toast(`Could not ${what}`, error instanceof Error ? error.message : String(error));

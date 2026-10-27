@@ -92,7 +92,6 @@ export class Engine {
     this.detachInput = attachInput(
       canvas,
       gestures({
-        canvas,
         framing: this.framing,
         pointer: this.pointer,
         band: this.band,
@@ -100,9 +99,6 @@ export class Engine {
         selectBox: (box) => this.backend.selectBox(box),
         viewMoved: () => {
           this.viewMoved();
-        },
-        fit: () => {
-          this.send({ type: 'fit' });
         },
         emit: (event) => {
           this.emit(event);
@@ -183,6 +179,14 @@ export class Engine {
       case 'fit':
         framing.fitGraph();
         break;
+      case 'pan-view':
+        framing.pan(command.fx * this.canvas.width, command.fy * this.canvas.height);
+        this.viewMoved();
+        return;
+      case 'zoom-view':
+        framing.zoomAt(this.canvas.width / 2, this.canvas.height / 2, command.factor, !layout.usable);
+        this.viewMoved();
+        return;
       case 'set-insets':
         framing.setInsets(command.insets);
         break;
