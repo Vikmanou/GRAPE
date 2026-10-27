@@ -52,6 +52,14 @@ export class Buffers {
     return buffer;
   }
 
+  /** Destroys one buffer before the rest. */
+  release(buffer: GPUBuffer | undefined): void {
+    if (!buffer || !this.owned.includes(buffer)) return;
+    this.owned = this.owned.filter((b) => b !== buffer);
+    allocated -= buffer.size;
+    buffer.destroy();
+  }
+
   destroy(): void {
     for (const buffer of this.owned) {
       allocated -= buffer.size;

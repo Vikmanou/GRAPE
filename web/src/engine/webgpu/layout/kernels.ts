@@ -1,6 +1,7 @@
 import cull from '../shaders/cull.wgsl?raw';
 import forces from '../shaders/forces.wgsl?raw';
 import grid from '../shaders/grid.wgsl?raw';
+import labels from '../shaders/labels.wgsl?raw';
 import common from '../shaders/layout-common.wgsl?raw';
 import pin from '../shaders/pin.wgsl?raw';
 import present from '../shaders/present.wgsl?raw';
@@ -17,6 +18,7 @@ const SOURCES = {
   present: common + present,
   query,
   pin,
+  labels,
 };
 
 const ENTRY_POINTS = {
@@ -42,6 +44,8 @@ const ENTRY_POINTS = {
   boundPieces: ['query', 'bound_pieces'],
   translate: ['pin', 'translate'],
   setMobility: ['pin', 'set_mobility'],
+  claimCells: ['labels', 'claim_cells'],
+  keepWinners: ['labels', 'keep_winners'],
 } as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
 
 export type Kernels = Record<keyof typeof ENTRY_POINTS, GPUComputePipeline>;

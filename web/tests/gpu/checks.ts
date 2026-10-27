@@ -4,6 +4,7 @@ import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
 import { encodeParams } from '../../src/engine/webgpu/layout/params';
 import { Scan } from '../../src/engine/webgpu/layout/scan';
 import { culling } from './cull';
+import { labelPlacement } from './labels';
 import { allPairsIteration, forceIteration } from './forces';
 import { picking } from './pick';
 import { bounds, boxSelect } from './query';
@@ -142,4 +143,5 @@ export const checks: Record<string, Check> = {
   picking,
   boxSelect,
   bounds,
+  labelPlacement,
 };
