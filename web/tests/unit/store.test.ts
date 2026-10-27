@@ -144,7 +144,7 @@ describe('store', () => {
       id: 1,
       hierarchy: { levels: [], start: new Float32Array(), frozen: new Uint8Array() },
     });
-    expect(engine.types()).toEqual(['set-theme', 'set-graph', 'start-layout']);
+    expect(engine.types()).toEqual(['set-theme', 'set-insets', 'set-graph', 'start-layout']);
     expect(store.getState().layoutStatus).toEqual({ state: 'running', iteration: 0, total: 10 });
 
     engine.emit({ type: 'layout-measured', boxes: new Float32Array(4), progress });
@@ -189,6 +189,14 @@ describe('store', () => {
     expect(engines[0]?.destroyed).toBe(true);
     expect(layouts.at(-1)?.cancelled).toBe(true);
     expect(store.getState().layoutStatus.state).toBe('idle');
+  });
+
+  it('panel insets measured before the engine exists reach it when it attaches', async () => {
+    const { store, engines } = setup();
+    const insets = { top: 40, right: 0, bottom: 28, left: 330 };
+    store.getState().setInsets(insets);
+    await store.getState().attachEngine({} as HTMLElement);
+    expect(engines[0]?.sent).toContainEqual({ type: 'set-insets', insets });
   });
 
   it('an engine that arrives after detaching is destroyed', async () => {

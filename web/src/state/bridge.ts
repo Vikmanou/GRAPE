@@ -39,7 +39,9 @@ export class Bridge {
     engine.on((event) => {
       this.receive(event);
     });
-    engine.send({ type: 'set-theme', theme: this.ctx.get().theme });
+    const { theme, insets } = this.ctx.get();
+    engine.send({ type: 'set-theme', theme });
+    engine.send({ type: 'set-insets', insets });
     return true;
   }
 

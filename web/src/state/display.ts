@@ -1,4 +1,4 @@
-import type { Insets } from '../engine/core/camera';
+import { type Insets, NO_INSETS } from '../engine/core/camera';
 import type { BackendKind } from '../engine/core/detect';
 import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
@@ -14,6 +14,8 @@ export interface DisplaySlice {
   gpuLayout: boolean;
   /** Frames per second over the last second of continuous drawing. */
   fps: number | undefined;
+  /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
+  insets: Insets;
   sidebar: { open: boolean; tab: SidebarTab };
   showSidebar: (tab: SidebarTab) => void;
   toggleSidebar: () => void;
@@ -22,7 +24,6 @@ export interface DisplaySlice {
   detachEngine: () => void;
   engineFailed: (message: string) => void;
   setTheme: (theme: Theme) => void;
-  /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   setInsets: (insets: Insets) => void;
 }
 
@@ -34,6 +35,7 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     theme: 'light',
     gpuLayout: false,
     fps: undefined,
+    insets: NO_INSETS,
     sidebar: { open: true, tab: 'overview' },
 
     showSidebar(tab) {
@@ -76,6 +78,7 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     },
 
     setInsets(insets) {
+      set({ insets });
       ctx.bridge.send({ type: 'set-insets', insets });
     },
   };
