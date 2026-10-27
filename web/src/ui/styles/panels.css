@@ -127,3 +127,43 @@
   gap: 6px;
   margin: 8px 0;
 }
+
+.mono {
+  font-family: ui-monospace, monospace;
+}
+
+.segment-name {
+  margin: 4px 0 8px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.info-panel h3 {
+  font-size: 0.9rem;
+  margin: 14px 0 4px;
+}
+
+.neighbours {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.neighbours li {
+  padding: 2px 0;
+}
+
+.sequence {
+  margin: 0;
+  word-break: break-all;
+  font-size: 12px;
+}
+
+.raw-line {
+  margin: 0;
+  max-height: 8em;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 12px;
+}

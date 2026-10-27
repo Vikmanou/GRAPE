@@ -79,6 +79,7 @@ export class Bridge {
         break;
       case 'selection':
         set({ selection: { count: event.count, single: event.single, bits: event.bits } });
+        get().refreshDetails();
         break;
       case 'device-lost':
         get().engineFailed(`GPU device lost: ${event.message}`);

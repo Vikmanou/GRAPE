@@ -6,6 +6,7 @@ import type { Topology } from '../workers/protocol/graph';
 import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
+import { createDetailsSlice, type DetailsSlice } from './details';
 import { createDisplaySlice, type DisplaySlice } from './display';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFileSlice, type FileSlice } from './load';
@@ -42,7 +43,7 @@ export interface Services {
   search: string;
 }
 
-export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice;
+export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice & DetailsSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -64,6 +65,7 @@ export function createAppStore(services: Services): AppStore {
       ...createDisplaySlice(ctx),
       ...createToastSlice(ctx),
       ...createSelectionSlice(ctx),
+      ...createDetailsSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
