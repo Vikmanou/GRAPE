@@ -197,7 +197,9 @@ fn hierarchy(name: &str, seed: u64) -> gfa_core::layout::Hierarchy {
         seed,
         ..LayoutOptions::default()
     };
-    Layout::new(graph.topology(), options).unwrap().hierarchy()
+    Layout::new(graph.topology(), options)
+        .unwrap()
+        .into_hierarchy()
 }
 
 #[test]

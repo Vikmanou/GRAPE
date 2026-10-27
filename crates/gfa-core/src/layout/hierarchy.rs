@@ -46,68 +46,74 @@ pub struct Hierarchy {
 }
 
 impl Layout {
-    pub fn hierarchy(&self) -> Hierarchy {
+    /// Hands each level over as it is converted, so at most one level is
+    /// held twice.
+    pub fn into_hierarchy(self) -> Hierarchy {
         let top = self.levels.len() - 1;
-        let levels = (0..=top)
-            .map(|l| {
-                let level = &self.levels[l];
-                let (offsets, ends) = level.adjacency();
-                let s = &level.springs;
-                let step = level.step_sizes();
-                let mut nodes = Vec::with_capacity(level.len() * 4);
-                for v in 0..level.len() {
-                    nodes.extend([
-                        level.component[v],
-                        step[v].to_bits(),
-                        offsets[v],
-                        offsets[v + 1],
-                    ]);
-                }
-                let mut edges = Vec::with_capacity(ends.len() * 3);
-                for (v, w) in offsets.windows(2).enumerate() {
-                    for &e in &ends[w[0] as usize..w[1] as usize] {
-                        let e = e as usize;
-                        let other = if s.a[e] as usize == v { s.b[e] } else { s.a[e] };
-                        edges.extend([other, s.rest[e].to_bits(), s.weight[e].to_bits()]);
-                    }
-                }
-                let children = if l == 0 {
-                    Vec::new()
-                } else {
-                    let finer = &self.levels[l - 1];
-                    self.splits[l - 1]
-                        .children
-                        .iter()
-                        .flat_map(|&(u, v, rest)| {
-                            let half = if v == NONE {
-                                0.0
-                            } else {
-                                (rest + (finer.span[u as usize] + finer.span[v as usize]) * 0.5)
-                                    * 0.5
-                            };
-                            [u, v, half.to_bits()]
-                        })
-                        .collect()
-                };
-                HierarchyLevel {
-                    nodes,
-                    edges,
-                    heat: level.heat(&self.frozen, l == top),
-                    repulsion: repulsion(level),
-                    mean_rest: level.mean_rest(),
-                    iterations: self.budget(l),
-                    parent: self
-                        .splits
-                        .get(l)
-                        .map_or_else(Vec::new, |s| s.parent.clone()),
-                    children,
-                }
-            })
-            .collect();
-        Hierarchy {
+        let budgets: Vec<u32> = (0..=top).map(|l| self.budget(l)).collect();
+        let Layout {
             levels,
-            start: self.start.clone(),
-            frozen: self.frozen.clone(),
+            splits,
+            frozen,
+            start,
+            ..
+        } = self;
+        let mut splits = splits.into_iter();
+        let mut merged = Vec::new();
+        let mut finer_span: Vec<f32> = Vec::new();
+        let mut out = Vec::with_capacity(levels.len());
+        for (l, level) in levels.into_iter().enumerate() {
+            let children = merged
+                .iter()
+                .flat_map(|&(u, v, rest): &(u32, u32, f32)| {
+                    let half: f32 = if v == NONE {
+                        0.0
+                    } else {
+                        (rest + (finer_span[u as usize] + finer_span[v as usize]) * 0.5) * 0.5
+                    };
+                    [u, v, half.to_bits()]
+                })
+                .collect();
+            let (parent, next) = splits
+                .next()
+                .map_or_else(Default::default, |s| (s.parent, s.children));
+            merged = next;
+            let (offsets, ends) = level.adjacency();
+            let s = &level.springs;
+            let step = level.step_sizes();
+            let mut nodes = Vec::with_capacity(level.len() * 4);
+            for v in 0..level.len() {
+                nodes.extend([
+                    level.component[v],
+                    step[v].to_bits(),
+                    offsets[v],
+                    offsets[v + 1],
+                ]);
+            }
+            let mut edges = Vec::with_capacity(ends.len() * 3);
+            for (v, w) in offsets.windows(2).enumerate() {
+                for &e in &ends[w[0] as usize..w[1] as usize] {
+                    let e = e as usize;
+                    let other = if s.a[e] as usize == v { s.b[e] } else { s.a[e] };
+                    edges.extend([other, s.rest[e].to_bits(), s.weight[e].to_bits()]);
+                }
+            }
+            out.push(HierarchyLevel {
+                nodes,
+                edges,
+                heat: level.heat(&frozen, l == top),
+                repulsion: repulsion(&level),
+                mean_rest: level.mean_rest(),
+                iterations: budgets[l],
+                parent,
+                children,
+            });
+            finer_span = level.span;
+        }
+        Hierarchy {
+            levels: out,
+            start,
+            frozen,
         }
     }
 }

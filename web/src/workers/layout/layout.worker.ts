@@ -22,7 +22,7 @@ function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
 
 function postGeometry(id: number, layout: Layout, segments: number): void {
   const pieces = plain(layout.pieces());
-  const links = plain(layout.links());
+  const links = plain(layout.takeLinks());
   const segmentStarts = plain(layout.segmentStarts());
   const segmentPieces = plain(layout.segmentPieces());
   const geometry = { segments, points: layout.points(), pieces, links, segmentStarts, segmentPieces };
@@ -50,16 +50,17 @@ function runCpu(id: number, layout: Layout): void {
   }
 }
 
-function copyHierarchy(h: WasmHierarchy): Hierarchy {
+/** Takes each array out of WASM, so none is held there and here at once for long. */
+function takeHierarchy(h: WasmHierarchy): Hierarchy {
   const levels = Array.from({ length: h.levels() }, (_, l) => ({
-    nodes: plain(h.nodes(l)),
-    edges: plain(h.edges(l)),
+    nodes: plain(h.takeNodes(l)),
+    edges: plain(h.takeEdges(l)),
     heat: plain(h.heat(l)),
     repulsion: h.repulsion(l),
     meanRest: h.meanRest(l),
     iterations: h.iterations(l),
-    parent: plain(h.parent(l)),
-    children: plain(h.children(l)),
+    parent: plain(h.takeParent(l)),
+    children: plain(h.takeChildren(l)),
   }));
   return { levels, start: plain(h.start()), frozen: plain(h.frozen()) };
 }
@@ -81,19 +82,28 @@ async function handle(request: LayoutRequest): Promise<void> {
     return;
   }
   const layout = create(request.topology, request.options);
+  if (request.type === 'layout') {
+    try {
+      postGeometry(request.id, layout, request.topology.lengths.length);
+      runCpu(request.id, layout);
+    } finally {
+      layout.free();
+    }
+    return;
+  }
   try {
     postGeometry(request.id, layout, request.topology.lengths.length);
-    if (request.type === 'layout') {
-      runCpu(request.id, layout);
-      return;
-    }
-    const wasm = layout.hierarchy();
-    const hierarchy = copyHierarchy(wasm);
-    wasm.free();
+  } catch (error) {
+    layout.free();
+    throw error;
+  }
+  const wasm = layout.intoHierarchy();
+  try {
+    const hierarchy = takeHierarchy(wasm);
     frozen = hierarchy.frozen.slice();
     post({ type: 'hierarchy', id: request.id, hierarchy }, transfers(hierarchy));
   } finally {
-    layout.free();
+    wasm.free();
   }
 }
 

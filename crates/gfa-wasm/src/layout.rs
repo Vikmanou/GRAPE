@@ -86,14 +86,16 @@ impl Layout {
         self.inner.chains.pieces.clone()
     }
 
-    /// `[end a, inner a, end b, inner b]` per link.
-    pub fn links(&self) -> Vec<u32> {
-        self.links.clone()
+    /// `[end a, inner a, end b, inner b]` per link; empty when asked again.
+    #[wasm_bindgen(js_name = takeLinks)]
+    pub fn take_links(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.links)
     }
 
-    /// Only meaningful before the first step.
-    pub fn hierarchy(&self) -> Hierarchy {
-        Hierarchy(self.inner.hierarchy())
+    /// Only meaningful before the first step; consumes the layout.
+    #[wasm_bindgen(js_name = intoHierarchy)]
+    pub fn into_hierarchy(self) -> Hierarchy {
+        Hierarchy(self.inner.into_hierarchy())
     }
 }
 
@@ -114,43 +116,49 @@ impl Hierarchy {
         self.0.frozen.iter().map(|&f| u8::from(f)).collect()
     }
 
-    pub fn nodes(&self, level: usize) -> Vec<u32> {
-        self.level(level).map_or_else(Vec::new, |l| l.nodes.clone())
+    #[wasm_bindgen(js_name = takeNodes)]
+    pub fn take_nodes(&mut self, level: usize) -> Vec<u32> {
+        self.level(level)
+            .map_or_else(Vec::new, |l| std::mem::take(&mut l.nodes))
     }
 
-    pub fn edges(&self, level: usize) -> Vec<u32> {
-        self.level(level).map_or_else(Vec::new, |l| l.edges.clone())
+    #[wasm_bindgen(js_name = takeEdges)]
+    pub fn take_edges(&mut self, level: usize) -> Vec<u32> {
+        self.level(level)
+            .map_or_else(Vec::new, |l| std::mem::take(&mut l.edges))
     }
 
-    pub fn heat(&self, level: usize) -> Vec<f32> {
+    pub fn heat(&mut self, level: usize) -> Vec<f32> {
         self.level(level).map_or_else(Vec::new, |l| l.heat.clone())
     }
 
-    pub fn parent(&self, level: usize) -> Vec<u32> {
+    #[wasm_bindgen(js_name = takeParent)]
+    pub fn take_parent(&mut self, level: usize) -> Vec<u32> {
         self.level(level)
-            .map_or_else(Vec::new, |l| l.parent.clone())
+            .map_or_else(Vec::new, |l| std::mem::take(&mut l.parent))
     }
 
-    pub fn children(&self, level: usize) -> Vec<u32> {
+    #[wasm_bindgen(js_name = takeChildren)]
+    pub fn take_children(&mut self, level: usize) -> Vec<u32> {
         self.level(level)
-            .map_or_else(Vec::new, |l| l.children.clone())
+            .map_or_else(Vec::new, |l| std::mem::take(&mut l.children))
     }
 
-    pub fn repulsion(&self, level: usize) -> f32 {
+    pub fn repulsion(&mut self, level: usize) -> f32 {
         self.level(level).map_or(0.0, |l| l.repulsion)
     }
 
     #[wasm_bindgen(js_name = meanRest)]
-    pub fn mean_rest(&self, level: usize) -> f32 {
+    pub fn mean_rest(&mut self, level: usize) -> f32 {
         self.level(level).map_or(0.0, |l| l.mean_rest)
     }
 
-    pub fn iterations(&self, level: usize) -> u32 {
+    pub fn iterations(&mut self, level: usize) -> u32 {
         self.level(level).map_or(0, |l| l.iterations)
     }
 
-    fn level(&self, level: usize) -> Option<&gfa_core::layout::HierarchyLevel> {
-        self.0.levels.get(level)
+    fn level(&mut self, level: usize) -> Option<&mut gfa_core::layout::HierarchyLevel> {
+        self.0.levels.get_mut(level)
     }
 }
 
