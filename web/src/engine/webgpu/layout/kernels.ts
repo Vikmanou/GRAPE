@@ -4,6 +4,7 @@ import grid from '../shaders/grid.wgsl?raw';
 import common from '../shaders/layout-common.wgsl?raw';
 import present from '../shaders/present.wgsl?raw';
 import prolong from '../shaders/prolong.wgsl?raw';
+import query from '../shaders/query.wgsl?raw';
 import scan from '../shaders/scan.wgsl?raw';
 
 const SOURCES = {
@@ -13,6 +14,7 @@ const SOURCES = {
   forces: common + forces,
   prolong: common + prolong,
   present: common + present,
+  query,
 };
 
 const ENTRY_POINTS = {
@@ -33,6 +35,7 @@ const ENTRY_POINTS = {
   markLinks: ['cull', 'mark_links'],
   markHighlight: ['cull', 'mark_highlight'],
   compact: ['cull', 'compact'],
+  selectBox: ['query', 'select_box'],
 } as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
 
 export type Kernels = Record<keyof typeof ENTRY_POINTS, GPUComputePipeline>;

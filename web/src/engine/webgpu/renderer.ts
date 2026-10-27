@@ -33,12 +33,19 @@ export interface View {
   hover: number | undefined;
 }
 
-interface Graph {
-  buffers: Buffers;
+/** What GPU queries over the drawn ribbons read. */
+export interface Drawn {
   positions: GPUBuffer;
+  pieces: GPUBuffer;
+  pieceCount: number;
+  segments: number;
+}
+
+interface Graph extends Drawn {
+  buffers: Buffers;
   selected: GPUBuffer;
   indirect: GPUBuffer;
-  pieces: Cull | undefined;
+  pieceCull: Cull | undefined;
   links: Cull | undefined;
   highlight: Cull | undefined;
   groups: Record<Pass, GPUBindGroup>;
@@ -157,9 +164,12 @@ export class Renderer {
     this.graph = {
       buffers: b,
       positions,
+      pieces,
+      pieceCount,
+      segments: geometry.segments,
       selected,
       indirect,
-      pieces: pieceCull,
+      pieceCull,
       links: linkCull,
       highlight,
       groups: {
@@ -174,6 +184,10 @@ export class Renderer {
   /** Where `x, y` per point, relative to the view's origin, are read from. */
   get positionBuffer(): GPUBuffer | undefined {
     return this.graph?.positions;
+  }
+
+  get drawn(): Drawn | undefined {
+    return this.graph;
   }
 
   /** `x, y` per point, relative to the same origin as the view's centre. */
@@ -193,7 +207,7 @@ export class Renderer {
   /** Finds what is in view; runs before the render pass that draws it. */
   cull(encoder: GPUCommandEncoder, view: View): void {
     const graph = this.graph;
-    if (!graph || (!graph.pieces && !graph.links)) return;
+    if (!graph || (!graph.pieceCull && !graph.links)) return;
     const worldPerPixel = 1 / view.zoom;
     const ribbonHalf = Math.max(view.ribbonHalf, worldPerPixel / 2);
     const area: CullView = {
@@ -206,7 +220,7 @@ export class Renderer {
       hover: view.hover,
     };
     const pass = encoder.beginComputePass({ label: 'cull' });
-    graph.pieces?.encode(this.device, pass, area);
+    graph.pieceCull?.encode(this.device, pass, area);
     if (view.linkAlpha > 0) graph.links?.encode(this.device, pass, area);
     if (this.highlighting(view)) graph.highlight?.encode(this.device, pass, area);
     pass.end();
@@ -222,7 +236,7 @@ export class Renderer {
       pass.setPipeline(this.link);
       pass.drawIndirect(graph.indirect, 0);
     }
-    if (!graph.pieces) return;
+    if (!graph.pieceCull) return;
     pass.setPipeline(this.ribbon);
     pass.drawIndirect(graph.indirect, PIECES_INDIRECT);
     if (!this.highlighting(view)) return;
@@ -239,7 +253,7 @@ export class Renderer {
   /** Segment ids of the ribbons in view, into an `ID_FORMAT` target; reuses the last cull. */
   drawIds(pass: GPURenderPassEncoder, view: View): void {
     const graph = this.graph;
-    if (!graph?.pieces) return;
+    if (!graph?.pieceCull) return;
     this.writeView('ids', view, 0);
     pass.setBindGroup(0, graph.groups.ids);
     pass.setPipeline(this.ribbonIds);

@@ -3,6 +3,7 @@ import type { Backend } from './core/backend';
 import { boundsOf, type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './core/camera';
 import { FrameCounter } from './core/frames';
 import { Pointer } from './core/Pointer';
+import { RubberBand } from './core/RubberBand';
 import { attachInput } from './core/input';
 import { randomColors } from './style/palette';
 import { WebGpuBackend } from './webgpu/WebGpuBackend';
@@ -57,12 +58,14 @@ export class Engine {
   /** Layout positions moved since they were last presented. */
   private stale = false;
   private readonly pointer: Pointer;
+  private readonly band: RubberBand;
 
   private constructor(
     host: HTMLElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly backend: Backend,
   ) {
+    this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
         this.emit(event);
@@ -111,6 +114,27 @@ export class Engine {
         this.autoFit = false;
         this.pointer.click(x, y, shift);
       },
+      box: (x0, y0, x1, y1, phase) => {
+        if (phase === 'drag') {
+          this.band.show(x0, y0, x1, y1);
+          return;
+        }
+        this.band.hide();
+        if (phase === 'end') {
+          this.autoFit = false;
+          const box = {
+            minX: Math.min(x0, x1),
+            minY: Math.min(y0, y1),
+            maxX: Math.max(x0, x1),
+            maxY: Math.max(y0, y1),
+          };
+          void this.backend.selectBox(box).then((bits) => {
+            if (this.destroyed) return;
+            this.pointer.selection.addBits(bits);
+            this.pointer.selectionChanged();
+          });
+        }
+      },
     });
   }
 
@@ -135,6 +159,7 @@ export class Engine {
     });
     relay.to = new Engine(host, canvas, backend);
     host.appendChild(canvas);
+    relay.to.band.attach(host);
     return relay.to;
   }
 
@@ -143,6 +168,7 @@ export class Engine {
     switch (command.type) {
       case 'set-theme':
         this.backend.setStyle({ theme: command.theme });
+        this.band.setTheme(command.theme);
         break;
       case 'set-graph':
         this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
@@ -226,6 +252,7 @@ export class Engine {
     this.detachInput();
     this.listeners.clear();
     this.pointer.destroy();
+    this.band.remove();
     this.backend.destroy();
     this.canvas.remove();
   }

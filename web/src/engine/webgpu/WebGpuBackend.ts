@@ -1,5 +1,6 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { Backend, BackendEvents, Style, View } from '../core/backend';
+import type { Bounds } from '../core/camera';
 import { palettes } from '../style/palette';
 import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH } from '../style/widths';
 import { createGpuContext } from './device';
@@ -7,6 +8,7 @@ import { PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
 import { createKernels, type Kernels } from './layout/kernels';
 import { Picker } from './pick';
+import { Queries } from './query';
 import { Renderer, type View as DrawnView } from './renderer';
 
 export class WebGpuBackend implements Backend {
@@ -14,6 +16,7 @@ export class WebGpuBackend implements Backend {
   readonly layout: GpuLayoutDriver;
   private readonly renderer: Renderer;
   private readonly picker: Picker;
+  private readonly queries: Queries;
   private style: Style = { theme: 'light' };
   private lastView: View | undefined;
   private hover: number | undefined;
@@ -32,6 +35,7 @@ export class WebGpuBackend implements Backend {
   ) {
     this.renderer = new Renderer(device, format, kernels);
     this.picker = new Picker(device);
+    this.queries = new Queries(device, kernels);
     this.layout = new GpuLayoutDriver(
       device,
       kernels,
@@ -137,6 +141,20 @@ export class WebGpuBackend implements Backend {
     }
     this.device.queue.submit([encoder.finish()]);
     return this.picker.read(staging);
+  }
+
+  async selectBox(box: Bounds): Promise<Uint32Array<ArrayBuffer>> {
+    const view = this.lastView;
+    const drawn = this.renderer.drawn;
+    if (!view || !drawn || !this.positioned) return new Uint32Array(0);
+    const world = (x: number, y: number) => [
+      view.centerX + (x - view.width / 2) / view.zoom,
+      view.centerY + (y - view.height / 2) / view.zoom,
+    ];
+    const [minX = 0, minY = 0] = world(box.minX, box.minY);
+    const [maxX = 0, maxY = 0] = world(box.maxX, box.maxY);
+    const half = Math.max(RIBBON_WIDTH / 2, 0.5 / view.zoom);
+    return this.queries.selectBox(drawn, { minX, minY, maxX, maxY }, half);
   }
 
   private drawn(view: View): DrawnView {

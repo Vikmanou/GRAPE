@@ -80,5 +80,7 @@ export interface Backend {
   draw(view: View): void;
   /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
   pick(x: number, y: number): Promise<number | undefined>;
+  /** One bit per segment whose ribbon touches a box of canvas pixels in the last drawn view. */
+  selectBox(box: Bounds): Promise<Uint32Array<ArrayBuffer>>;
   destroy(): void;
 }

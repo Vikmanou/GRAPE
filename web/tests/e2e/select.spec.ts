@@ -6,7 +6,8 @@ import { appState, openSettled, repo, segmentsOnScreen } from './helpers';
 
 test('click selects, shift-click adds and removes, a click on nothing clears', async ({ page }) => {
   await openSettled(page, repo('testdata/two_components.gfa'));
-  const segments = [...(await segmentsOnScreen(page, 2)).entries()];
+  // Left of where the info panel opens on the first click.
+  const segments = [...(await segmentsOnScreen(page, 20)).entries()].filter(([, at]) => at.x < 800);
   const [[a, at] = [], [b, bt] = []] = segments;
   if (a === undefined || b === undefined || !at || !bt) throw new Error('fewer than two segments on screen');
 

@@ -6,6 +6,8 @@ export interface InputHandler {
   leave(): void;
   /** A press and release that moved less than `CLICK_SLOP`. */
   click(x: number, y: number, shift: boolean): void;
+  /** A shift-drag from `x0, y0` now at `x1, y1`. */
+  box(x0: number, y0: number, x1: number, y1: number, phase: 'drag' | 'end' | 'cancel'): void;
   zoom(x: number, y: number, factor: number): void;
   zoomCenter(factor: number): void;
   panView(fx: number, fy: number): void;
@@ -42,7 +44,9 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
     const s = scale();
     return [(event.clientX - rect.left) * s, (event.clientY - rect.top) * s];
   };
-  let press: { id: number; x: number; y: number; startX: number; startY: number; dragging: boolean } | undefined;
+  let press:
+    | { id: number; x: number; y: number; startX: number; startY: number; dragging: boolean; boxing: boolean }
+    | undefined;
 
   const down = (event: PointerEvent) => {
     if (event.button !== 0) return;
@@ -53,7 +57,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
       // captured; the drag still works while the pointer stays on the canvas.
     }
     const { clientX: x, clientY: y } = event;
-    press = { id: event.pointerId, x, y, startX: x, startY: y, dragging: false };
+    press = { id: event.pointerId, x, y, startX: x, startY: y, dragging: false, boxing: event.shiftKey };
   };
   const move = (event: PointerEvent) => {
     if (!press) {
@@ -63,6 +67,10 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
     if (press.id !== event.pointerId) return;
     press.dragging ||= Math.hypot(event.clientX - press.startX, event.clientY - press.startY) > CLICK_SLOP;
     if (!press.dragging) return;
+    if (press.boxing) {
+      handler.box(...boxCorners(press, event), 'drag');
+      return;
+    }
     const s = scale();
     handler.pan((event.clientX - press.x) * s, (event.clientY - press.y) * s);
     press.x = event.clientX;
@@ -70,8 +78,15 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): (
   };
   const up = (event: PointerEvent) => {
     if (press?.id !== event.pointerId) return;
-    if (!press.dragging && event.type === 'pointerup') handler.click(...local(event), event.shiftKey);
+    if (press.boxing && press.dragging) {
+      handler.box(...boxCorners(press, event), event.type === 'pointerup' ? 'end' : 'cancel');
+    } else if (!press.dragging && event.type === 'pointerup') handler.click(...local(event), event.shiftKey);
     press = undefined;
+  };
+  const boxCorners = (from: { startX: number; startY: number }, to: MouseEvent): [number, number, number, number] => {
+    const rect = canvas.getBoundingClientRect();
+    const s = scale();
+    return [(from.startX - rect.left) * s, (from.startY - rect.top) * s, ...local(to)];
   };
   const leave = () => {
     if (!press) handler.leave();
