@@ -739,3 +739,41 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   are step sizes on level 0) carry over without a second scheme.
 - **Alternatives**: a separate pinned bitset read by the force loop; repacking
   after each refinement (components jump while dragging).
+
+## 2026-10-27: The WebGL2 backend reads data from textures and culls on the CPU
+
+- **Decision**: the WebGL2 shaders are a line-for-line port of graph.wgsl
+  and glyphs.wgsl. Positions, pieces, links, the segment table and the
+  selection live in data textures 4096 texels wide (`RG32F`, `RG32UI`,
+  `RGBA32UI`, `R32UI`) read with `texelFetch`; the view and style are two
+  std140 uniform blocks packed by the same code as WebGPU's uniforms
+  (engine/style/uniforms.ts), whose WGSL layout gives the same offsets.
+  The layout worker sends a uniform grid over pieces and links (gfa-core
+  `layout::Grid`, about four pieces per cell, items covering more than 16
+  cells on a wide list) with each set of positions; the main thread culls
+  pieces, links and highlighted pieces over it into instance lists kept in
+  index order, and draws every item without a list when the view holds the
+  whole grid. Dots for short segments are decided in the vertex shader.
+  Box select, bounds and label placement follow query.wgsl and labels.wgsl
+  on the CPU, so both backends select and place the same. Picking reads one
+  texel of an `R32UI` framebuffer through a pixel buffer and a fence, so it
+  never stalls the main thread.
+- **Reason**: WebGL2 has no storage buffers or compute shaders (spec,
+  Rendering: WebGL2 backend); textures keep the shaders identical to the
+  WGSL ones, and drawing in index order keeps overlaps the same as WebGPU.
+- **Alternatives**: per-instance vertex attributes expanded on the CPU
+  (copies every piece's points each frame); a grid built on the main thread
+  (the spec puts it in the layout worker); synchronous `readPixels` (stalls).
+
+## 2026-10-27: `?renderer=webgl2` forces the fallback; layout controls go through the engine
+
+- **Decision**: the query parameter `?renderer=webgl2` makes a WebGPU machine
+  use the WebGL2 backend, for users and tests, like `?layout=cpu`; it is not
+  part of the share link (M10). Under WebGL2 the engine's layout driver
+  (`CpuLayoutDriver`) turns pause, drag, unpin and re-layout into
+  `layout-control` events that the store forwards to the layout worker, so
+  the store's actions are the same on both backends and only the store talks
+  to workers.
+- **Reason**: chosen by the owner; one path for every control.
+- **Alternatives**: a production-ignored parameter; a settings toggle; store
+  actions calling the worker directly for the CPU layout.

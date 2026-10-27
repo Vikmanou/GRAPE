@@ -47,6 +47,12 @@ class FakeLayout implements LayoutService {
     return Promise.resolve(new Float32Array(boxes.length / 2));
   }
 
+  sentControls: unknown[] = [];
+
+  send(request: unknown): void {
+    this.sentControls.push(request);
+  }
+
   memory() {
     return Promise.resolve({ wasm: 0, held: 0 });
   }

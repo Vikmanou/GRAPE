@@ -17,7 +17,6 @@ export function LayoutControls() {
   const options = useApp((s) => s.layoutOptions);
   const running = useApp((s) => s.layoutStatus.state === 'running');
   const paused = useApp((s) => s.layoutPaused);
-  const canPause = useApp((s) => s.gpuLayout);
   const onOptions = useApp((s) => s.setLayoutOptions);
   const onPause = useApp((s) => s.setLayoutPaused);
   return (
@@ -27,7 +26,7 @@ export function LayoutControls() {
         <button
           type="button"
           data-testid="layout-pause"
-          disabled={!canPause || !running}
+          disabled={!running}
           onClick={() => {
             onPause(!paused);
           }}

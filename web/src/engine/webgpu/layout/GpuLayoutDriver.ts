@@ -105,6 +105,10 @@ export class GpuLayoutDriver implements LayoutDriver {
     this.refineAgain(onlySelected ? 'selection' : 'pinned');
   }
 
+  setProgress(): void {
+    // Only a layout run in the worker reports progress this way.
+  }
+
   get active(): boolean {
     return this.layout !== undefined;
   }

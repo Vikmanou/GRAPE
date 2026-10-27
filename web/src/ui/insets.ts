@@ -4,7 +4,7 @@ import { useApp } from '../state/store';
 /** Panels marked `data-inset` are kept clear when fitting; `key` changes when panels come or go. */
 export function usePanelInsets(key: string): void {
   const setInsets = useApp((s) => s.setInsets);
-  const attached = useApp((s) => s.renderer === 'webgpu' && s.engineError === undefined);
+  const attached = useApp((s) => (s.renderer === 'webgpu' || s.renderer === 'webgl2') && s.engineError === undefined);
   useEffect(() => {
     const host = document.querySelector<HTMLElement>('.app');
     if (!attached || !host) return;

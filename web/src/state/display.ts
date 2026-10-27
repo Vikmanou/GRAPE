@@ -96,8 +96,10 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     },
 
     async detectRenderer() {
-      const renderer = await services.detectBackend();
-      const cpu = new URLSearchParams(services.search).get('layout') === 'cpu';
+      const detected = await services.detectBackend();
+      const params = new URLSearchParams(services.search);
+      const renderer = detected !== 'none' && params.get('renderer') === 'webgl2' ? 'webgl2' : detected;
+      const cpu = params.get('layout') === 'cpu';
       set({ renderer, gpuLayout: renderer === 'webgpu' && !cpu });
       get().restartLayout();
     },

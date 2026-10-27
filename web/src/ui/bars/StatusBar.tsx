@@ -11,7 +11,7 @@ interface Props {
 const rendererLabel: Record<BackendKind | 'detecting', string> = {
   detecting: 'Detecting GPU…',
   webgpu: 'WebGPU',
-  webgl2: 'WebGL2 detected; WebGL2 rendering arrives in milestone 8',
+  webgl2: 'WebGL2',
   none: 'No GPU backend',
 };
 

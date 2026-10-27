@@ -3,8 +3,8 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { BackendKind } from '../engine/core/detect';
 import type { GraphClient } from '../workers/graph/GraphClient';
 import type { Topology } from '../workers/protocol/graph';
-import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
-import type { WorkerMemory } from '../workers/rpc';
+import type { LayoutControl, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { WithoutId, WorkerMemory } from '../workers/rpc';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
 import { createDetailsSlice, type DetailsSlice } from './details';
@@ -33,6 +33,8 @@ export interface LayoutService {
     listener: (response: LayoutResponse) => void,
   ): void;
   pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array>;
+  /** Steers a running CPU layout. */
+  send(request: WithoutId<LayoutControl>): void;
   memory(): Promise<WorkerMemory>;
   cancel(): void;
 }
@@ -42,9 +44,9 @@ export interface Services {
   graph: GraphService;
   sequence: SequenceService;
   layoutClient(): LayoutService;
-  createEngine(host: HTMLElement): Promise<EngineLike>;
+  createEngine(host: HTMLElement, kind: 'webgpu' | 'webgl2'): Promise<EngineLike>;
   detectBackend(): Promise<BackendKind>;
-  /** The page's query string, for `?layout=cpu`. */
+  /** The page's query string, for `?layout=cpu` and `?renderer=webgl2`. */
   search: string;
 }
 
@@ -86,7 +88,10 @@ export function createAppStore(services: Services): AppStore {
       ...createLabelSlice(ctx),
     };
   });
-  ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
+  ctx.bridge = new Bridge(ctx, (host) => {
+    const { renderer } = ctx.get();
+    return services.createEngine(host, renderer === 'webgpu' ? 'webgpu' : 'webgl2');
+  });
   exposeForTests(store, ctx);
   return store;
 }

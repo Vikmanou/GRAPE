@@ -51,27 +51,9 @@ export class LayoutClient {
     return expect(response, 'packed').offsets;
   }
 
-  /** The CPU layout only. */
-  setPaused(paused: boolean): void {
-    this.control({ type: 'pause', paused });
-  }
-
-  /** Moves a segment by `dx, dy` and pins it; the CPU layout only. */
-  drag(segment: number, dx: number, dy: number): void {
-    this.control({ type: 'drag', segment, dx, dy });
-  }
-
-  unpinAll(): void {
-    this.control({ type: 'unpin' });
-  }
-
-  /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
-  refine(selected: Uint32Array<ArrayBuffer> | undefined): void {
-    const copy = selected?.slice();
-    this.control({ type: 'refine', selected: copy }, copy ? [copy.buffer] : []);
-  }
-
-  private control(request: WithoutId<LayoutControl>, transfer: Transferable[] = []): void {
+  /** Steers a running CPU layout. */
+  send(request: WithoutId<LayoutControl>): void {
+    const transfer = request.type === 'refine' && request.selected ? [request.selected.buffer] : [];
     this.rpc?.request(request, { transfer }).catch(() => undefined);
   }
 

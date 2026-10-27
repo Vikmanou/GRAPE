@@ -1,5 +1,6 @@
 import type { SegmentAttributes } from '../../workers/protocol/graph';
-import type { Geometry, Hierarchy } from '../../workers/protocol/layout';
+import type { CpuProgress, Geometry, Hierarchy, LayoutControl, PositionGrid } from '../../workers/protocol/layout';
+import type { WithoutId } from '../../workers/rpc';
 import type { DisplayOptions } from '../style/display';
 import type { Atlas } from '../text/Atlas';
 import type { Theme } from '../style/palette';
@@ -78,6 +79,8 @@ export interface LayoutDriver {
   unpinAll(): void;
   /** Refines level 0 again, moving only the selected segments when `onlySelected`. */
   refine(onlySelected: boolean): void;
+  /** Where a layout run in the layout worker stands; drivers that run their own ignore it. */
+  setProgress(progress: CpuProgress): void;
 }
 
 export interface BackendEvents {
@@ -87,6 +90,8 @@ export interface BackendEvents {
   measured(boxes: Float32Array<ArrayBuffer>, progress: LayoutProgress): void;
   /** A refinement after a drag or of the selection started or ended. */
   refining(active: boolean): void;
+  /** A request for a layout run in the layout worker. */
+  control?(request: WithoutId<LayoutControl>): void;
 }
 
 /** One level of a GPU layout: its size, the iterations it ran and the time they took. */
@@ -125,8 +130,8 @@ export interface Backend {
   /** `seed` steps the random colours. */
   setGraph(geometry: Geometry, segments: SegmentData, seed: number): void;
   setStyle(style: Style): void;
-  /** `x, y` per point relative to the view's origin, from a layout run elsewhere. */
-  setPositions(positions: Float32Array<ArrayBuffer>): void;
+  /** `x, y` per point relative to the view's origin, from a layout run elsewhere, and a grid over them in that frame. */
+  setPositions(positions: Float32Array<ArrayBuffer>, grid?: PositionGrid): void;
   /** One bit per segment, and how many are set. */
   setSelection(bits: Uint32Array<ArrayBuffer>, count: number): void;
   setHover(segment: number | undefined): void;

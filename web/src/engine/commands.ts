@@ -1,4 +1,5 @@
-import type { Geometry, Hierarchy } from '../workers/protocol/layout';
+import type { CpuProgress, Geometry, Hierarchy, LayoutControl, PositionGrid } from '../workers/protocol/layout';
+import type { WithoutId } from '../workers/rpc';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { DisplayOptions } from './style/display';
@@ -15,8 +16,8 @@ export type EngineCommand =
   | { type: 'set-label-text'; generation: number; segments: Uint32Array; texts: string[] }
   | { type: 'set-label-options'; options: LabelOptions }
   | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
-  /** `x, y` per point, in layout units, from a layout run elsewhere. */
-  | { type: 'set-positions'; positions: Float32Array }
+  /** `x, y` per point, in layout units, from a layout run in the worker, with its grid and progress. */
+  | { type: 'set-positions'; positions: Float32Array; grid?: PositionGrid; progress?: CpuProgress }
   /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */
   | { type: 'start-layout'; hierarchy: Hierarchy; seed: number }
   /** `dx, dy` per component, packing the boxes of the last `layout-measured`. */
@@ -67,6 +68,8 @@ export type EngineEvent =
   | { type: 'camera'; x: number; y: number; zoom: number }
   /** A refinement after a drag or of the selection started or ended. */
   | { type: 'refining'; active: boolean }
+  /** For the layout worker: the CPU layout's driver wants the run paused, a segment dragged, pins cleared or a refinement. */
+  | { type: 'layout-control'; request: WithoutId<LayoutControl> }
   /** How many segments the user has pinned by dragging. */
   | { type: 'pins'; count: number }
   /** The segment under the pointer changed. */

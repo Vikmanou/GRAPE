@@ -31,7 +31,7 @@ export interface LayoutSlice {
   /** Lays out the selection again on the finest level, holding everything else. */
   relayoutSelection: () => void;
   setLayoutOptions: (options: LayoutOptions) => void;
-  /** Pauses or resumes the GPU layout; the CPU layout cannot pause. */
+  /** Pauses or resumes the layout. */
   setLayoutPaused: (paused: boolean) => void;
   /** Lays out the loaded graph from the start, when it and its renderer are ready. */
   restartLayout: () => void;
@@ -106,13 +106,18 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
           break;
         case 'positions': {
           const p = response.progress;
-          bridge.send({ type: 'set-positions', positions: response.positions });
-          if (p.done) exposeSettledLayout({ seed, quality, positions: response.positions });
-          status(
-            p.done
-              ? { state: 'done', total, ms: performance.now() - start }
-              : { state: 'running', iteration: p.iteration, total, level: p.level, levels: p.levels },
-          );
+          const { positions, grid } = response;
+          bridge.send({ type: 'set-positions', positions, grid, progress: p });
+          if (usableMs === undefined && p.level <= USABLE_LEVEL) usableMs = performance.now() - start;
+          set({ pinned: p.pinned, refining: p.refining });
+          if (p.done) exposeSettledLayout({ seed, quality, positions });
+          // A refinement after the layout settled leaves it settled, as on the GPU.
+          if (p.done && !finished) {
+            finished = true;
+            status({ state: 'done', total, ms: performance.now() - start, usableMs });
+          } else if (!finished) {
+            status({ state: 'running', iteration: p.iteration, total, level: p.level, levels: p.levels });
+          }
           break;
         }
         case 'error':
@@ -152,14 +157,14 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
     },
 
     setLayoutPaused(paused) {
-      if (get().layoutStatus.state !== 'running' || !get().gpuLayout) return;
+      if (get().layoutStatus.state !== 'running') return;
       ctx.bridge.send({ type: 'pause-layout', paused });
       set({ layoutPaused: paused });
     },
 
     restartLayout() {
       get().stopLayout();
-      if (get().gpuLayout && !ctx.bridge.attached) return;
+      if (get().renderer !== 'none' && !ctx.bridge.attached) return;
       stopRun = run();
     },
 

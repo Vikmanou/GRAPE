@@ -14,7 +14,7 @@ export function startApp(): AppStore {
       graph: new GraphClient(),
       sequence: new SequenceClient(),
       layoutClient: () => new LayoutClient(),
-      createEngine: (host) => Engine.create(host),
+      createEngine: (host, kind) => Engine.create(host, kind),
       detectBackend: () => detectBackend(),
       search: location.search,
     }),

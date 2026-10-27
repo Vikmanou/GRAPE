@@ -42,7 +42,7 @@ export function App() {
 
   return (
     <main className="app">
-      {renderer === 'webgpu' && !engineError && <EngineHost />}
+      {(renderer === 'webgpu' || renderer === 'webgl2') && !engineError && <EngineHost />}
       <TopBar file={file} onOpen={openFile} />
       {unsupported && <Unsupported detail={engineError} />}
       {!unsupported && (load.state === 'idle' || load.state === 'parsing') && <EmptyState dragging={dragging} />}

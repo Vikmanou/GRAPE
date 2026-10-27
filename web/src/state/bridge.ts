@@ -83,6 +83,9 @@ export class Bridge {
       case 'pins':
         set({ pinned: event.count });
         break;
+      case 'layout-control':
+        this.ctx.layout?.send(event.request);
+        break;
       case 'hover':
         set({ hovered: event.segment });
         break;
