@@ -47,13 +47,13 @@ decision, reason, alternatives considered.
 - **Decision**: the Playwright smoke test passes on WebGPU, the WebGL2 notice
   or the unsupported message, as long as the WASM core loads and there are no
   page errors. WebGPU is verified locally with `npm run check:headed`.
-- **Reason**: headless Chromium on CI and on Windows returns no WebGPU adapter.
+- **Reason**: headless Chromium returns no WebGPU adapter.
 
 ## 2026-10-23: Root npm workspace and one gate script
 
 - **Decision**: the repo root is an npm workspace (`web` is its only package)
   with one lockfile, and `scripts/check.mjs` is the single quality gate, run
-  locally and by CI on Linux and Windows.
+  locally and by CI.
 - **Reason**: everything runs from the root, and CI cannot drift from local
   runs because it runs the same script.
 - **Alternatives**: separate `check.sh` and `check.ps1`; listing every step
@@ -122,14 +122,6 @@ decision, reason, alternatives considered.
   and bgzip output is multi-member by design. Owner's choice.
 - **Alternatives**: inflate in Rust with flate2/miniz_oxide (a dependency and
   slower than the native path); single-member gzip only.
-
-## 2026-10-24: Fuzzing on Windows uses MSVC AddressSanitizer
-
-- **Decision**: `npm run fuzz` installs nightly and cargo-fuzz, finds MSVC's
-  `clang_rt.asan_dynamic-x86_64.dll` with vswhere and puts it on PATH.
-- **Reason**: without the DLL the fuzz binary exits with
-  STATUS_DLL_NOT_FOUND, and `-s none` fails to link on MSVC (unresolved
-  `__start/__stop___sancov_pcs`).
 
 ## 2026-10-24: Real sample graphs are downloaded, not committed
 
@@ -653,12 +645,12 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 ## 2026-10-27: Pages deploys from CI with the Actions source
 
 - **Decision**: CI builds `web/dist` and deploys it with
-  `actions/deploy-pages` on every push to `main`, after the gate passes on
-  Linux and Windows. Pages is set to the "GitHub Actions" source. This comes
-  before milestone 11 so the live site can be tried early; the offline
-  service worker still lands in milestone 11.
+  `actions/deploy-pages` on every push to `main`, after the gate passes. The
+  gate's own production build is the one deployed. Pages is set to the
+  "GitHub Actions" source. This comes before milestone 11 so the live site can
+  be tried early; the offline service worker still lands in milestone 11.
 - **Reason**: no `gh-pages` branch full of build output, and a broken `main`
   never reaches the site. The relative Vite base already serves the build from
   `/GRAPE/`.
 - **Alternatives**: a `gh-pages` branch pushed by a workflow; a separate
-  workflow chained with `workflow_run` (harder to follow).
+  build for the site (could differ from what the gate tested).

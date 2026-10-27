@@ -1,6 +1,5 @@
 // Builds crates/gfa-wasm to wasm32 and runs wasm-bindgen into
-// web/src/wasm/pkg. Written in Node rather than shell so it runs the same on
-// Windows and CI.
+// web/src/wasm/pkg.
 //
 // Usage: node scripts/build-wasm.mjs [--dev]
 

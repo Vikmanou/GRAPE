@@ -104,8 +104,6 @@ view state and a fingerprint, never sequences.
 
 ## Environment notes
 
-- Development is on Windows (PowerShell) and Fedora Linux; CI runs Linux and
-  Windows.
 - `npm run check` is the gate and is exactly what CI runs.
 - Headless Chromium has no WebGPU adapter: headless Playwright covers the
   fallback path only. Use `npm run check:headed` for the WebGPU path.

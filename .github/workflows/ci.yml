@@ -18,14 +18,8 @@ env:
 
 jobs:
   gate:
-    name: Gate (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        # Linux is what CI and GitHub Pages run on; Windows is the main
-        # development machine, and clippy and path handling differ there.
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    name: Gate
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -50,38 +44,22 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report-${{ matrix.os }}
+          name: playwright-report
           path: web/playwright-report
           retention-days: 7
 
-  # Publishes web/dist to GitHub Pages, only from main and only once the gate
-  # is green on both systems.
-  pages-build:
-    name: Pages build
-    needs: gate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-bindgen-cli@0.2.129
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+      # The gate's own production build is what gets deployed.
       - uses: actions/configure-pages@v5
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       - uses: actions/upload-pages-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           path: web/dist
 
-  pages-deploy:
+  pages:
     name: Pages deploy
-    needs: pages-build
+    needs: gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -89,9 +67,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: pages
-      cancel-in-progress: false
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
