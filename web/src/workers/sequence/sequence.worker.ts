@@ -4,7 +4,7 @@
 import init, { basesFromFile, fastaRecord, PackedSequences } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { FastaRecords, SequenceRequest, SequenceResponse, SequenceSource } from '../protocol/sequence';
-import { Sequences } from './Sequences';
+import { type HeldSource, Sequences } from './Sequences';
 
 const ready = init({ module_or_path: wasmUrl });
 const encoder = new TextEncoder();
@@ -18,12 +18,14 @@ function post(message: SequenceResponse): void {
 function load(source: SequenceSource): void {
   packed?.free();
   packed = undefined;
+  let held: HeldSource = source;
   if (source.kind === 'packed') {
-    const p = source.packed;
+    const { packed: p, ...rest } = source;
     packed = new PackedSequences(p.bits, p.bases, p.runStarts, p.runLengths, p.runBytes, p.lowerStarts, p.lowerLengths);
+    held = rest;
   }
   const current = packed;
-  sequences = new Sequences(source, {
+  sequences = new Sequences(held, {
     basesFromFile,
     packedBases: current && ((start, length, flags) => current.bases(start, length, flags)),
   });

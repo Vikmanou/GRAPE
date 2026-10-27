@@ -13,12 +13,17 @@ export interface Core {
   packedBases: ((start: number, length: number, flags: number) => Uint8Array | undefined) | undefined;
 }
 
+/** A source as this reader keeps it: packed bases live in WASM, not here. */
+export type HeldSource =
+  | Exclude<SequenceSource, { kind: 'packed' }>
+  | Omit<Extract<SequenceSource, { kind: 'packed' }>, 'packed'>;
+
 const decoder = new TextDecoder();
 const text = (bytes: Uint8Array) => decoder.decode(bytes);
 
 export class Sequences {
   constructor(
-    private readonly source: SequenceSource,
+    private readonly source: HeldSource,
     private readonly core: Core,
   ) {}
 
@@ -30,12 +35,7 @@ export class Sequences {
     const s = this.source;
     if (s.kind === 'dropped') return 0;
     const own = s.lengths.byteLength + s.offsets.byteLength + s.flags.byteLength;
-    if (s.kind === 'file') return own + s.lines.byteLength;
-    const p = s.packed;
-    return [p.bits, p.runStarts, p.runLengths, p.runBytes, p.lowerStarts, p.lowerLengths].reduce(
-      (sum, a) => sum + a.byteLength,
-      own,
-    );
+    return s.kind === 'file' ? own + s.lines.byteLength : own;
   }
 
   get available(): boolean {
