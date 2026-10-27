@@ -22,9 +22,11 @@
     "fuzz": "node scripts/fuzz.mjs",
     "bench:parse": "node scripts/bench-parse.mjs",
     "bench:layout": "node scripts/bench-layout.mjs",
-    "bench:interaction": "node scripts/bench-interaction.mjs"
+    "bench:interaction": "node scripts/bench-interaction.mjs",
+    "font-atlas": "node scripts/font-atlas.mjs"
   },
   "devDependencies": {
+    "msdf-bmfont-xml": "2.8.0",
     "prettier": "3.6.2"
   }
 }

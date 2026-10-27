@@ -693,3 +693,17 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   overlap by a unit, and only the colour tells them apart.
 - **Alternatives**: one colour for both strands (they read as one wide
   ribbon); strand chains of their own (rejected on 2026-10-26).
+
+## 2026-10-27: Label font atlas from msdf-bmfont-xml, committed
+
+- **Decision**: `npm run font-atlas` builds a multi-channel signed distance
+  field atlas of JetBrains Mono Regular 2.304 (SIL OFL 1.1, fetched at a
+  pinned tag and SHA-256) for ASCII 32 to 126 with msdf-bmfont-xml 2.8.0, a
+  pinned devDependency. The 512x256 atlas, its glyph metrics and the font's
+  licence are committed in web/public/fonts; nothing of the tool ships.
+- **Reason**: owner's choice of a true MSDF, as the spec asks; the tool runs
+  once. `npm audit` reports a high advisory in zod under the tool's jimp
+  dependency, which never runs in the app.
+- **Alternatives**: a single-channel SDF rendered in Playwright's Chromium
+  (no dependency, softer corners); msdf-atlas-gen's binary (needs building
+  on Linux).
