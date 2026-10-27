@@ -176,6 +176,9 @@ export class Engine {
       case 'read-positions':
         void this.readPositions();
         return;
+      case 'report-layout-profile':
+        this.emit({ type: 'layout-profile', levels: layout.levels });
+        return;
       case 'report-memory':
         this.emit({ type: 'memory', gpu: this.backend.gpuBytes, cpu: this.positions?.byteLength ?? 0 });
         return;

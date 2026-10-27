@@ -52,6 +52,8 @@ export interface LayoutDriver {
   tick(now: number, interactive: boolean): boolean;
   /** Writes the latest positions, relative to `origin`, to where the backend draws from. */
   present(origin: Origin): void;
+  /** The running or last layout, level by level. */
+  readonly levels: LevelRecord[];
   /** `x, y` per point as packed. */
   readPositions(): Promise<Float32Array<ArrayBuffer> | undefined>;
   /** Pinning and refinement need the layout at its finest level. */
@@ -72,6 +74,17 @@ export interface BackendEvents {
   measured(boxes: Float32Array<ArrayBuffer>, progress: LayoutProgress): void;
   /** A refinement after a drag or of the selection started or ended. */
   refining(active: boolean): void;
+}
+
+/** One level of a GPU layout: its size, the iterations it ran and the time they took. */
+export interface LevelRecord {
+  level: number;
+  nodes: number;
+  iterations: number;
+  /** From timestamp queries; 0 where the adapter has none. */
+  gpuMs: number;
+  /** From the level's first batch to the next level's, or to the end. */
+  wallMs: number;
 }
 
 /** Everything that touches the GPU. The engine above it never does. */

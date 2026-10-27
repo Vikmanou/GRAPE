@@ -2,7 +2,7 @@ import type { Geometry, Hierarchy } from '../workers/protocol/layout';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { Theme } from './style/palette';
-import type { LayoutProgress } from './core/backend';
+import type { LayoutProgress, LevelRecord } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
@@ -19,6 +19,8 @@ export type EngineCommand =
   | { type: 'read-positions' }
   /** Answered by a `memory` event. */
   | { type: 'report-memory' }
+  /** Answered by a `layout-profile` event. */
+  | { type: 'report-layout-profile' }
   | { type: 'fit' }
   /** Pans by fractions of the view's width and height. */
   | { type: 'pan-view'; fx: number; fy: number }
@@ -52,6 +54,7 @@ export type EngineEvent =
   | { type: 'positions'; positions: Float32Array<ArrayBuffer> }
   /** GPU buffer bytes, and bytes of the typed arrays the engine keeps on the CPU. */
   | { type: 'memory'; gpu: number; cpu: number }
+  | { type: 'layout-profile'; levels: LevelRecord[] }
   | { type: 'picked'; x: number; y: number; segment: number | undefined }
   /** The camera after it moved, at most `CAMERA_EVENT_MS` apart. */
   | { type: 'camera'; x: number; y: number; zoom: number }

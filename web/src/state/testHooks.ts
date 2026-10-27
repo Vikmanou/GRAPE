@@ -1,4 +1,5 @@
-import type { EngineEvent } from '../engine/commands';
+import type { LevelRecord } from '../engine/core/backend';
+import type { EngineCommand, EngineEvent } from '../engine/commands';
 import type { WorkerMemory } from '../workers/rpc';
 import type { Bridge } from './bridge';
 import type { AppStore, Context } from './store';
@@ -31,16 +32,22 @@ export interface TestHooks {
   send: Bridge['send'];
   on: Bridge['on'];
   memory: () => Promise<MemoryReport>;
+  layoutProfile: () => Promise<LevelRecord[]>;
 }
 
-function engineMemory(bridge: Bridge): Promise<Extract<EngineEvent, { type: 'memory' }>> {
+/** Sends a command and waits for the event that answers it. */
+function ask<T extends EngineEvent['type']>(
+  bridge: Bridge,
+  command: EngineCommand,
+  answer: T,
+): Promise<Extract<EngineEvent, { type: T }>> {
   return new Promise((resolve) => {
     const off = bridge.on((event) => {
-      if (event.type !== 'memory') return;
+      if (event.type !== answer) return;
       off();
-      resolve(event);
+      resolve(event as Extract<EngineEvent, { type: T }>);
     });
-    bridge.send({ type: 'report-memory' });
+    bridge.send(command);
   });
 }
 
@@ -51,7 +58,7 @@ async function memory(ctx: Context): Promise<MemoryReport> {
     ? [t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits].reduce((sum, a) => sum + a.byteLength, 0)
     : 0;
   const [engine, graph, sequence, layout] = await Promise.all([
-    engineMemory(ctx.bridge),
+    ask(ctx.bridge, { type: 'report-memory' }, 'memory'),
     ctx.services.graph.memory(),
     ctx.services.sequence.memory(),
     ctx.layout?.memory() ?? { wasm: 0, held: 0 },
@@ -79,6 +86,7 @@ export function exposeForTests(store: AppStore, ctx: Context): void {
     },
     on: (listener) => bridge.on(listener),
     memory: () => memory(ctx),
+    layoutProfile: async () => (await ask(bridge, { type: 'report-layout-profile' }, 'layout-profile')).levels,
   };
   (window as Window & { grapeTest?: TestHooks }).grapeTest = hooks;
 }

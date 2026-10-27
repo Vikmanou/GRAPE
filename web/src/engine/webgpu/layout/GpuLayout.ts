@@ -127,10 +127,15 @@ export class GpuLayout {
     return this.levelIndex === 0 && this.levelIteration >= this.budget(0);
   }
 
+  /** Moves to the next finer level once this one has run its budget. */
+  advance(): void {
+    if (!this.done && this.levelIteration >= this.budget(this.levelIndex)) this.descend();
+  }
+
   /** Submits up to `n` iterations, stopping at the end of a level. Returns how many ran. */
   run(n: number, timing?: PassTiming): number {
     if (this.done) return 0;
-    if (this.levelIteration >= this.budget(this.levelIndex)) this.descend();
+    this.advance();
     const k = Math.min(n, this.budget(this.levelIndex) - this.levelIteration);
     const encoder = this.device.createCommandEncoder({ label: 'layout iterations' });
     const passes = new Passes(encoder, undefined, timing?.writes);

@@ -1,8 +1,15 @@
 import type { Hierarchy } from '../../../workers/protocol/layout';
-import { type LayoutDriver, type LayoutProgress, type Origin, USABLE_LEVEL } from '../../core/backend';
+import {
+  type LayoutDriver,
+  type LayoutProgress,
+  type LevelRecord,
+  type Origin,
+  USABLE_LEVEL,
+} from '../../core/backend';
 import type { Bounds } from '../../core/camera';
 import { PassTiming } from './gpu';
 import { GpuLayout } from './GpuLayout';
+import { LevelProfile } from './LevelProfile';
 import { Pins, type Ribbons } from './Pins';
 import type { Kernels } from './kernels';
 
@@ -48,6 +55,7 @@ export class GpuLayoutDriver implements LayoutDriver {
   private pins: Pins | undefined;
   /** A level 0 refinement is running; packing stays as it was. */
   private refining: false | 'pinned' | 'selection' = false;
+  private profile = new LevelProfile();
 
   constructor(
     private readonly device: GPUDevice,
@@ -121,6 +129,7 @@ export class GpuLayoutDriver implements LayoutDriver {
     this.offsets = undefined;
     this.boxes = undefined;
     this.moved = true;
+    this.profile = new LevelProfile();
     this.pins?.clear();
     this.endRefining();
   }
@@ -158,6 +167,7 @@ export class GpuLayoutDriver implements LayoutDriver {
     if (!layout) return false;
     if (!this.paused && this.inFlight < MAX_IN_FLIGHT && !layout.done) this.runBatch(layout, interactive);
     const finished = layout.done && this.inFlight === 0;
+    if (finished && this.refining === false) this.profile.leave(now);
     if (this.refining !== false) {
       if (finished) this.endRefining();
     } else if (!this.measuring && !this.reportedDone && (finished || now - this.lastMeasure >= MEASURE_INTERVAL_MS)) {
@@ -173,6 +183,10 @@ export class GpuLayoutDriver implements LayoutDriver {
     if (!target || !this.layout) return;
     this.layout.present(target, this.shift(this.layout, origin));
     this.presented();
+  }
+
+  get levels(): LevelRecord[] {
+    return this.profile.levels;
   }
 
   async readPositions(): Promise<Float32Array<ArrayBuffer> | undefined> {
@@ -213,18 +227,23 @@ export class GpuLayoutDriver implements LayoutDriver {
   }
 
   private runBatch(layout: GpuLayout, interactive: boolean): void {
+    layout.advance();
     this.enterLevel(layout.currentLevel, layout.levelNodes);
     const level = layout.currentLevel;
     const timing = this.device.features.has('timestamp-query') ? new PassTiming(this.device) : undefined;
     const submitted = performance.now();
-    this.moved ||= layout.run(Math.round(this.batch), timing) > 0;
+    const ran = layout.run(Math.round(this.batch), timing);
+    this.moved ||= ran > 0;
+    if (this.refining === false) this.profile.ran(level, ran);
     this.inFlight++;
     const gpuMs = timing
       ? timing.ms()
       : this.device.queue.onSubmittedWorkDone().then(() => performance.now() - submitted);
     gpuMs
       .then((ms) => {
-        if (this.layout === layout && layout.currentLevel === level) this.resize(ms, interactive);
+        if (this.layout !== layout) return;
+        if (timing) this.profile.timed(level, ms);
+        if (layout.currentLevel === level) this.resize(ms, interactive);
       })
       // A lost device rejects; the engine reports that.
       .catch(() => undefined)
@@ -242,6 +261,7 @@ export class GpuLayoutDriver implements LayoutDriver {
   /** A new level keeps the batch, scaled by how many more nodes each iteration moves. */
   private enterLevel(level: number, nodes: number): void {
     if (level === this.batchLevel) return;
+    this.profile.enter(level, nodes, performance.now());
     this.batch = Math.max(1, (this.batch * this.batchNodes) / Math.max(nodes, 1));
     this.batchLevel = level;
     this.batchNodes = nodes;
