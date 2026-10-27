@@ -92,6 +92,8 @@ proptest! {
         prop_assert_eq!(&g.components.length, &naive.components);
         prop_assert_eq!(s.links, naive.links);
         prop_assert!((s.mean_depth - naive.mean_depth).abs() < 1e-3);
+        prop_assert!((s.depth_q1 - naive.depth_q1).abs() < 1e-3);
+        prop_assert!((s.depth_q3 - naive.depth_q3).abs() < 1e-3);
     }
 }
 
@@ -111,6 +113,8 @@ struct Naive {
     components: Vec<u64>,
     links: u64,
     mean_depth: f64,
+    depth_q1: f64,
+    depth_q3: f64,
 }
 
 fn small_graph() -> impl Strategy<Value = SmallGraph> {
@@ -213,7 +217,26 @@ impl SmallGraph {
             .map(|(&l, &d)| f64::from(l) * f64::from(d))
             .sum();
 
+        // Bandage's list holds both strands of every node.
+        let mut both: Vec<f64> = self
+            .depths
+            .iter()
+            .flat_map(|&d| [f64::from(d); 2])
+            .collect();
+        both.sort_unstable_by(f64::total_cmp);
+        let at = |index: f64| {
+            let whole = index.floor() as usize;
+            if whole + 1 >= both.len() {
+                return both[both.len() - 1];
+            }
+            let f = index - whole as f64;
+            both[whole] * (1.0 - f) + both[whole + 1] * f
+        };
+        let last = (both.len() - 1) as f64;
+
         Naive {
+            depth_q1: at(last / 4.0),
+            depth_q3: at(last * 3.0 / 4.0),
             total,
             n50: nx(0.5),
             n75: nx(0.75),
