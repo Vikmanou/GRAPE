@@ -66,7 +66,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-const result = { topology: {} } as unknown as ParseResult;
+const result = { topology: {}, stats: { segments: 1, links: 0 } } as unknown as ParseResult;
 const parsed = { result, sequences: { kind: 'dropped' } as const };
 type Parsed = typeof parsed;
 const geometry = {
@@ -165,6 +165,15 @@ describe('store', () => {
     expect(layout.packs).toHaveLength(1);
     expect(engine.types()).toContain('set-offsets');
     expect(store.getState().layoutStatus.state).toBe('done');
+  });
+
+  it('warns when a graph is above the v1 ceiling', async () => {
+    const { store, parses } = setup();
+    store.getState().open(new File([''], 'big.gfa'));
+    const big = { ...result, stats: { ...result.stats, segments: 1_000_001 } };
+    parses[0]?.resolve({ ...parsed, result: big });
+    await flush();
+    expect(store.getState().toasts.map((t) => t.message)).toEqual(['This graph is larger than GRAPE is built for']);
   });
 
   it('restarts the layout when the options change', async () => {

@@ -2,6 +2,10 @@ import type { ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import type { Context } from './store';
 
+/** The v1 ceiling (spec, Overview); larger graphs load with a warning. */
+export const MAX_SEGMENTS = 1_000_000;
+export const MAX_LINKS = 1_500_000;
+
 export interface FileInfo {
   name: string;
   size: number;
@@ -67,6 +71,13 @@ export function createFileSlice(ctx: Context): FileSlice {
             if (parsing !== file) return;
             parsing = undefined;
             set({ load: { state: 'loaded', file: info, result } });
+            const { segments, links } = result.stats;
+            if (segments > MAX_SEGMENTS || links > MAX_LINKS) {
+              get().toast(
+                'This graph is larger than GRAPE is built for',
+                `GRAPE is tested up to ${MAX_SEGMENTS.toLocaleString('en')} segments and ${MAX_LINKS.toLocaleString('en')} links; this one has ${segments.toLocaleString('en')} and ${links.toLocaleString('en')}. It may be slow or run out of memory.`,
+              );
+            }
             services.sequence.load(sequences).catch((error: unknown) => {
               get().toast('Sequences could not be loaded', message(error));
             });

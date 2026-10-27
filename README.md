@@ -16,7 +16,9 @@ all run on your machine.
 
 ## Features
 
-- GFA 1.0 and 1.1 and SPAdes-style FASTG, plain, gzipped or bgzipped.
+- GFA 1.0 and 1.1 and SPAdes-style FASTG, plain, gzipped or bgzipped, up to
+  1 million segments and 1.5 million links. Larger graphs still load, with a
+  warning.
 - Graph stats, components and parse warnings with line numbers.
 - Segments drawn as ribbons and links as curves, in Bandage's style.
 - Multilevel force-directed layout on the GPU that you watch settle, with
