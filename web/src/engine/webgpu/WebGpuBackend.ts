@@ -3,7 +3,8 @@ import type { Backend, BackendEvents, LabelMetrics, PlacedLabels, SegmentData, S
 import type { Bounds } from '../core/camera';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
-import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
+import { RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
+import { drawnView } from '../style/uniforms';
 import { createGpuContext } from './device';
 import type { Atlas } from '../text/Atlas';
 import { GlyphRenderer } from './glyphs';
@@ -210,18 +211,7 @@ export class WebGpuBackend implements Backend {
   }
 
   private drawn(view: View): DrawnView {
-    const palette = palettes[this.style.theme];
-    return {
-      ...view,
-      ribbonHalf: RIBBON_WIDTH / 2,
-      linkHalf: LINK_WIDTH / 2,
-      linkAlpha: linkFade(view.zoom, this.style.display.linkFullPx),
-      linkColor: palette.link,
-      outline: palette.selection,
-      hoverOutline: palette.hover,
-      outlineWidth: outlineWidth(view.zoom),
-      hover: this.hover,
-    };
+    return drawnView(view, this.style, this.hover);
   }
 
   destroy(): void {

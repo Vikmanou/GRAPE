@@ -2,40 +2,21 @@ import type { Geometry } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { MAX_RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
-import type { Rgba } from '../style/palette';
+import { type DrawnView, packView, type StyledGraph, VIEW_BYTES } from '../style/uniforms';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
-import { type StyledGraph, StyleUniform, uploadSegments } from './segments';
+import { StyleUniform, uploadSegments } from './segments';
 import shader from './shaders/graph.wgsl?raw';
 
-/** Matches `View` in graph.wgsl: 23 words, padded to 24. */
-const VIEW_BYTES = 96;
 const LINK_STEPS = 16;
 /** `vertexCount, instanceCount, firstVertex, firstInstance` for links, pieces, then highlighted pieces. */
 const INDIRECT = [LINK_STEPS * 6, 0, 0, 0, 6, 0, 0, 0, 6, 0, 0, 0];
 const PIECES_INDIRECT = 16;
 const HIGHLIGHT_INDIRECT = 32;
-const NO_SEGMENT = 0xffffffff;
 export const ID_FORMAT = 'r32uint';
 
-export interface View {
-  centerX: number;
-  centerY: number;
-  /** Pixels per world unit. */
-  zoom: number;
-  width: number;
-  height: number;
-  ribbonHalf: number;
-  linkHalf: number;
-  linkAlpha: number;
-  linkColor: Rgba;
-  outline: Rgba;
-  hoverOutline: Rgba;
-  /** Width of the selection outline in world units. */
-  outlineWidth: number;
-  hover: number | undefined;
-}
+export type View = DrawnView;
 
 /** What GPU queries over the drawn ribbons read. */
 export interface Drawn {
@@ -321,23 +302,7 @@ export class Renderer {
   }
 
   private writeView(pass: Pass, k: number, view: View, grow: number, strand: number): void {
-    const f = new Float32Array(this.viewData);
-    f.set([
-      view.centerX,
-      view.centerY,
-      (view.zoom * 2) / view.width,
-      (-view.zoom * 2) / view.height,
-      1 / view.zoom,
-      view.ribbonHalf,
-      view.linkHalf,
-      view.linkAlpha,
-      ...view.linkColor,
-      ...view.outline,
-      ...view.hoverOutline,
-      grow,
-    ]);
-    new Uint32Array(this.viewData)[21] = view.hover ?? NO_SEGMENT;
-    new Float32Array(this.viewData)[22] = strand;
+    packView(this.viewData, view, grow, strand);
     const buffer = this.views[pass][k];
     if (buffer) this.device.queue.writeBuffer(buffer, 0, this.viewData);
   }
