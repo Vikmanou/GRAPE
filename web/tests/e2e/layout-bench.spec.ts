@@ -58,12 +58,17 @@ test.describe('layout benchmark', () => {
         usableMs: Number(await status.getAttribute('data-usable-ms')),
         tabMb: memoryMb()?.tab,
         gpuProcessMb: memoryMb()?.gpu,
+      };
+      // The JS heap counts garbage until a collection runs.
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('HeapProfiler.collectGarbage');
+      Object.assign(result, {
         ...(await page.evaluate(async () => {
           type Hooks = { memory(): Promise<unknown>; layoutProfile(): Promise<unknown> };
           const hooks = (window as unknown as { grapeTest: Hooks }).grapeTest;
           return { memory: await hooks.memory(), levels: await hooks.layoutProfile() };
         })),
-      };
+      });
       const positions = await page.evaluate(() => {
         const layout = (window as unknown as { grapeLayout: { positions: Float32Array } }).grapeLayout;
         const bytes = new Uint8Array(layout.positions.buffer, layout.positions.byteOffset, layout.positions.byteLength);
