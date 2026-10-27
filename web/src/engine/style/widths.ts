@@ -5,6 +5,12 @@ export const LINK_WIDTH = 1.5;
 export const MAX_RIBBON_WIDTH = 4 * RIBBON_WIDTH;
 const MIN_RIBBON_WIDTH = 0.5 * RIBBON_WIDTH;
 
+/**
+ * Double mode draws each strand this far to its side of the shared layout
+ * (`doubleModeNodeSeparation` in program/settings.cpp).
+ */
+export const STRAND_SHIFT = 2;
+
 /** Ribbons this many pixels wide or wider show their links fully. */
 export const LINK_FULL_PX = 3;
 

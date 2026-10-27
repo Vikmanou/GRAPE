@@ -674,3 +674,22 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a colour buffer rewritten on the CPU for each mode (a
   4 MB write and a loop per change at 1M); interleaved records (a packing
   loop); viridis or Bandage's black-to-red ramp (owner chose viridis).
+
+## 2026-10-27: Double mode draws both strands from one chain, with Bandage's strand colours
+
+- **Decision**: in double mode each ribbon and link is drawn twice, once per
+  strand, from the same layout points. Each point moves 2 units along the
+  left normal of the direction its neighbours give it, for the strand that
+  reads that way (`shiftPointSideways`), so the reverse strand lands on the
+  other side. A link's ends move by the left normal of the way it leaves its
+  first segment and the right normal of the way it enters the next, which
+  puts every link, its mirror and self-loops on the strands they name. Each
+  strand ends in Bandage's 45 degree arrowhead. The reverse strand takes
+  Bandage's negative colours: lightness 90 instead of 150 for random (and
+  component) colours, `uniformNegativeNodeColour` in uniform mode, and its
+  own C2 tag in tag mode.
+- **Reason**: Bandage's look and colour rules (graph/graphicsitemnode.cpp,
+  program/settings.cpp); with a 2-unit shift and 5-unit ribbons the strands
+  overlap by a unit, and only the colour tells them apart.
+- **Alternatives**: one colour for both strands (they read as one wide
+  ribbon); strand chains of their own (rejected on 2026-10-26).

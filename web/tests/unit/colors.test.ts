@@ -8,6 +8,7 @@ import {
   segmentColor,
   tagColor,
   UNIFORM_COLOR,
+  UNIFORM_REVERSE_COLOR,
 } from '../../src/engine/style/colors';
 import { ramp, rampColor } from '../../src/engine/style/ramps';
 import { rangeFraction } from '../../src/engine/style/scales';
@@ -99,6 +100,14 @@ describe('segment colours', () => {
     expect(segmentColor(style('depth'), data, 1, 'single')).toBe(rgba8(128, 128, 128));
     expect(segmentColor(style('gc', 'linear', 0, 1), data, 1, 'single')).toBe(ramp[64]);
     expect(segmentColor(style('length', 'log', 10, 1000), data, 2, 'single')).toBe(ramp[128]);
+  });
+
+  it("darkens the reverse strand as Bandage's double mode does", () => {
+    expect(segmentColor(style('uniform'), data, 0, 'reverse')).toBe(UNIFORM_REVERSE_COLOR);
+    const forward = segmentColor(style('random'), data, 0, 'forward');
+    const reverse = segmentColor(style('random'), data, 0, 'reverse');
+    const lightness = (c: number) => (c & 0xff) + ((c >>> 8) & 0xff) + ((c >>> 16) & 0xff);
+    expect(lightness(reverse)).toBeLessThan(lightness(forward));
   });
 
   it("falls back to the other strand's tag in single mode only", () => {

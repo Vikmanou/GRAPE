@@ -38,6 +38,10 @@ struct Style {
   dim: u32,
   // Segments shorter than this draw as a dot.
   sprite_px: f32,
+  // How far double mode shifts each strand sideways.
+  strand_shift: f32,
+  // The uniform colour of double mode's reverse strand.
+  uniform_reverse_color: u32,
   // 256 RGBA8 colours, four to an entry.
   ramp: array<vec4u, 64>,
 }
@@ -82,11 +86,13 @@ fn hsl(h: f32, s: f32, l: f32) -> vec3f {
   return l - a * clamp(min(k - 3.0, 9.0 - k), vec3f(-1.0), vec3f(1.0));
 }
 
-// Bandage's random colours: saturation 127 and lightness 150 of 255, the hue
-// stepped by the golden ratio as an exact u32 sequence.
-fn golden_color(start: u32, i: u32) -> vec4f {
+// Bandage's random colours: saturation 127 and lightness 150 of 255, or 90
+// on the reverse strand, the hue stepped by the golden ratio as an exact u32
+// sequence.
+fn golden_color(start: u32, i: u32, strand: f32) -> vec4f {
   let hue = f32(start + i * 0x9e3779b9u) / 4294967296.0;
-  return vec4f(hsl(hue, 127.0 / 255.0, 150.0 / 255.0), 1.0);
+  let lightness = select(150.0, 90.0, strand < 0.0) / 255.0;
+  return vec4f(hsl(hue, 127.0 / 255.0, lightness), 1.0);
 }
 
 fn ramped(value: f32) -> vec4f {
@@ -120,10 +126,10 @@ fn tag_color(segment: u32, strand: f32) -> vec4f {
 fn segment_color(segment: u32, strand: f32) -> vec4f {
   switch style.mode {
     case 0u: {
-      return unpack4x8unorm(style.uniform_color);
+      return unpack4x8unorm(select(style.uniform_color, style.uniform_reverse_color, strand < 0.0));
     }
     case 1u: {
-      return golden_color(style.random_start, segment);
+      return golden_color(style.random_start, segment, strand);
     }
     case 2u: {
       return ramped(bitcast<f32>(field(DEPTH, segment)));
@@ -135,7 +141,7 @@ fn segment_color(segment: u32, strand: f32) -> vec4f {
       return ramped(f32(field(LENGTH, segment)));
     }
     case 5u: {
-      return golden_color(0u, field(COMPONENT, segment));
+      return golden_color(0u, field(COMPONENT, segment), strand);
     }
     default: {
       return tag_color(segment, strand);
@@ -165,6 +171,23 @@ fn sprite_center(segment: u32, sprite_world: f32) -> vec3f {
   return vec3f(center, select(0.0, 1.0, extent < sprite_world));
 }
 
+// Bandage's left normal of a direction, (dy, -dx) in its y-down coordinates,
+// which are ours too.
+fn left_of(direction: vec2f) -> vec2f {
+  let l = length(direction);
+  return select(vec2f(0.0), vec2f(direction.y, -direction.x) / l, l > 1e-6);
+}
+
+// A point of a segment's chain moved to the side of the strand being drawn,
+// along the direction its neighbours give it, as Bandage's
+// `shiftPointSideways` does; strand -1 runs the other way, so it lands on
+// the other side.
+fn strand_point(i: u32, start: u32, last: u32) -> vec2f {
+  let before = positions[select(i - 1u, i, i == start)];
+  let after = positions[select(i + 1u, i, i == last)];
+  return positions[i] + left_of(after - before) * view.strand * style.strand_shift;
+}
+
 // Faded unselected segments keep this much of their colour.
 const DIMMED = 0.25;
 
@@ -190,6 +213,8 @@ struct Ribbon {
   @location(1) @interpolate(flat) size: vec2f,
   @location(2) @interpolate(flat) color: vec4f,
   @location(3) @interpolate(flat) segment: u32,
+  // 1 or -1 where the piece ends in an arrowhead at its end or start.
+  @location(4) @interpolate(flat) arrow: f32,
 }
 
 // Each piece is a capsule cut from a quad by a signed distance, which gives
@@ -200,9 +225,21 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   var a = positions[piece.x];
   var b = positions[piece.x + 1u];
   let sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);
+  var arrow = 0.0;
   if sprite.z > 0.0 {
     a = sprite.xy;
     b = sprite.xy;
+  } else if view.strand != 0.0 {
+    let start = field(START, piece.y);
+    let last = start + field(PIECES, piece.y);
+    a = strand_point(piece.x, start, last);
+    b = strand_point(piece.x + 1u, start, last);
+    // Each strand points the way it reads: forward ends at the chain's last point.
+    if view.strand > 0.0 && piece.x + 1u == last {
+      arrow = 1.0;
+    } else if view.strand < 0.0 && piece.x == start {
+      arrow = -1.0;
+    }
   }
   let length_ab = length(b - a);
   let along = select(vec2f(1.0, 0.0), (b - a) / length_ab, length_ab > 1e-6);
@@ -221,13 +258,26 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   }
   out.color = color;
   out.segment = piece.y;
+  out.arrow = arrow;
   return out;
+}
+
+// Signed distance inside the ribbon piece, in world units: a capsule, or in
+// double mode with Bandage's 45 degree arrowhead in place of the cap at the
+// end its strand points to.
+fn inside(in: Ribbon) -> f32 {
+  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
+  let capsule = in.size.y - length(in.local - nearest);
+  if in.arrow == 0.0 {
+    return capsule;
+  }
+  let to_tip = select(in.local.x, in.size.x - in.local.x, in.arrow > 0.0);
+  return min(capsule, (to_tip - abs(in.local.y)) * 0.70710678);
 }
 
 @fragment
 fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
-  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
-  let alpha = coverage(in.size.y - length(in.local - nearest)) * in.color.a;
+  let alpha = coverage(inside(in)) * in.color.a;
   if alpha <= 0.0 {
     discard;
   }
@@ -236,9 +286,8 @@ fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
 
 @fragment
 fn ribbon_outline_fragment(in: Ribbon) -> @location(0) vec4f {
-  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
   let color = select(view.outline, view.hover_outline, in.segment == view.hover);
-  let alpha = coverage(in.size.y - length(in.local - nearest)) * color.a;
+  let alpha = coverage(inside(in)) * color.a;
   if alpha <= 0.0 {
     discard;
   }
@@ -249,8 +298,7 @@ fn ribbon_outline_fragment(in: Ribbon) -> @location(0) vec4f {
 // Pixels whose centre lies inside the capsule count, with no antialiasing.
 @fragment
 fn ribbon_id_fragment(in: Ribbon) -> @location(0) u32 {
-  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
-  if length(in.local - nearest) > in.size.y {
+  if inside(in) < 0.0 {
     discard;
   }
   return in.segment + 1u;
@@ -267,10 +315,14 @@ struct Link {
 // Ends that (nearly) meet, as in `a+ a-`, would give a curve with no length,
 // so they open sideways into a loop.
 fn controls(link: vec4u) -> array<vec2f, 4> {
-  let p0 = positions[link.x];
-  let p3 = positions[link.z];
-  let out_a = normalize_or(p0 - positions[link.y], vec2f(1.0, 0.0));
-  let out_b = normalize_or(p3 - positions[link.w], vec2f(-1.0, 0.0));
+  let out_a = normalize_or(positions[link.x] - positions[link.y], vec2f(1.0, 0.0));
+  let out_b = normalize_or(positions[link.z] - positions[link.w], vec2f(-1.0, 0.0));
+  // In double mode a link leaves the strand it names on the left of the way
+  // it leaves, and enters the next strand on the right of the way it enters,
+  // whatever the orientations; strand -1 draws its mirror.
+  let shift = view.strand * style.strand_shift;
+  let p0 = positions[link.x] + left_of(out_a) * shift;
+  let p3 = positions[link.z] - left_of(out_b) * shift;
   let gap = length(p3 - p0);
   let reach = max(gap * 0.4, view.ribbon_half * 6.0);
   if gap < view.ribbon_half * 4.0 {

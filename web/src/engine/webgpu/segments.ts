@@ -1,9 +1,10 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
-import { mix, NO_TAG_COLOR, UNIFORM_COLOR } from '../style/colors';
+import { mix, NO_TAG_COLOR, UNIFORM_COLOR, UNIFORM_REVERSE_COLOR } from '../style/colors';
 import { COLOR_MODES } from '../style/display';
 import { packRgba, palettes } from '../style/palette';
 import { ramp, RAMP_SIZE } from '../style/ramps';
+import { STRAND_SHIFT } from '../style/widths';
 import type { Buffers } from './layout/gpu';
 
 /** The fields of graph.wgsl's segment table, each a run of one u32 per segment. */
@@ -81,6 +82,8 @@ export class StyleUniform {
     u[10] = NO_TAG_COLOR;
     u[11] = dim ? 1 : 0;
     f[12] = display.spritePx;
+    f[13] = STRAND_SHIFT;
+    u[14] = UNIFORM_REVERSE_COLOR;
     u.set(ramp, HEADER_WORDS);
     device.queue.writeBuffer(this.buffer, 0, this.data);
   }

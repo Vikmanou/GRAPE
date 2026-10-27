@@ -12,15 +12,20 @@ export function rgba8(r: number, g: number, b: number, a = 255): number {
   return (r | (g << 8) | (b << 16) | (a << 24)) >>> 0;
 }
 
-// Bandage's `uniformPositiveNodeColour` and `defaultCustomNodeColour`
+// Bandage's `uniformPositiveNodeColour`, `uniformNegativeNodeColour` for the
+// reverse strand in double mode, and `defaultCustomNodeColour`
 // (program/settings.cpp).
 export const UNIFORM_COLOR = rgba8(178, 34, 34);
+export const UNIFORM_REVERSE_COLOR = rgba8(128, 0, 0);
 export const NO_TAG_COLOR = rgba8(190, 190, 190);
 
-// Bandage's random colours: saturation 127 and lightness 150 of 255
-// (`randomColourPositiveSaturation`, `randomColourPositiveLightness`).
+// Bandage's random colours: saturation 127 and lightness 150 of 255, and
+// lightness 90 for the reverse strand in double mode
+// (`randomColourPositiveSaturation`, `randomColourPositiveLightness`,
+// `randomColourNegativeLightness`).
 const SATURATION = 127 / 255;
 const LIGHTNESS = 150 / 255;
+const REVERSE_LIGHTNESS = 90 / 255;
 /** 2^32 over the golden ratio: hues stepped by it stay far apart for any run of ids. */
 const GOLDEN_STEP = 0x9e3779b9;
 
@@ -47,8 +52,8 @@ export function hsl(h: number, s: number, l: number): [number, number, number] {
   return [channel(0), channel(8), channel(4)];
 }
 
-export function hueColor(hue: number): number {
-  const [r, g, b] = hsl(hue, SATURATION, LIGHTNESS);
+export function hueColor(hue: number, strand: Strand = 'single'): number {
+  const [r, g, b] = hsl(hue, SATURATION, strand === 'reverse' ? REVERSE_LIGHTNESS : LIGHTNESS);
   return rgba8(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
 }
 
@@ -90,11 +95,11 @@ export function segmentColor(style: ColorStyle, data: SegmentData, segment: numb
   };
   switch (style.mode) {
     case 'uniform':
-      return UNIFORM_COLOR;
+      return strand === 'reverse' ? UNIFORM_REVERSE_COLOR : UNIFORM_COLOR;
     case 'random':
-      return hueColor(goldenHue(mix(style.seed), segment));
+      return hueColor(goldenHue(mix(style.seed), segment), strand);
     case 'component':
-      return hueColor(goldenHue(0, data.components[segment] ?? 0));
+      return hueColor(goldenHue(0, data.components[segment] ?? 0), strand);
     case 'tags':
       return tagColor(data, segment, strand);
     case 'depth':

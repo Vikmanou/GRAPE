@@ -36,7 +36,6 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
     hoverOutline: [0, 0, 1, 0.5],
     outlineWidth: 1,
     hover: undefined,
-    strand: 0,
   };
   const ids = idView(view);
   // Texture copy rows are multiples of 256 bytes.

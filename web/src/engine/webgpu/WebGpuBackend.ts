@@ -3,7 +3,7 @@ import type { Backend, BackendEvents, SegmentData, Style, View } from '../core/b
 import type { Bounds } from '../core/camera';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
-import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH } from '../style/widths';
+import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import { createGpuContext } from './device';
 import { gpuBytes, PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
@@ -161,7 +161,8 @@ export class WebGpuBackend implements Backend {
     ];
     const [minX = 0, minY = 0] = world(box.minX, box.minY);
     const [maxX = 0, maxY = 0] = world(box.maxX, box.maxY);
-    const half = Math.max(RIBBON_WIDTH / 2, 0.5 / view.zoom);
+    const shift = this.style.display.double ? STRAND_SHIFT : 0;
+    const half = Math.max(RIBBON_WIDTH / 2, 0.5 / view.zoom) + shift;
     return this.queries.selectBox(drawn, { minX, minY, maxX, maxY }, half);
   }
 
@@ -183,7 +184,6 @@ export class WebGpuBackend implements Backend {
       hoverOutline: palette.hover,
       outlineWidth: outlineWidth(view.zoom),
       hover: this.hover,
-      strand: 0,
     };
   }
 
