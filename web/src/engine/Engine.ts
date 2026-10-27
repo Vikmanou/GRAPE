@@ -1,5 +1,5 @@
 import type { EngineCommand, EngineEvent } from './commands';
-import type { Backend } from './core/backend';
+import type { Backend, Style } from './core/backend';
 import { boundsOf, type Bounds } from './core/camera';
 import { Framing } from './core/Framing';
 import { FrameCounter } from './core/frames';
@@ -8,7 +8,7 @@ import { attachInput } from './core/input';
 import { Pointer } from './core/Pointer';
 import { RubberBand } from './core/RubberBand';
 import { throttle } from './core/throttle';
-import { randomColors } from './style/palette';
+import { DEFAULT_DISPLAY } from './style/display';
 import { RIBBON_WIDTH } from './style/widths';
 import { WebGpuBackend } from './webgpu/WebGpuBackend';
 
@@ -54,6 +54,7 @@ export class Engine {
   /** Layout positions moved since they were last presented. */
   private stale = false;
   private reported = { x: NaN, y: NaN, zoom: NaN };
+  private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
   private readonly cameraReport = throttle(() => {
     const camera = this.framing.camera;
     const last = this.reported;
@@ -140,11 +141,16 @@ export class Engine {
     const framing = this.framing;
     switch (command.type) {
       case 'set-theme':
-        this.backend.setStyle({ theme: command.theme });
+        this.style = { ...this.style, theme: command.theme };
+        this.backend.setStyle(this.style);
         this.band.setTheme(command.theme);
         break;
+      case 'set-display':
+        this.style = { ...this.style, display: command.display };
+        this.backend.setStyle(this.style);
+        break;
       case 'set-graph':
-        this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
+        this.backend.setGraph(command.geometry, command.segments, command.seed);
         this.pointer.reset(command.segments.components);
         this.positions = undefined;
         framing.autoFit = true;

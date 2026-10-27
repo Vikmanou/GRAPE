@@ -1,11 +1,13 @@
 import type { Geometry, Hierarchy } from '../workers/protocol/layout';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
+import type { DisplayOptions } from './style/display';
 import type { Theme } from './style/palette';
 import type { LayoutProgress, LevelRecord, SegmentData } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
+  | { type: 'set-display'; display: DisplayOptions }
   | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
   /** `x, y` per point, in layout units, from a layout run elsewhere. */
   | { type: 'set-positions'; positions: Float32Array }

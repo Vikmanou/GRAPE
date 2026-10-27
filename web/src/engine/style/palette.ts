@@ -1,5 +1,3 @@
-import { goldenHue, hueColor, mix } from './colors';
-
 // Single source of render colors, shared by the WebGPU renderer and the
 // WebGL2 fallback. Keep `background` in sync with --bg in ui/styles.css.
 
@@ -14,6 +12,8 @@ export interface Palette {
   /** Around selected segments; the hovered one gets the lighter `hover`. */
   selection: Rgba;
   hover: Rgba;
+  /** Segments whose depth or GC is unknown, in the modes colouring by them. */
+  unknown: Rgba;
 }
 
 function hex(value: string): Rgba {
@@ -36,17 +36,20 @@ export const palettes: Record<Theme, Palette> = {
     link: hex('#3d3d3a'),
     selection: LIGHT_SELECTION,
     hover: faded(LIGHT_SELECTION, 0.45),
+    unknown: hex('#a3a3a0'),
   },
   dark: {
     background: hex('#17161a'),
     link: hex('#c9c7d1'),
     selection: DARK_SELECTION,
     hover: faded(DARK_SELECTION, 0.5),
+    unknown: hex('#6b6a72'),
   },
 };
 
-/** Bandage's random colours per segment, stepped from the seed; RGBA8 with red in the low byte. */
-export function randomColors(segments: number, seed: number): Uint32Array<ArrayBuffer> {
-  const start = mix(seed);
-  return Uint32Array.from({ length: segments }, (_, i) => hueColor(goldenHue(start, i)));
+/** RGBA8 with red in the low byte. */
+export function packRgba([r, g, b, a]: Rgba): number {
+  return (
+    (Math.round(r * 255) | (Math.round(g * 255) << 8) | (Math.round(b * 255) << 16) | (Math.round(a * 255) << 24)) >>> 0
+  );
 }

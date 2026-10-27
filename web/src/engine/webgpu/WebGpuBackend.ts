@@ -1,6 +1,7 @@
 import type { Geometry } from '../../workers/protocol/layout';
-import type { Backend, BackendEvents, Style, View } from '../core/backend';
+import type { Backend, BackendEvents, SegmentData, Style, View } from '../core/backend';
 import type { Bounds } from '../core/camera';
+import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
 import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH } from '../style/widths';
 import { createGpuContext } from './device';
@@ -17,7 +18,7 @@ export class WebGpuBackend implements Backend {
   private readonly renderer: Renderer;
   private readonly picker: Picker;
   private readonly queries: Queries;
-  private style: Style = { theme: 'light' };
+  private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
   private lastView: View | undefined;
   private hover: number | undefined;
   /** A new graph's position buffer holds zeros until positions arrive; drawing them stacks every ribbon on one point. */
@@ -76,9 +77,9 @@ export class WebGpuBackend implements Backend {
     return gpuBytes();
   }
 
-  setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
+  setGraph(geometry: Geometry, segments: SegmentData, seed: number): void {
     this.layout.stop();
-    this.renderer.setGeometry(geometry, colors);
+    this.renderer.setGeometry(geometry, segments, seed);
     this.layout.setSegments(geometry.segmentStarts, geometry.segmentPieces);
     this.positioned = false;
     this.picker.invalidate();
@@ -86,6 +87,7 @@ export class WebGpuBackend implements Backend {
 
   setStyle(style: Style): void {
     this.style = style;
+    this.renderer.setStyle(style);
   }
 
   setPositions(positions: Float32Array<ArrayBuffer>): void {
@@ -175,12 +177,13 @@ export class WebGpuBackend implements Backend {
       ...view,
       ribbonHalf: RIBBON_WIDTH / 2,
       linkHalf: LINK_WIDTH / 2,
-      linkAlpha: linkFade(view.zoom),
+      linkAlpha: linkFade(view.zoom, this.style.display.linkFullPx),
       linkColor: palette.link,
       outline: palette.selection,
       hoverOutline: palette.hover,
       outlineWidth: outlineWidth(view.zoom),
       hover: this.hover,
+      strand: 0,
     };
   }
 

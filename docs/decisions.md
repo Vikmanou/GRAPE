@@ -654,3 +654,23 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   `/GRAPE/`.
 - **Alternatives**: a `gh-pages` branch pushed by a workflow; a separate
   build for the site (could differ from what the gate tested).
+
+## 2026-10-27: Segments are coloured in the shader from one segment table
+
+- **Decision**: every per-segment value the shaders read (depth, GC, length,
+  component, CL and C2 colours, chain start and piece count) sits in one
+  storage buffer as runs of one u32 per segment, each run written straight
+  from its typed array. A style uniform holds the colour mode, the scale and
+  range, the colours and the 256-entry viridis ramp, so changing a mode or a
+  range is one uniform write. Random and component colours step the hue by
+  the golden ratio as an exact u32 sequence (`start + i * 0x9E3779B9`), which
+  replaces the per-segment colour buffer; random colours differ slightly
+  from milestones 2 to 5. `engine/style/colors.ts` computes the same colours
+  on the CPU for tests and exports. CL and C2 colours of 0 (fully transparent
+  black) count as no tag.
+- **Reason**: the spec's one-uniform-write rule and its limit of 8 storage
+  buffers per stage; runs avoid a packing loop over a million segments on
+  the main thread; f32 loses the hue's fraction past about 2^24 ids.
+- **Alternatives**: a colour buffer rewritten on the CPU for each mode (a
+  4 MB write and a loop per change at 1M); interleaved records (a packing
+  loop); viridis or Bandage's black-to-red ramp (owner chose viridis).

@@ -31,6 +31,7 @@ const data: SegmentData = {
     [0, BLUE],
     [1, BLUE],
   ]),
+  meanDepth: 20,
 };
 
 const style = (mode: ColorStyle['mode'], scale: 'linear' | 'log' = 'linear', min = 0, max = 100): ColorStyle => ({

@@ -1,11 +1,14 @@
 import type { Geometry } from '../../workers/protocol/layout';
+import type { SegmentData, Style } from '../core/backend';
+import { DEFAULT_DISPLAY } from '../style/display';
 import type { Rgba } from '../style/palette';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
+import { type StyledGraph, StyleUniform, uploadSegments } from './segments';
 import shader from './shaders/graph.wgsl?raw';
 
-/** Matches `View` in graph.wgsl: 22 words, padded to 24. */
+/** Matches `View` in graph.wgsl: 23 words, padded to 24. */
 const VIEW_BYTES = 96;
 const LINK_STEPS = 16;
 /** `vertexCount, instanceCount, firstVertex, firstInstance` for links, pieces, then highlighted pieces. */
@@ -31,6 +34,8 @@ export interface View {
   /** Width of the selection outline in world units. */
   outlineWidth: number;
   hover: number | undefined;
+  /** 0 in single mode; 1 or -1 for a strand of double mode. */
+  strand: number;
 }
 
 /** What GPU queries over the drawn ribbons read. */
@@ -50,6 +55,8 @@ interface Graph extends Drawn {
   pieceCull: Cull | undefined;
   links: Cull | undefined;
   highlight: Cull | undefined;
+  style: StyleUniform;
+  styled: StyledGraph;
   groups: Record<Pass, GPUBindGroup>;
 }
 
@@ -73,6 +80,7 @@ export class Renderer {
   private readonly viewData = new ArrayBuffer(VIEW_BYTES);
   private graph: Graph | undefined;
   private selectedCount = 0;
+  private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
 
   constructor(
     private readonly device: GPUDevice,
@@ -86,7 +94,8 @@ export class Renderer {
       label: 'graph',
       entries: [
         { binding: 0, visibility, buffer: { type: 'uniform' } },
-        ...[1, 2, 3, 4, 5, 6].map((binding) => ({ binding, visibility, buffer: storage })),
+        ...[1, 2, 3, 4, 5, 6, 7].map((binding) => ({ binding, visibility, buffer: storage })),
+        { binding: 8, visibility, buffer: { type: 'uniform' } },
       ],
     });
     const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [this.layout] });
@@ -117,9 +126,11 @@ export class Renderer {
     };
   }
 
-  setGeometry(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {
+  setGeometry(geometry: Geometry, data: SegmentData, seed: number): void {
     this.graph?.buffers.destroy();
     const b = new Buffers(this.device);
+    const table = uploadSegments(b, geometry, data);
+    const styleUniform = new StyleUniform(b);
     const pieceCount = geometry.pieces.length / 2;
     const linkCount = geometry.links.length / 4;
     const positions = b.storage('positions', geometry.points * 8);
@@ -145,7 +156,6 @@ export class Renderer {
     const linkCull = cull('links', linkCount, links, 1);
     const highlight = cull('highlight', pieceCount, pieces, HIGHLIGHT_INDIRECT / 4 + 1);
     const empty = b.storage('empty', 4);
-    const colorBuffer = b.upload('colors', colors);
     const group = (pass: Pass, visiblePieces: GPUBuffer) =>
       this.device.createBindGroup({
         label: pass,
@@ -154,10 +164,12 @@ export class Renderer {
           this.views[pass],
           positions,
           pieces,
-          colorBuffer,
+          table,
           links,
           linkCull?.visible ?? empty,
           visiblePieces,
+          selected,
+          styleUniform.buffer,
         ].map((buffer, binding) => ({ binding, resource: { buffer } })),
       });
     const visible = pieceCull?.visible ?? empty;
@@ -174,6 +186,8 @@ export class Renderer {
       pieceCull,
       links: linkCull,
       highlight,
+      style: styleUniform,
+      styled: { segments: geometry.segments, seed, meanDepth: data.meanDepth },
       groups: {
         graph: group('graph', visible),
         ids: group('ids', visible),
@@ -181,6 +195,18 @@ export class Renderer {
         fill: group('fill', lit),
       },
     };
+    this.writeStyle();
+  }
+
+  setStyle(style: Style): void {
+    this.style = style;
+    this.writeStyle();
+  }
+
+  private writeStyle(): void {
+    const graph = this.graph;
+    const dim = this.style.display.dimUnselected && this.selectedCount > 0;
+    graph?.style.write(this.device, this.style, graph.styled, dim);
   }
 
   /** Where `x, y` per point, relative to the view's origin, are read from. */
@@ -203,7 +229,9 @@ export class Renderer {
     const target = this.graph?.selected;
     if (!target) return;
     this.device.queue.writeBuffer(target, 0, bits, 0, Math.min(bits.length, target.size / 4));
+    const changed = count > 0 !== this.selectedCount > 0;
     this.selectedCount = count;
+    if (changed) this.writeStyle();
   }
 
   /** Finds what is in view; runs before the render pass that draws it. */
@@ -283,6 +311,7 @@ export class Renderer {
       grow,
     ]);
     new Uint32Array(this.viewData)[21] = view.hover ?? NO_SEGMENT;
+    new Float32Array(this.viewData)[22] = view.strand;
     this.device.queue.writeBuffer(this.views[pass], 0, this.viewData);
   }
 

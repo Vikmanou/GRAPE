@@ -1,5 +1,6 @@
 import type { SegmentAttributes } from '../../workers/protocol/graph';
 import type { Geometry, Hierarchy } from '../../workers/protocol/layout';
+import type { DisplayOptions } from '../style/display';
 import type { Theme } from '../style/palette';
 import type { Bounds } from './camera';
 
@@ -18,10 +19,13 @@ export interface SegmentData extends SegmentAttributes {
   lengths: Uint32Array;
   /** Component rank, largest first. */
   components: Uint32Array;
+  /** Length-weighted, over segments with a depth; NaN when none has one. */
+  meanDepth: number;
 }
 
 export interface Style {
   theme: Theme;
+  display: DisplayOptions;
 }
 
 /** The spec's "first usable layout": refined to this level or finer, and packed. */
@@ -104,7 +108,8 @@ export interface Backend {
   readonly drawMs: number;
   /** Bytes of GPU memory the backend holds. */
   readonly gpuBytes: number;
-  setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void;
+  /** `seed` steps the random colours. */
+  setGraph(geometry: Geometry, segments: SegmentData, seed: number): void;
   setStyle(style: Style): void;
   /** `x, y` per point relative to the view's origin, from a layout run elsewhere. */
   setPositions(positions: Float32Array<ArrayBuffer>): void;

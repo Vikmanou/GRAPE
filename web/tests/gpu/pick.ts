@@ -6,7 +6,7 @@ import { Buffers, readBuffer } from '../../src/engine/webgpu/layout/gpu';
 import type { Kernels } from '../../src/engine/webgpu/layout/kernels';
 import { idView, Picker } from '../../src/engine/webgpu/pick';
 import { ID_FORMAT, Renderer, type View } from '../../src/engine/webgpu/renderer';
-import { assert, random } from './reference';
+import { assert, plainSegments, random } from './reference';
 
 function distanceToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
   const [dx, dy] = [bx - ax, by - ay];
@@ -35,6 +35,7 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
     hoverOutline: [0, 0, 1, 0.5],
     outlineWidth: 1,
     hover: undefined,
+    strand: 0,
   };
   const ids = idView(view);
   // Texture copy rows are multiples of 256 bytes.
@@ -53,7 +54,8 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
         segmentStarts: new Uint32Array(segments),
         segmentPieces: new Uint8Array(segments),
       },
-      new Uint32Array(segments).fill(0xffffffff),
+      plainSegments(segments),
+      1,
     );
     renderer.setPositions(positions);
     const texture = device.createTexture({

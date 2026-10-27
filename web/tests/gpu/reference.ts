@@ -1,5 +1,7 @@
 // CPU ports of the WGSL helpers in layout-common.wgsl, for checking kernels.
 
+import type { SegmentData } from '../../src/engine/core/backend';
+
 export function mix32(x: number): number {
   let h = x >>> 0;
   h ^= h >>> 16;
@@ -34,4 +36,18 @@ export function random(seed: number): () => number {
 
 export function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
+}
+
+/** Segment attributes for checks that only draw shapes. */
+export function plainSegments(segments: number): SegmentData {
+  const none = { segments: new Uint32Array(0), colors: new Uint32Array(0) };
+  return {
+    lengths: new Uint32Array(segments),
+    components: new Uint32Array(segments),
+    depth: new Float32Array(segments).fill(NaN),
+    gc: new Float32Array(segments).fill(NaN),
+    tagColors: none,
+    tagColors2: none,
+    meanDepth: NaN,
+  };
 }

@@ -16,20 +16,131 @@ struct View {
   // capsule this much wider, then the fill this much narrower.
   grow: f32,
   hover: u32,
+  // 0 in single mode; 1 or -1 for the strand double mode draws.
+  strand: f32,
+}
+
+struct Style {
+  // Index into COLOR_MODES (engine/style/display.ts).
+  mode: u32,
+  log_scale: u32,
+  // The colour range, already through the scale.
+  range_lo: f32,
+  range_hi: f32,
+  random_start: u32,
+  segments: u32,
+  width_by_depth: u32,
+  mean_depth: f32,
+  uniform_color: u32,
+  unknown_color: u32,
+  no_tag_color: u32,
+  // Unselected segments fade.
+  dim: u32,
+  // 256 RGBA8 colours, four to an entry.
+  ramp: array<vec4u, 64>,
 }
 
 @group(0) @binding(0) var<uniform> view: View;
 @group(0) @binding(1) var<storage, read> positions: array<vec2f>;
 // First point and segment of each ribbon piece.
 @group(0) @binding(2) var<storage, read> pieces: array<vec2u>;
-// RGBA8 per segment.
-@group(0) @binding(3) var<storage, read> colors: array<u32>;
+// Runs of one u32 per segment, in the order of FIELDS in segments.ts.
+@group(0) @binding(3) var<storage, read> segment_table: array<u32>;
 // End and inner point of each side of each link.
 @group(0) @binding(4) var<storage, read> links: array<vec4u>;
 // The links and pieces that touch the view, from cull.wgsl; draws are
 // instanced over these.
 @group(0) @binding(5) var<storage, read> visible_links: array<u32>;
 @group(0) @binding(6) var<storage, read> visible_pieces: array<u32>;
+// One bit per selected segment.
+@group(0) @binding(7) var<storage, read> selected: array<u32>;
+@group(0) @binding(8) var<uniform> style: Style;
+
+const DEPTH = 0u;
+const GC = 1u;
+const LENGTH = 2u;
+const COMPONENT = 3u;
+const TAG = 4u;
+const TAG2 = 5u;
+
+fn field(f: u32, segment: u32) -> u32 {
+  return segment_table[f * style.segments + segment];
+}
+
+fn is_selected(segment: u32) -> bool {
+  return ((selected[segment >> 5u] >> (segment & 31u)) & 1u) == 1u;
+}
+
+// Mirrors engine/style/colors.ts, the reference the tests check against.
+fn hsl(h: f32, s: f32, l: f32) -> vec3f {
+  let a = s * min(l, 1.0 - l);
+  let k = (vec3f(0.0, 8.0, 4.0) + h * 12.0) % 12.0;
+  return l - a * clamp(min(k - 3.0, 9.0 - k), vec3f(-1.0), vec3f(1.0));
+}
+
+// Bandage's random colours: saturation 127 and lightness 150 of 255, the hue
+// stepped by the golden ratio as an exact u32 sequence.
+fn golden_color(start: u32, i: u32) -> vec4f {
+  let hue = f32(start + i * 0x9e3779b9u) / 4294967296.0;
+  return vec4f(hsl(hue, 127.0 / 255.0, 150.0 / 255.0), 1.0);
+}
+
+fn ramped(value: f32) -> vec4f {
+  if value != value {
+    return unpack4x8unorm(style.unknown_color);
+  }
+  var v = value;
+  if style.log_scale == 1u {
+    v = log(max(v, 1e-30));
+  }
+  let span = style.range_hi - style.range_lo;
+  var t = 0.0;
+  if span > 0.0 {
+    t = clamp((v - style.range_lo) / span, 0.0, 1.0);
+  }
+  let i = min(u32(floor(t * 256.0)), 255u);
+  return unpack4x8unorm(style.ramp[i / 4u][i % 4u]);
+}
+
+// Bandage's `getCustomColourForDisplay`; 0 means no tag.
+fn tag_color(segment: u32, strand: f32) -> vec4f {
+  let forward = field(TAG, segment);
+  let reverse = field(TAG2, segment);
+  var tag = select(forward, reverse, strand < 0.0);
+  if strand == 0.0 && tag == 0u {
+    tag = reverse;
+  }
+  return unpack4x8unorm(select(tag, style.no_tag_color, tag == 0u));
+}
+
+fn segment_color(segment: u32, strand: f32) -> vec4f {
+  switch style.mode {
+    case 0u: {
+      return unpack4x8unorm(style.uniform_color);
+    }
+    case 1u: {
+      return golden_color(style.random_start, segment);
+    }
+    case 2u: {
+      return ramped(bitcast<f32>(field(DEPTH, segment)));
+    }
+    case 3u: {
+      return ramped(bitcast<f32>(field(GC, segment)));
+    }
+    case 4u: {
+      return ramped(f32(field(LENGTH, segment)));
+    }
+    case 5u: {
+      return golden_color(0u, field(COMPONENT, segment));
+    }
+    default: {
+      return tag_color(segment, strand);
+    }
+  }
+}
+
+// Faded unselected segments keep this much of their colour.
+const DIMMED = 0.25;
 
 // x along, y across.
 const QUAD = array<vec2f, 6>(
@@ -73,7 +184,11 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   out.clip = to_clip(a + along * local.x + across * local.y);
   out.local = local;
   out.size = vec2f(length_ab, half);
-  out.color = unpack4x8unorm(colors[piece.y]);
+  var color = segment_color(piece.y, view.strand);
+  if style.dim == 1u && !is_selected(piece.y) {
+    color.a *= DIMMED;
+  }
+  out.color = color;
   out.segment = piece.y;
   return out;
 }

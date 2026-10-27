@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { hsl } from '../../src/engine/style/colors';
-import { randomColors } from '../../src/engine/style/palette';
+import { goldenHue, hsl, hueColor, mix } from '../../src/engine/style/colors';
+
+/** What the random colour mode gives each segment. */
+function randomColors(segments: number, seed: number): Uint32Array {
+  return Uint32Array.from({ length: segments }, (_, i) => hueColor(goldenHue(mix(seed), i)));
+}
 
 function unpack(c: number): [number, number, number, number] {
   return [c & 0xff, (c >>> 8) & 0xff, (c >>> 16) & 0xff, c >>> 24];
