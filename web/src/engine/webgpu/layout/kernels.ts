@@ -36,6 +36,7 @@ const ENTRY_POINTS = {
   markHighlight: ['cull', 'mark_highlight'],
   compact: ['cull', 'compact'],
   selectBox: ['query', 'select_box'],
+  boundPieces: ['query', 'bound_pieces'],
 } as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
 
 export type Kernels = Record<keyof typeof ENTRY_POINTS, GPUComputePipeline>;

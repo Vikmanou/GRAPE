@@ -157,6 +157,12 @@ export class WebGpuBackend implements Backend {
     return this.queries.selectBox(drawn, { minX, minY, maxX, maxY }, half);
   }
 
+  async bounds(of: Uint32Array<ArrayBuffer>): Promise<Bounds | undefined> {
+    const drawn = this.renderer.drawn;
+    if (!drawn || !this.positioned) return undefined;
+    return this.queries.bounds(drawn, of);
+  }
+
   private drawn(view: View): DrawnView {
     const palette = palettes[this.style.theme];
     return {

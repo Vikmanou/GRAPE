@@ -71,6 +71,9 @@ export class Bridge {
         console.error(`GPU error: ${event.message}`);
         get().toast('The GPU reported an error', event.message);
         break;
+      case 'camera':
+        set({ camera: { x: event.x, y: event.y, zoom: event.zoom } });
+        break;
       case 'hover':
         set({ hovered: event.segment });
         break;

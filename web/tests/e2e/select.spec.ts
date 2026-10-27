@@ -35,3 +35,37 @@ test('hovering a segment marks it', async ({ page }) => {
   await expect.poll(async () => (await appState(page)).hovered).toBe(segment);
   await expect(page.getByTestId('engine-canvas')).toHaveCSS('cursor', 'pointer');
 });
+
+test('components select and frame, the selection grows to its components and inverts', async ({ page }) => {
+  await openSettled(page, repo('testdata/two_components.gfa'));
+  const segments = Number((await page.getByTestId('stat-segments').textContent())?.replace(/\D/g, ''));
+  const second = Number(
+    await page.getByTestId('components').locator('tbody tr').nth(1).locator('td').nth(1).textContent(),
+  );
+  await expect.poll(async () => (await appState(page)).zoom).toBeDefined();
+  const fitted = (await appState(page)).zoom ?? 0;
+
+  await page.getByTestId('component-2').click();
+  await expect.poll(async () => (await appState(page)).selection.count).toBe(second);
+  await expect.poll(async () => (await appState(page)).zoom).toBeGreaterThan(fitted);
+
+  await page.getByTestId('invert-selection').click();
+  await expect.poll(async () => (await appState(page)).selection.count).toBe(segments - second);
+
+  await page.getByTestId('component-2').click();
+  const [[one] = []] = [...(await segmentsOnScreen(page, 1)).entries()];
+  if (one === undefined) throw new Error('no segment on screen');
+  await page.evaluate((segment) => {
+    type Store = { getState(): { select(s: Uint32Array, mode: string): void } };
+    (window as unknown as { grapeTest: { store: Store } }).grapeTest.store
+      .getState()
+      .select(Uint32Array.of(segment), 'replace');
+  }, one);
+  await expect.poll(async () => (await appState(page)).selection.count).toBe(1);
+  await page.getByTestId('select-components').click();
+  await expect.poll(async () => (await appState(page)).selection.count).toBeGreaterThan(1);
+
+  const before = (await appState(page)).zoom ?? 0;
+  await page.getByTestId('zoom-selection').click();
+  await expect.poll(async () => (await appState(page)).zoom).not.toBe(before);
+});

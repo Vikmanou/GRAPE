@@ -79,3 +79,33 @@ fn select_box(@builtin(global_invocation_id) id: vec3u) {
     atomicOr(&hits[piece.y >> 5u], 1u << (piece.y & 31u));
   }
 }
+
+// One bit per segment whose extent `bound_pieces` measures.
+@group(0) @binding(4) var<storage, read> wanted: array<u32>;
+// max of inverted x and y (so minima), then max x and y, as order-preserving
+// u32s, like `bound` in present.wgsl.
+@group(0) @binding(5) var<storage, read_write> extent: array<atomic<u32>, 4>;
+
+fn ordered(v: f32) -> u32 {
+  let bits = bitcast<u32>(v);
+  return select(bits ^ 0x80000000u, ~bits, (bits & 0x80000000u) != 0u);
+}
+
+@compute @workgroup_size(256)
+fn bound_pieces(@builtin(global_invocation_id) id: vec3u) {
+  let i = id.x;
+  if (i >= query.count) {
+    return;
+  }
+  let piece = pieces[i];
+  if (((wanted[piece.y >> 5u] >> (piece.y & 31u)) & 1u) == 0u) {
+    return;
+  }
+  for (var k = 0u; k < 2u; k++) {
+    let p = positions[piece.x + k];
+    atomicMax(&extent[0], ~ordered(p.x));
+    atomicMax(&extent[1], ~ordered(p.y));
+    atomicMax(&extent[2], ordered(p.x));
+    atomicMax(&extent[3], ordered(p.y));
+  }
+}

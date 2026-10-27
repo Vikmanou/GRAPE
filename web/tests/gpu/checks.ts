@@ -6,7 +6,7 @@ import { Scan } from '../../src/engine/webgpu/layout/scan';
 import { culling } from './cull';
 import { forceIteration } from './forces';
 import { picking } from './pick';
-import { boxSelect } from './query';
+import { bounds, boxSelect } from './query';
 import { assert, cellHash, cellKey, random } from './reference';
 
 export type Check = (device: GPUDevice, kernels: Kernels) => Promise<void>;
@@ -133,4 +133,12 @@ const binning: Check = async (device, kernels) => {
   }
 };
 
-export const checks: Record<string, Check> = { prefixSum, binning, forceIteration, culling, picking, boxSelect };
+export const checks: Record<string, Check> = {
+  prefixSum,
+  binning,
+  forceIteration,
+  culling,
+  picking,
+  boxSelect,
+  bounds,
+};

@@ -1,17 +1,18 @@
 import type { EngineCommand, EngineEvent } from './commands';
 import type { Backend } from './core/backend';
-import { boundsOf, type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './core/camera';
+import { boundsOf, type Bounds } from './core/camera';
+import { Framing } from './core/Framing';
 import { FrameCounter } from './core/frames';
+import { attachInput } from './core/input';
 import { Pointer } from './core/Pointer';
 import { RubberBand } from './core/RubberBand';
-import { attachInput } from './core/input';
+import { throttle } from './core/throttle';
 import { randomColors } from './style/palette';
+import { RIBBON_WIDTH } from './style/widths';
 import { WebGpuBackend } from './webgpu/WebGpuBackend';
 
 type Listener = (event: EngineEvent) => void;
 
-/** Free space around the graph when fitting, in CSS pixels. */
-const FIT_MARGIN = 24;
 /**
  * Positions are re-uploaded relative to the camera once it is this many
  * pixels from the upload origin, keeping shader maths within f32 precision.
@@ -26,12 +27,8 @@ const LAYOUT_REDRAW_MS = 100;
 const LAYOUT_DRAW_SHARE = 10;
 /** The view counts as moving for this long after the last pan or zoom. */
 const INTERACTION_MS = 250;
-/**
- * Before the layout is usable, many points share a few coarse positions, and
- * zooming far into them stacks thousands of screen-sized ribbons: enough
- * overdraw for the driver to reset the GPU (measured on the 200k graph).
- */
-const COARSE_MAX_ZOOM = 8;
+/** The store mirrors the camera at most ten times a second (spec, Architecture). */
+export const CAMERA_EVENT_MS = 100;
 
 /**
  * Owns the canvas, the camera and the frame loop, and draws through a
@@ -43,13 +40,11 @@ export class Engine {
   private readonly listeners = new Set<Listener>();
   private readonly resizeObserver: ResizeObserver;
   private readonly detachInput: () => void;
-  private camera: Camera = { x: 0, y: 0, zoom: 1 };
+  private readonly framing: Framing;
+  private readonly pointer: Pointer;
+  private readonly band: RubberBand;
   private positions: Float32Array | undefined;
-  private bounds: Bounds | undefined;
   private origin = { x: 0, y: 0 };
-  /** Keeps the graph framed while the layout settles, until the user moves the view. */
-  private autoFit = true;
-  private insets: Insets = NO_INSETS;
   private readonly frames = new FrameCounter();
   private lastDraw = -Infinity;
   private lastInteraction = -Infinity;
@@ -57,14 +52,21 @@ export class Engine {
   private dirty = true;
   /** Layout positions moved since they were last presented. */
   private stale = false;
-  private readonly pointer: Pointer;
-  private readonly band: RubberBand;
+  private reported = { x: NaN, y: NaN, zoom: NaN };
+  private readonly cameraReport = throttle(() => {
+    const camera = this.framing.camera;
+    const last = this.reported;
+    if (this.destroyed || (camera.x === last.x && camera.y === last.y && camera.zoom === last.zoom)) return;
+    this.reported = { ...camera };
+    this.emit({ type: 'camera', ...camera });
+  }, CAMERA_EVENT_MS);
 
   private constructor(
     host: HTMLElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly backend: Backend,
   ) {
+    this.framing = new Framing(canvas);
     this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
@@ -86,56 +88,7 @@ export class Engine {
       // Safari rejects this box type; resize() falls back to CSS size × DPR.
       this.resizeObserver.observe(host);
     }
-    this.detachInput = attachInput(canvas, {
-      pan: (dx, dy) => {
-        this.moveCamera(pan(this.camera, dx, dy));
-      },
-      zoom: (x, y, factor) => {
-        this.moveCamera(zoomAt(this.camera, this.viewport(), x, y, this.allowedZoom(factor)));
-      },
-      zoomCenter: (factor) => {
-        const [x, y] = [canvas.width / 2, canvas.height / 2];
-        this.moveCamera(zoomAt(this.camera, this.viewport(), x, y, this.allowedZoom(factor)));
-      },
-      panView: (fx, fy) => {
-        this.moveCamera(pan(this.camera, fx * canvas.width, fy * canvas.height));
-      },
-      fit: () => {
-        this.send({ type: 'fit' });
-      },
-      hover: (x, y) => {
-        this.pointer.moved(x, y);
-      },
-      leave: () => {
-        this.pointer.left();
-      },
-      click: (x, y, shift) => {
-        // Panels that open for the selection must not refit the view under the pointer.
-        this.autoFit = false;
-        this.pointer.click(x, y, shift);
-      },
-      box: (x0, y0, x1, y1, phase) => {
-        if (phase === 'drag') {
-          this.band.show(x0, y0, x1, y1);
-          return;
-        }
-        this.band.hide();
-        if (phase === 'end') {
-          this.autoFit = false;
-          const box = {
-            minX: Math.min(x0, x1),
-            minY: Math.min(y0, y1),
-            maxX: Math.max(x0, x1),
-            maxY: Math.max(y0, y1),
-          };
-          void this.backend.selectBox(box).then((bits) => {
-            if (this.destroyed) return;
-            this.pointer.selection.addBits(bits);
-            this.pointer.selectionChanged();
-          });
-        }
-      },
-    });
+    this.detachInput = this.listen();
   }
 
   static async create(host: HTMLElement): Promise<Engine> {
@@ -165,6 +118,7 @@ export class Engine {
 
   send(command: EngineCommand): void {
     const layout = this.backend.layout;
+    const framing = this.framing;
     switch (command.type) {
       case 'set-theme':
         this.backend.setStyle({ theme: command.theme });
@@ -172,30 +126,27 @@ export class Engine {
         break;
       case 'set-graph':
         this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
-        this.pointer.reset(command.geometry.segments);
+        this.pointer.reset(command.components);
         this.positions = undefined;
-        this.bounds = undefined;
-        this.autoFit = true;
+        framing.autoFit = true;
+        framing.setBounds(undefined);
         break;
       case 'set-positions':
         layout.stop();
         this.positions = command.positions;
-        this.bounds = boundsOf(command.positions);
-        if (this.autoFit) this.fitView();
+        framing.setBounds(boundsOf(command.positions));
         this.upload();
         break;
       case 'start-layout':
         this.positions = undefined;
+        framing.autoFit = true;
         // Components overlap until the first pack; their start still frames the view.
-        this.bounds = boundsOf(command.hierarchy.start);
-        this.autoFit = true;
-        this.fitView();
+        framing.setBounds(boundsOf(command.hierarchy.start));
         layout.start(command.hierarchy, command.seed);
         break;
       case 'set-offsets':
         layout.setOffsets(command.offsets);
-        this.bounds = layout.bounds();
-        if (this.autoFit) this.fitView();
+        framing.setBounds(layout.bounds());
         // Waits for the next layout redraw, like any other layout progress.
         this.stale = true;
         this.scheduleFrame();
@@ -207,28 +158,24 @@ export class Engine {
         void this.readPositions();
         return;
       case 'fit':
-        this.autoFit = true;
-        this.fitView();
+        framing.fitGraph();
         break;
       case 'set-insets':
-        this.insets = command.insets;
-        if (this.autoFit) this.fitView();
+        framing.setInsets(command.insets);
         break;
-      case 'select': {
-        const selection = this.pointer.selection;
-        if (command.mode === 'replace') selection.replace(command.segments);
-        else selection.add(command.segments);
-        this.pointer.selectionChanged();
-        break;
-      }
-      case 'clear-selection':
-        this.pointer.selection.clear();
-        this.pointer.selectionChanged();
-        break;
+      case 'select':
+      case 'select-component':
+      case 'select-components':
       case 'invert-selection':
-        this.pointer.selection.invert();
-        this.pointer.selectionChanged();
-        break;
+      case 'clear-selection':
+        this.pointer.apply(command);
+        return;
+      case 'zoom-to-selection':
+        void this.zoomTo(this.pointer.selection.snapshot());
+        return;
+      case 'zoom-to-component':
+        void this.zoomTo(this.pointer.componentBits(command.component));
+        return;
       case 'pick': {
         const { x, y } = command;
         void this.backend.pick(x, y).then((segment) => {
@@ -248,6 +195,7 @@ export class Engine {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.cameraReport.cancel();
     this.resizeObserver.disconnect();
     this.detachInput();
     this.listeners.clear();
@@ -255,6 +203,72 @@ export class Engine {
     this.band.remove();
     this.backend.destroy();
     this.canvas.remove();
+  }
+
+  private listen(): () => void {
+    const { canvas, framing, pointer } = this;
+    const coarse = () => !this.backend.layout.usable;
+    return attachInput(canvas, {
+      pan: (dx, dy) => {
+        framing.pan(dx, dy);
+        this.viewMoved();
+      },
+      zoom: (x, y, factor) => {
+        framing.zoomAt(x, y, factor, coarse());
+        this.viewMoved();
+      },
+      zoomCenter: (factor) => {
+        framing.zoomAt(canvas.width / 2, canvas.height / 2, factor, coarse());
+        this.viewMoved();
+      },
+      panView: (fx, fy) => {
+        framing.pan(fx * canvas.width, fy * canvas.height);
+        this.viewMoved();
+      },
+      fit: () => {
+        this.send({ type: 'fit' });
+      },
+      hover: (x, y) => {
+        pointer.moved(x, y);
+      },
+      leave: () => {
+        pointer.left();
+      },
+      click: (x, y, shift) => {
+        // Panels that open for the selection must not refit the view under the pointer.
+        framing.autoFit = false;
+        pointer.click(x, y, shift);
+      },
+      box: (x0, y0, x1, y1, phase) => {
+        if (phase === 'drag') {
+          this.band.show(x0, y0, x1, y1);
+          return;
+        }
+        this.band.hide();
+        if (phase === 'cancel') return;
+        framing.autoFit = false;
+        const box = { minX: Math.min(x0, x1), minY: Math.min(y0, y1), maxX: Math.max(x0, x1), maxY: Math.max(y0, y1) };
+        void this.backend.selectBox(box).then((bits) => {
+          pointer.addBits(bits);
+        });
+      },
+    });
+  }
+
+  /** Frames the drawn extent of the segments whose bit is set. */
+  private async zoomTo(bits: Uint32Array<ArrayBuffer>): Promise<void> {
+    const origin = this.origin;
+    const box = await this.backend.bounds(bits);
+    if (!box || this.destroyed) return;
+    const pad = RIBBON_WIDTH;
+    const world: Bounds = {
+      minX: box.minX + origin.x - pad,
+      minY: box.minY + origin.y - pad,
+      maxX: box.maxX + origin.x + pad,
+      maxY: box.maxY + origin.y + pad,
+    };
+    this.framing.frame(world);
+    this.viewMoved();
   }
 
   private async readPositions(): Promise<void> {
@@ -266,38 +280,15 @@ export class Engine {
     for (const listener of this.listeners) listener(event);
   }
 
-  private viewport() {
-    return { width: this.canvas.width, height: this.canvas.height };
-  }
-
-  private moveCamera(camera: Camera): void {
+  private viewMoved(): void {
     this.lastInteraction = performance.now();
-    this.autoFit = false;
-    this.camera = camera;
     this.pointer.viewMoved();
     this.requestFrame();
   }
 
-  private allowedZoom(factor: number): number {
-    if (factor <= 1 || this.backend.layout.usable || !this.bounds) return factor;
-    const fitted = fit(this.bounds, this.viewport(), FIT_MARGIN * window.devicePixelRatio).zoom;
-    return Math.max(1, Math.min(factor, (fitted * COARSE_MAX_ZOOM) / this.camera.zoom));
-  }
-
-  private fitView(): void {
-    if (!this.bounds) return;
-    const dpr = window.devicePixelRatio;
-    const { top, right, bottom, left } = this.insets;
-    this.camera = fit(this.bounds, this.viewport(), FIT_MARGIN * dpr, {
-      top: top * dpr,
-      right: right * dpr,
-      bottom: bottom * dpr,
-      left: left * dpr,
-    });
-  }
-
   private upload(): void {
-    this.origin = { x: Math.round(this.camera.x), y: Math.round(this.camera.y) };
+    const { camera } = this.framing;
+    this.origin = { x: Math.round(camera.x), y: Math.round(camera.y) };
     const layout = this.backend.layout;
     if (layout.active) {
       layout.present(this.origin);
@@ -322,7 +313,7 @@ export class Engine {
     const max = this.backend.maxCanvasSize;
     this.canvas.width = Math.max(1, Math.min(width, max));
     this.canvas.height = Math.max(1, Math.min(height, max));
-    if (this.autoFit) this.fitView();
+    this.framing.refit();
     this.emit({ type: 'resize', width: this.canvas.width, height: this.canvas.height });
     this.requestFrame();
   }
@@ -361,7 +352,7 @@ export class Engine {
     const started = performance.now();
     this.dirty = false;
     this.lastDraw = now;
-    const c = this.camera;
+    const c = this.framing.camera;
     if (this.stale || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) {
       this.stale = false;
       this.upload();
@@ -375,5 +366,6 @@ export class Engine {
     });
     const stats = this.frames.record(now, performance.now() - started, this.backend.drawMs);
     if (stats) this.emit({ type: 'frame-stats', ...stats });
+    this.cameraReport.request();
   }
 }

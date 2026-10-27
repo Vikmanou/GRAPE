@@ -1,6 +1,11 @@
-import type { EngineEvent } from '../commands';
+import type { EngineCommand, EngineEvent } from '../commands';
 import type { Backend } from './backend';
 import { Selection } from './Selection';
+
+export type SelectionCommand = Extract<
+  EngineCommand,
+  { type: 'select' | 'select-component' | 'select-components' | 'invert-selection' | 'clear-selection' }
+>;
 
 export interface PointerHost {
   emit(event: EngineEvent): void;
@@ -23,6 +28,8 @@ export class Pointer {
   private picking = false;
   private hovered: number | undefined;
   private destroyed = false;
+  /** Component rank per segment. */
+  private components: Uint32Array = new Uint32Array(0);
 
   constructor(
     private readonly backend: Backend,
@@ -82,10 +89,56 @@ export class Pointer {
   }
 
   /** A new graph: nothing hovered or selected. */
-  reset(segments: number): void {
+  reset(components: Uint32Array): void {
+    this.components = components;
     this.setHovered(undefined);
-    this.selection.reset(segments);
+    this.selection.reset(components.length);
     this.selectionChanged();
+  }
+
+  apply(command: SelectionCommand): void {
+    const s = this.selection;
+    switch (command.type) {
+      case 'select':
+        if (command.mode === 'replace') s.replace(command.segments);
+        else s.add(command.segments);
+        break;
+      case 'select-component':
+        s.replace(this.inComponents(new Set([command.component])));
+        break;
+      case 'select-components': {
+        const ranks = new Set<number>();
+        for (const [segment, rank] of this.components.entries()) if (s.has(segment)) ranks.add(rank);
+        s.add(this.inComponents(ranks));
+        break;
+      }
+      case 'invert-selection':
+        s.invert();
+        break;
+      case 'clear-selection':
+        s.clear();
+        break;
+    }
+    this.selectionChanged();
+  }
+
+  /** One bit per segment of a component. */
+  componentBits(component: number): Uint32Array<ArrayBuffer> {
+    const bits = new Uint32Array(Math.ceil(this.components.length / 32));
+    for (const segment of this.inComponents(new Set([component])))
+      bits[segment >>> 5] = (bits[segment >>> 5] ?? 0) | (1 << (segment & 31));
+    return bits;
+  }
+
+  /** Adds the segments a box select found. */
+  addBits(bits: Uint32Array): void {
+    if (this.destroyed) return;
+    this.selection.addBits(bits);
+    this.selectionChanged();
+  }
+
+  private *inComponents(ranks: Set<number>): Generator<number> {
+    for (const [segment, rank] of this.components.entries()) if (ranks.has(rank)) yield segment;
   }
 
   selectionChanged(): void {

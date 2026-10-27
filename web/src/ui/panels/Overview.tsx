@@ -1,3 +1,4 @@
+import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function Overview({ result }: Props) {
+  const showComponent = useApp((s) => s.showComponent);
   const { stats, components } = result;
   const rows: [string, string, string][] = [
     ['segments', 'Segments', formatCount(stats.segments)],
@@ -62,7 +64,19 @@ export function Overview({ result }: Props) {
         <tbody>
           {Array.from({ length: shown }, (_, rank) => (
             <tr key={rank}>
-              <td>{rank + 1}</td>
+              <td>
+                <button
+                  type="button"
+                  className="link"
+                  data-testid={`component-${rank + 1}`}
+                  title="Select and zoom to this component"
+                  onClick={() => {
+                    showComponent(rank);
+                  }}
+                >
+                  {rank + 1}
+                </button>
+              </td>
               <td>{formatCount(components.segments[rank] ?? 0)}</td>
               <td>{formatBases(components.lengths[rank] ?? 0)}</td>
             </tr>

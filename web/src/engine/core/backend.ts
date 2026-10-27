@@ -82,5 +82,7 @@ export interface Backend {
   pick(x: number, y: number): Promise<number | undefined>;
   /** One bit per segment whose ribbon touches a box of canvas pixels in the last drawn view. */
   selectBox(box: Bounds): Promise<Uint32Array<ArrayBuffer>>;
+  /** The drawn extent, relative to the view's origin, of segments whose bit is set. */
+  bounds(of: Uint32Array<ArrayBuffer>): Promise<Bounds | undefined>;
   destroy(): void;
 }

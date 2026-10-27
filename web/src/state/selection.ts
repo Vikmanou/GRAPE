@@ -15,6 +15,11 @@ export interface SelectionSlice {
   select: (segments: Uint32Array, mode: 'replace' | 'add') => void;
   clearSelection: () => void;
   invertSelection: () => void;
+  /** Adds every segment of the components the selection touches. */
+  selectComponents: () => void;
+  /** Selects one component, by rank, and frames it. */
+  showComponent: (component: number) => void;
+  zoomToSelection: () => void;
 }
 
 export function createSelectionSlice(ctx: Context): SelectionSlice {
@@ -29,6 +34,16 @@ export function createSelectionSlice(ctx: Context): SelectionSlice {
     },
     invertSelection() {
       ctx.bridge.send({ type: 'invert-selection' });
+    },
+    selectComponents() {
+      ctx.bridge.send({ type: 'select-components' });
+    },
+    showComponent(component) {
+      ctx.bridge.send({ type: 'select-component', component });
+      ctx.bridge.send({ type: 'zoom-to-component', component });
+    },
+    zoomToSelection() {
+      ctx.bridge.send({ type: 'zoom-to-selection' });
     },
   };
 }

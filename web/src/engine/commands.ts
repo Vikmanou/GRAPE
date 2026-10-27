@@ -6,7 +6,8 @@ import type { LayoutProgress } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
-  | { type: 'set-graph'; geometry: Geometry; seed: number }
+  /** `components`: rank per segment. */
+  | { type: 'set-graph'; geometry: Geometry; seed: number; components: Uint32Array }
   /** `x, y` per point, in layout units, from a layout run elsewhere. */
   | { type: 'set-positions'; positions: Float32Array }
   /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */
@@ -22,8 +23,14 @@ export type EngineCommand =
   /** Answered by a `picked` event: the segment drawn at canvas pixel `x, y`. */
   | { type: 'pick'; x: number; y: number }
   | { type: 'select'; segments: Uint32Array; mode: 'replace' | 'add' }
+  /** Selects every segment of one component, by rank. */
+  | { type: 'select-component'; component: number }
+  /** Adds every segment of the components the selection touches. */
+  | { type: 'select-components' }
   | { type: 'clear-selection' }
-  | { type: 'invert-selection' };
+  | { type: 'invert-selection' }
+  | { type: 'zoom-to-selection' }
+  | { type: 'zoom-to-component'; component: number };
 
 export type EngineEvent =
   | { type: 'resize'; width: number; height: number }
@@ -36,6 +43,8 @@ export type EngineEvent =
   /** `x, y` per point as drawn, answering `read-positions`. */
   | { type: 'positions'; positions: Float32Array<ArrayBuffer> }
   | { type: 'picked'; x: number; y: number; segment: number | undefined }
+  /** The camera after it moved, at most `CAMERA_EVENT_MS` apart. */
+  | { type: 'camera'; x: number; y: number; zoom: number }
   /** The segment under the pointer changed. */
   | { type: 'hover'; segment: number | undefined }
   /** One bit per segment. `single` is the selected segment when exactly one is. */

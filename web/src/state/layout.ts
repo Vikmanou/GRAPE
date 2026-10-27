@@ -84,7 +84,12 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
         case 'geometry':
           total = response.totalIterations;
           set({ fps: undefined });
-          bridge.send({ type: 'set-graph', geometry: response.geometry, seed });
+          bridge.send({
+            type: 'set-graph',
+            geometry: response.geometry,
+            seed,
+            components: load.result.topology.components,
+          });
           status({ state: 'running', iteration: 0, total });
           break;
         case 'hierarchy':

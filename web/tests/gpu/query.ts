@@ -70,3 +70,53 @@ export async function boxSelect(device: GPUDevice, kernels: Kernels): Promise<vo
     buffers.destroy();
   }
 }
+
+/** The bounds pass against min and max on the CPU, exactly: both read the same f32 points. */
+export async function bounds(device: GPUDevice, kernels: Kernels): Promise<void> {
+  const next = random(29);
+  const pieceCount = 5000;
+  const segments = 900;
+  const positions = Float32Array.from({ length: pieceCount * 4 }, () => next() * 2e4 - 1e4);
+  const pieces = Uint32Array.from({ length: pieceCount * 2 }, (_, k) =>
+    k % 2 === 0 ? k : Math.floor(next() * segments),
+  );
+  const queries = new Queries(device, kernels);
+  const buffers = new Buffers(device);
+  try {
+    const drawn = {
+      positions: buffers.upload('positions', positions),
+      pieces: buffers.upload('pieces', pieces),
+      pieceCount,
+      segments,
+    };
+    const none = await queries.bounds(drawn, new Uint32Array(Math.ceil(segments / 32)));
+    assert(none === undefined, 'no wanted segment gives no bounds');
+    for (const share of [0.002, 0.05, 1]) {
+      const wanted = new Uint32Array(Math.ceil(segments / 32));
+      for (let s = 0; s < segments; s++) if (next() < share) wanted[s >>> 5] = (wanted[s >>> 5] ?? 0) | (1 << (s & 31));
+      const want = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      for (let i = 0; i < pieceCount; i++) {
+        const s = pieces[i * 2 + 1] ?? 0;
+        if ((((wanted[s >>> 5] ?? 0) >>> (s & 31)) & 1) === 0) continue;
+        for (let k = 0; k < 2; k++) {
+          const [x = 0, y = 0] = [positions[i * 4 + k * 2], positions[i * 4 + k * 2 + 1]];
+          want.minX = Math.min(want.minX, x);
+          want.minY = Math.min(want.minY, y);
+          want.maxX = Math.max(want.maxX, x);
+          want.maxY = Math.max(want.maxY, y);
+        }
+      }
+      const got = await queries.bounds(drawn, wanted);
+      if (want.minX === Infinity) {
+        assert(got === undefined, `share ${share}: bounds without segments`);
+        continue;
+      }
+      assert(
+        JSON.stringify(got) === JSON.stringify(want),
+        `share ${share}: ${JSON.stringify(got)} vs ${JSON.stringify(want)}`,
+      );
+    }
+  } finally {
+    buffers.destroy();
+  }
+}

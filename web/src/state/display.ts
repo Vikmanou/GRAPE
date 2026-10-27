@@ -1,4 +1,4 @@
-import { type Insets, NO_INSETS } from '../engine/core/camera';
+import { type Camera, type Insets, NO_INSETS } from '../engine/core/camera';
 import type { BackendKind } from '../engine/core/detect';
 import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
@@ -16,6 +16,8 @@ export interface DisplaySlice {
   fps: number | undefined;
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   insets: Insets;
+  /** The engine's camera, mirrored at most ten times a second. */
+  camera: Camera | undefined;
   sidebar: { open: boolean; tab: SidebarTab };
   showSidebar: (tab: SidebarTab) => void;
   toggleSidebar: () => void;
@@ -36,6 +38,7 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
     gpuLayout: false,
     fps: undefined,
     insets: NO_INSETS,
+    camera: undefined,
     sidebar: { open: true, tab: 'overview' },
 
     showSidebar(tab) {

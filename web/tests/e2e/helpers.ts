@@ -27,15 +27,20 @@ export async function showTab(page: Page, tab: 'overview' | 'display'): Promise<
 export interface AppSnapshot {
   selection: { count: number; single: number | undefined };
   hovered: number | undefined;
+  zoom: number | undefined;
 }
 
 /** The parts of the store the flows check, read through `window.grapeTest`. */
 export function appState(page: Page): Promise<AppSnapshot> {
   return page.evaluate(() => {
-    type State = { selection: AppSnapshot['selection']; hovered: number | undefined };
+    type State = {
+      selection: AppSnapshot['selection'];
+      hovered: number | undefined;
+      camera: { zoom: number } | undefined;
+    };
     const store = (window as unknown as { grapeTest: { store: { getState(): State } } }).grapeTest.store;
-    const { selection, hovered } = store.getState();
-    return { selection: { count: selection.count, single: selection.single }, hovered };
+    const { selection, hovered, camera } = store.getState();
+    return { selection: { count: selection.count, single: selection.single }, hovered, zoom: camera?.zoom };
   });
 }
 
