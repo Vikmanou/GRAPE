@@ -128,6 +128,14 @@ export const SHORTCUTS: Shortcut[] = [
     },
   },
   {
+    keys: ['l'],
+    label: 'L',
+    action: 'Show or hide labels',
+    run: (a) => {
+      a.setLabels({ show: !a.labels.show });
+    },
+  },
+  {
     keys: ['d'],
     label: 'D',
     action: 'Switch between single and double mode',
