@@ -81,6 +81,8 @@ export interface Backend {
   readonly maxCanvasSize: number;
   /** GPU time of recent draws in milliseconds, 0 where the GPU cannot tell. */
   readonly drawMs: number;
+  /** Bytes of GPU memory the backend holds. */
+  readonly gpuBytes: number;
   setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void;
   setStyle(style: Style): void;
   /** `x, y` per point relative to the view's origin, from a layout run elsewhere. */

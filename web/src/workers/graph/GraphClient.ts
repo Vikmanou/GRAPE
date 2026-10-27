@@ -1,7 +1,7 @@
 import type { GraphRequest, GraphResponse, ParseResult, SegmentInfo, SelectionSummary } from '../protocol/graph';
 import type { FastaRecords, SequenceSource } from '../protocol/sequence';
 import type { FindQuery } from './findQuery';
-import { expect, RpcClient } from '../rpc';
+import { expect, RpcClient, type WorkerMemory } from '../rpc';
 
 export type ProgressListener = (bytesRead: number, totalBytes: number) => void;
 
@@ -46,6 +46,10 @@ export class GraphClient {
 
   async exportRecords(segments: Uint32Array<ArrayBuffer>): Promise<FastaRecords> {
     return expect(await this.rpc.request({ type: 'export', segments }), 'export').records;
+  }
+
+  async memory(): Promise<WorkerMemory> {
+    return expect(await this.rpc.request({ type: 'memory' }), 'memory').memory;
   }
 
   cancel(): void {

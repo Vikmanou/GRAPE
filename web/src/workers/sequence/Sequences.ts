@@ -26,6 +26,18 @@ export class Sequences {
     return this.source.kind === 'dropped' ? 0 : (this.source.lengths[segment] ?? 0);
   }
 
+  get heldBytes(): number {
+    const s = this.source;
+    if (s.kind === 'dropped') return 0;
+    const own = s.lengths.byteLength + s.offsets.byteLength + s.flags.byteLength;
+    if (s.kind === 'file') return own + s.lines.byteLength;
+    const p = s.packed;
+    return [p.bits, p.runStarts, p.runLengths, p.runBytes, p.lowerStarts, p.lowerLengths].reduce(
+      (sum, a) => sum + a.byteLength,
+      own,
+    );
+  }
+
   get available(): boolean {
     return this.source.kind !== 'dropped';
   }

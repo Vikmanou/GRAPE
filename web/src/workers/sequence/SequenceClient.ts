@@ -5,7 +5,7 @@ import {
   type SequenceSource,
   sourceTransfers,
 } from '../protocol/sequence';
-import { expect, RpcClient } from '../rpc';
+import { expect, RpcClient, type WorkerMemory } from '../rpc';
 
 export interface Preview {
   length: number;
@@ -23,6 +23,10 @@ export class SequenceClient {
 
   async load(source: SequenceSource): Promise<void> {
     expect(await this.rpc.request({ type: 'load', source }, { transfer: sourceTransfers(source) }), 'loaded');
+  }
+
+  async memory(): Promise<WorkerMemory> {
+    return expect(await this.rpc.request({ type: 'memory' }), 'memory').memory;
   }
 
   async preview(segment: number, bases: number): Promise<Preview> {

@@ -55,6 +55,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
     const bridge = ctx.bridge;
     const { seed, quality } = options;
     const client = services.layoutClient();
+    ctx.layout = client;
     const start = performance.now();
     let live = true;
     let total = 0;
@@ -121,6 +122,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
 
     return () => {
       live = false;
+      if (ctx.layout === client) ctx.layout = undefined;
       unsubscribe();
       client.cancel();
     };

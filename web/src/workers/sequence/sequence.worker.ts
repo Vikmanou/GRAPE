@@ -63,6 +63,13 @@ async function fasta(records: FastaRecords): Promise<Blob> {
 async function handle(request: SequenceRequest): Promise<void> {
   await ready;
   switch (request.type) {
+    case 'memory':
+      post({
+        type: 'memory',
+        id: request.id,
+        memory: { wasm: (await ready).memory.buffer.byteLength, held: sequences?.heldBytes ?? 0 },
+      });
+      return;
     case 'load':
       load(request.source);
       post({ type: 'loaded', id: request.id });

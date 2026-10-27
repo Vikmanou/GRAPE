@@ -11,6 +11,13 @@ export function nextPowerOfTwo(n: number): number {
   return 2 ** Math.ceil(Math.log2(Math.max(n, 1)));
 }
 
+let allocated = 0;
+
+/** Bytes held in buffers made through `Buffers`, which hold all but a few small ones. */
+export function gpuBytes(): number {
+  return allocated;
+}
+
 /** Creates buffers and destroys them all together. */
 export class Buffers {
   private owned: GPUBuffer[] = [];
@@ -24,7 +31,7 @@ export class Buffers {
       size: Math.max(16, Math.ceil(bytes / 16) * 16),
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | usage,
     });
-    this.owned.push(buffer);
+    this.own(buffer);
     return buffer;
   }
 
@@ -41,13 +48,21 @@ export class Buffers {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(buffer, 0, data);
-    this.owned.push(buffer);
+    this.own(buffer);
     return buffer;
   }
 
   destroy(): void {
-    for (const buffer of this.owned) buffer.destroy();
+    for (const buffer of this.owned) {
+      allocated -= buffer.size;
+      buffer.destroy();
+    }
     this.owned = [];
+  }
+
+  private own(buffer: GPUBuffer): void {
+    allocated += buffer.size;
+    this.owned.push(buffer);
   }
 }
 

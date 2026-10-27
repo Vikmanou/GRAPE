@@ -1,6 +1,6 @@
 import type { Topology } from '../protocol/graph';
 import type { LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
-import { expect, RpcClient } from '../rpc';
+import { expect, RpcClient, type WorkerMemory } from '../rpc';
 
 export type LayoutListener = (response: LayoutResponse) => void;
 
@@ -30,6 +30,13 @@ export class LayoutClient {
     const rpc = this.rpc;
     if (!rpc) throw new Error('no layout is running');
     return expect(await rpc.request({ type: 'pack', boxes }, { transfer: [boxes.buffer] }), 'packed').offsets;
+  }
+
+  /** Nothing when no worker is running. */
+  async memory(): Promise<WorkerMemory> {
+    const rpc = this.rpc;
+    if (!rpc) return { wasm: 0, held: 0 };
+    return expect(await rpc.request({ type: 'memory' }), 'memory').memory;
   }
 
   cancel(): void {

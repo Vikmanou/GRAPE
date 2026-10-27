@@ -161,6 +161,9 @@ async function handle(request: GraphRequest): Promise<void> {
       case 'ping':
         post({ type: 'pong', id, coreVersion: coreVersion() });
         return;
+      case 'memory':
+        post({ type: 'memory', id, memory: { wasm: (await ready).memory.buffer.byteLength, held: 0 } });
+        return;
       case 'parse':
         await parse(id, request.file);
         return;

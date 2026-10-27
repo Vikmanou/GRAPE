@@ -4,6 +4,7 @@ import type { BackendKind } from '../engine/core/detect';
 import type { GraphClient } from '../workers/graph/GraphClient';
 import type { Topology } from '../workers/protocol/graph';
 import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { WorkerMemory } from '../workers/rpc';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
 import { createDetailsSlice, type DetailsSlice } from './details';
@@ -17,10 +18,10 @@ import { createToastSlice, type ToastSlice } from './toasts';
 
 export type GraphService = Pick<
   GraphClient,
-  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords'
+  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords' | 'memory'
 >;
 
-export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta'>;
+export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta' | 'memory'>;
 
 export interface LayoutService {
   start(
@@ -30,6 +31,7 @@ export interface LayoutService {
     listener: (response: LayoutResponse) => void,
   ): void;
   pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array>;
+  memory(): Promise<WorkerMemory>;
   cancel(): void;
 }
 
@@ -53,6 +55,8 @@ export interface Context {
   get: AppStore['getState'];
   services: Services;
   bridge: Bridge;
+  /** The running layout's worker, if any. */
+  layout?: LayoutService | undefined;
 }
 
 export function createAppStore(services: Services): AppStore {
@@ -71,7 +75,7 @@ export function createAppStore(services: Services): AppStore {
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
-  exposeForTests(store, ctx.bridge);
+  exposeForTests(store, ctx);
   return store;
 }
 

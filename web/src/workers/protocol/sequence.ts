@@ -1,4 +1,4 @@
-import type { ErrorResponse } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../rpc';
 
 /** Gzipped input's bases, 2 bits each, with runs of other bytes and lowercase spans. */
 export interface PackedArrays {
@@ -42,6 +42,7 @@ export interface FastaRecords {
 
 export type SequenceRequest =
   | { type: 'load'; id: number; source: SequenceSource }
+  | { type: 'memory'; id: number }
   /** The first and last `bases` of a segment. */
   | { type: 'preview'; id: number; segment: number; bases: number }
   /** Sequences joined by newlines, as Bandage copies them. */
@@ -51,6 +52,7 @@ export type SequenceRequest =
 
 export type SequenceResponse =
   | { type: 'loaded'; id: number }
+  | { type: 'memory'; id: number; memory: WorkerMemory }
   /** `head` holds the whole sequence when it is no longer than twice `bases`. */
   | { type: 'preview'; id: number; length: number; head: string; tail: string; missing: boolean }
   | { type: 'sequence'; id: number; text: string }

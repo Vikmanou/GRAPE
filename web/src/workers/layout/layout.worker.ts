@@ -71,6 +71,10 @@ function transfers(h: Hierarchy): Transferable[] {
 
 async function handle(request: LayoutRequest): Promise<void> {
   await ready;
+  if (request.type === 'memory') {
+    post({ type: 'memory', id: request.id, memory: { wasm: (await ready).memory.buffer.byteLength, held: 0 } });
+    return;
+  }
   if (request.type === 'pack') {
     const offsets = pack(request.boxes, frozen);
     post({ type: 'packed', id: request.id, offsets }, [offsets.buffer]);

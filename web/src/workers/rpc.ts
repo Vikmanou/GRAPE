@@ -13,6 +13,14 @@ export interface ErrorResponse {
   message: string;
 }
 
+/** What a worker holds, answering a `memory` request. */
+export interface WorkerMemory {
+  /** The WASM instance's linear memory, which never shrinks. */
+  wasm: number;
+  /** Typed arrays the worker keeps outside WASM. */
+  held: number;
+}
+
 /** Rejection for requests still pending when the worker is stopped. */
 export class WorkerTerminatedError extends Error {
   constructor(name: string) {

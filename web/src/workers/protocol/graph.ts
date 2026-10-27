@@ -1,10 +1,11 @@
-import type { ErrorResponse } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../rpc';
 import type { FindQuery } from '../graph/findQuery';
 import type { Compression } from '../graph/readFile';
 import type { FastaRecords, SequenceSource } from './sequence';
 
 export type GraphRequest =
   | { type: 'ping'; id: number }
+  | { type: 'memory'; id: number }
   | { type: 'parse'; id: number; file: File }
   | { type: 'info'; id: number; segment: number }
   /** One bit per segment. */
@@ -15,6 +16,7 @@ export type GraphRequest =
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
+  | { type: 'memory'; id: number; memory: WorkerMemory }
   | { type: 'progress'; id: number; bytesRead: number; totalBytes: number }
   | { type: 'parsed'; id: number; result: ParseResult; sequences: SequenceSource }
   | { type: 'info'; id: number; info: SegmentInfo | undefined }

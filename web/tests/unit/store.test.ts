@@ -47,6 +47,10 @@ class FakeLayout implements LayoutService {
     return Promise.resolve(new Float32Array(boxes.length / 2));
   }
 
+  memory() {
+    return Promise.resolve({ wasm: 0, held: 0 });
+  }
+
   cancel(): void {
     this.cancelled = true;
   }
@@ -92,6 +96,7 @@ function setup() {
       sequence: () => Promise.reject(new Error('unused')),
       rawLine: () => Promise.reject(new Error('unused')),
       fasta: () => Promise.reject(new Error('unused')),
+      memory: () => Promise.reject(new Error('unused')),
     },
     graph: {
       ping: () => Promise.resolve({ coreVersion: 'test', roundTripMs: 1 }),
@@ -104,6 +109,7 @@ function setup() {
       summary: () => Promise.reject(new Error('unused')),
       find: () => Promise.reject(new Error('unused')),
       exportRecords: () => Promise.reject(new Error('unused')),
+      memory: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;
         for (const p of parses) p.reject(new WorkerTerminatedError('graph'));

@@ -17,6 +17,8 @@ export type EngineCommand =
   | { type: 'pause-layout'; paused: boolean }
   /** Answered by a `positions` event. */
   | { type: 'read-positions' }
+  /** Answered by a `memory` event. */
+  | { type: 'report-memory' }
   | { type: 'fit' }
   /** Pans by fractions of the view's width and height. */
   | { type: 'pan-view'; fx: number; fy: number }
@@ -48,6 +50,8 @@ export type EngineEvent =
   | ({ type: 'frame-stats' } & FrameStats)
   /** `x, y` per point as drawn, answering `read-positions`. */
   | { type: 'positions'; positions: Float32Array<ArrayBuffer> }
+  /** GPU buffer bytes, and bytes of the typed arrays the engine keeps on the CPU. */
+  | { type: 'memory'; gpu: number; cpu: number }
   | { type: 'picked'; x: number; y: number; segment: number | undefined }
   /** The camera after it moved, at most `CAMERA_EVENT_MS` apart. */
   | { type: 'camera'; x: number; y: number; zoom: number }

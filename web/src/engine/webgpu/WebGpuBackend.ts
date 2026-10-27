@@ -4,7 +4,7 @@ import type { Bounds } from '../core/camera';
 import { palettes } from '../style/palette';
 import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH } from '../style/widths';
 import { createGpuContext } from './device';
-import { PassTiming } from './layout/gpu';
+import { gpuBytes, PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
 import { createKernels, type Kernels } from './layout/kernels';
 import { Picker } from './pick';
@@ -70,6 +70,10 @@ export class WebGpuBackend implements Backend {
 
   get drawMs(): number {
     return this.gpuDrawMs;
+  }
+
+  get gpuBytes(): number {
+    return gpuBytes();
   }
 
   setGraph(geometry: Geometry, colors: Uint32Array<ArrayBuffer>): void {

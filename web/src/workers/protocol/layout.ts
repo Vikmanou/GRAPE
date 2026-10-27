@@ -1,4 +1,4 @@
-import type { ErrorResponse } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../rpc';
 import type { Topology } from './graph';
 
 export type Quality = 'fast' | 'balanced' | 'best';
@@ -15,7 +15,8 @@ export type LayoutRequest =
   /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
   | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
   /** `x0, y0, x1, y1` per component. */
-  | { type: 'pack'; id: number; boxes: Float32Array };
+  | { type: 'pack'; id: number; boxes: Float32Array }
+  | { type: 'memory'; id: number };
 
 export interface Geometry {
   segments: number;
@@ -63,4 +64,5 @@ export type LayoutResponse =
   | { type: 'hierarchy'; id: number; hierarchy: Hierarchy }
   /** `dx, dy` per component. */
   | { type: 'packed'; id: number; offsets: Float32Array }
+  | { type: 'memory'; id: number; memory: WorkerMemory }
   | ErrorResponse;
