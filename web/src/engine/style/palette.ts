@@ -1,3 +1,5 @@
+import { goldenHue, hueColor, mix } from './colors';
+
 // Single source of render colors, shared by the WebGPU renderer and the
 // WebGL2 fallback. Keep `background` in sync with --bg in ui/styles.css.
 
@@ -43,39 +45,8 @@ export const palettes: Record<Theme, Palette> = {
   },
 };
 
-// Bandage's default random colours: a random hue at saturation 127 and
-// lightness 150 of 255 (`randomColourPositiveSaturation` and
-// `randomColourPositiveLightness` in Bandage's program/settings.cpp).
-const SATURATION = 127 / 255;
-const LIGHTNESS = 150 / 255;
-/** Stepping hue by the golden ratio keeps any run of ids far apart in hue. */
-const GOLDEN = (Math.sqrt(5) - 1) / 2;
-
-/** murmur3's 32-bit finaliser, to turn the seed into a starting hue. */
-function mix(x: number): number {
-  let h = x >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  return (h ^ (h >>> 16)) >>> 0;
-}
-
-/** HSL to RGB, all in 0 to 1. */
-export function hsl(h: number, s: number, l: number): [number, number, number] {
-  const a = s * Math.min(l, 1 - l);
-  const channel = (n: number) => {
-    const k = (n + h * 12) % 12;
-    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-  };
-  return [channel(0), channel(8), channel(4)];
-}
-
-/** RGBA8 with red in the low byte, as WGSL's `unpack4x8unorm` reads it. */
+/** Bandage's random colours per segment, stepped from the seed; RGBA8 with red in the low byte. */
 export function randomColors(segments: number, seed: number): Uint32Array<ArrayBuffer> {
-  const out = new Uint32Array(segments);
-  const start = mix(seed) / 2 ** 32;
-  for (let i = 0; i < segments; i++) {
-    const [r, g, b] = hsl((start + i * GOLDEN) % 1, SATURATION, LIGHTNESS);
-    out[i] = (Math.round(r * 255) | (Math.round(g * 255) << 8) | (Math.round(b * 255) << 16) | (255 << 24)) >>> 0;
-  }
-  return out;
+  const start = mix(seed);
+  return Uint32Array.from({ length: segments }, (_, i) => hueColor(goldenHue(start, i)));
 }
