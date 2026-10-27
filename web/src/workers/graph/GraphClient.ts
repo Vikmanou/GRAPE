@@ -1,5 +1,6 @@
-import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
-import type { SequenceSource } from '../protocol/sequence';
+import type { GraphRequest, GraphResponse, ParseResult, SegmentInfo, SelectionSummary } from '../protocol/graph';
+import type { FastaRecords, SequenceSource } from '../protocol/sequence';
+import type { FindQuery } from './findQuery';
 import { expect, RpcClient } from '../rpc';
 
 export type ProgressListener = (bytesRead: number, totalBytes: number) => void;
@@ -28,6 +29,23 @@ export class GraphClient {
     );
     const { result, sequences } = expect(response, 'parsed');
     return { result, sequences };
+  }
+
+  async info(segment: number): Promise<SegmentInfo | undefined> {
+    return expect(await this.rpc.request({ type: 'info', segment }), 'info').info;
+  }
+
+  async summary(bits: Uint32Array<ArrayBuffer>): Promise<SelectionSummary> {
+    return expect(await this.rpc.request({ type: 'summary', bits }), 'summary').summary;
+  }
+
+  async find(query: FindQuery): Promise<{ segments: Uint32Array<ArrayBuffer>; missing: string[] }> {
+    const { segments, missing } = expect(await this.rpc.request({ type: 'find', query }), 'found');
+    return { segments, missing };
+  }
+
+  async exportRecords(segments: Uint32Array<ArrayBuffer>): Promise<FastaRecords> {
+    return expect(await this.rpc.request({ type: 'export', segments }), 'export').records;
   }
 
   cancel(): void {

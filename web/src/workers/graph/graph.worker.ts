@@ -5,6 +5,7 @@ import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { plain } from '../plain';
 import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
 import { type SequenceSource, sourceTransfers } from '../protocol/sequence';
+import { exportRecords, find, segmentInfo, summary } from './queries';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -13,7 +14,7 @@ const PIECE_BYTES = 1 << 20;
 
 const ready = init({ module_or_path: wasmUrl });
 
-/** Kept for later milestones (layout, info panel); freed on the next load. */
+/** The parsed graph, answering queries until the next load frees it. */
 let current: Loaded | undefined;
 
 function post(message: GraphResponse, transfer: Transferable[] = []): void {
@@ -147,13 +148,38 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
   return result;
 }
 
+function loaded(): Loaded {
+  if (!current) throw new Error('no graph is loaded');
+  return current;
+}
+
 async function handle(request: GraphRequest): Promise<void> {
   try {
     await ready;
-    if (request.type === 'ping') {
-      post({ type: 'pong', id: request.id, coreVersion: coreVersion() });
-    } else {
-      await parse(request.id, request.file);
+    const { id } = request;
+    switch (request.type) {
+      case 'ping':
+        post({ type: 'pong', id, coreVersion: coreVersion() });
+        return;
+      case 'parse':
+        await parse(id, request.file);
+        return;
+      case 'info':
+        post({ type: 'info', id, info: segmentInfo(loaded(), request.segment) });
+        return;
+      case 'summary':
+        post({ type: 'summary', id, summary: summary(loaded(), request.bits) });
+        return;
+      case 'find': {
+        const found = find(loaded(), request.query);
+        post({ type: 'found', id, ...found }, [found.segments.buffer]);
+        return;
+      }
+      case 'export': {
+        const records = exportRecords(loaded(), request.segments);
+        post({ type: 'export', id, records }, [records.segments.buffer, records.depths.buffer]);
+        return;
+      }
     }
   } catch (error) {
     post({ type: 'error', id: request.id, message: error instanceof Error ? error.message : String(error) });

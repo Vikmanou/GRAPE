@@ -13,7 +13,10 @@ import { createSelectionSlice, type SelectionSlice } from './selection';
 import { exposeForTests } from './testHooks';
 import { createToastSlice, type ToastSlice } from './toasts';
 
-export type GraphService = Pick<GraphClient, 'ping' | 'parse' | 'cancel'>;
+export type GraphService = Pick<
+  GraphClient,
+  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords'
+>;
 
 export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta'>;
 

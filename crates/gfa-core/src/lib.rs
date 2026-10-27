@@ -2,7 +2,7 @@
 //! stats and sequence search. Pure Rust with no browser dependencies, so
 //! everything here is tested natively.
 
-mod analysis;
+pub mod analysis;
 pub mod layout;
 mod parse;
 mod store;

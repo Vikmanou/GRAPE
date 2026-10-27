@@ -2,10 +2,12 @@
 
 mod layout;
 mod parse;
+mod query;
 mod sequence;
 
 pub use layout::{Hierarchy, Layout, pack};
 pub use parse::{Loaded, Parser, Summary};
+pub use query::{Found, Info};
 pub use sequence::{PackedParts, PackedSequences, bases_from_file_bytes, fasta_record};
 use wasm_bindgen::prelude::*;
 

@@ -1,14 +1,61 @@
 import type { ErrorResponse } from '../rpc';
-import type { SequenceSource } from './sequence';
+import type { FindQuery } from '../graph/findQuery';
 import type { Compression } from '../graph/readFile';
+import type { FastaRecords, SequenceSource } from './sequence';
 
-export type GraphRequest = { type: 'ping'; id: number } | { type: 'parse'; id: number; file: File };
+export type GraphRequest =
+  | { type: 'ping'; id: number }
+  | { type: 'parse'; id: number; file: File }
+  | { type: 'info'; id: number; segment: number }
+  /** One bit per segment. */
+  | { type: 'summary'; id: number; bits: Uint32Array<ArrayBuffer> }
+  | { type: 'find'; id: number; query: FindQuery }
+  /** Names and depths for a FASTA export, in Bandage's order. */
+  | { type: 'export'; id: number; segments: Uint32Array<ArrayBuffer> };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
   | { type: 'progress'; id: number; bytesRead: number; totalBytes: number }
   | { type: 'parsed'; id: number; result: ParseResult; sequences: SequenceSource }
+  | { type: 'info'; id: number; info: SegmentInfo | undefined }
+  | { type: 'summary'; id: number; summary: SelectionSummary }
+  | { type: 'found'; id: number; segments: Uint32Array<ArrayBuffer>; missing: string[] }
+  | { type: 'export'; id: number; records: FastaRecords }
   | ErrorResponse;
+
+/** A link at one of the segment's ends: `from` leaves its end into `to`. */
+export interface SegmentLink {
+  other: number;
+  otherName: string;
+  from: number;
+  fromReverse: boolean;
+  to: number;
+  toReverse: boolean;
+}
+
+export interface SegmentInfo {
+  segment: number;
+  name: string;
+  length: number;
+  /** NaN when unknown. */
+  depth: number;
+  /** NaN without a sequence. */
+  gc: number;
+  /** Rank, largest first, from 0. */
+  component: number;
+  degreeStart: number;
+  degreeEnd: number;
+  /** At most `MAX_LINKS` of `totalLinks`. */
+  links: SegmentLink[];
+  totalLinks: number;
+}
+
+export interface SelectionSummary {
+  count: number;
+  totalLength: number;
+  /** Length-weighted over segments with a depth; NaN when none has one. */
+  meanDepth: number;
+}
 
 export interface GraphStats {
   segments: number;

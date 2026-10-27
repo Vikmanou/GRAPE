@@ -41,6 +41,15 @@ impl Arena {
         Ok(id)
     }
 
+    /// Every string back to back; string `i` ends at `ends()[i]`.
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn ends(&self) -> &[u32] {
+        &self.ends
+    }
+
     pub fn text_bytes(&self) -> usize {
         self.bytes.capacity()
     }

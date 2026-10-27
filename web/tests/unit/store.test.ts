@@ -93,6 +93,10 @@ function setup() {
         parses.push(parse);
         return parse.promise;
       },
+      info: () => Promise.reject(new Error('unused')),
+      summary: () => Promise.reject(new Error('unused')),
+      find: () => Promise.reject(new Error('unused')),
+      exportRecords: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;
         for (const p of parses) p.reject(new WorkerTerminatedError('graph'));

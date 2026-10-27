@@ -518,3 +518,69 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   seconds of a 200k load keep the device. Owner's choice.
 - **Alternatives**: refitting only (deep zoom in the first seconds of a load
   could still stack ribbons); deferring to milestone 5.
+
+## 2026-10-26: One store, one bridge, one RPC client
+
+- **Decision**: `createAppStore(services)` builds the zustand store from
+  slices (file, layout, display, selection, toasts) around injected services:
+  the graph, sequence and layout clients, the engine factory and backend
+  detection. `state/bridge.ts` alone holds the engine; it drops an engine that
+  arrives after a newer attach or a detach. `workers/rpc.ts` is the one worker
+  client: every response echoes its request's id, updates (progress, partial
+  results) go to a callback, the final response resolves, `error` rejects,
+  and cancelling terminates and respawns the worker. Development builds put
+  the store and the bridge's `send` and `on` on `window.grapeTest`.
+- **Reason**: tests drive the store with fake services and no browser; the
+  React tree never sees a worker or the engine; StrictMode's double mount
+  cannot leak an engine.
+- **Alternatives**: services as module singletons (untestable without
+  mocking imports); a client class per worker with its own message plumbing.
+
+## 2026-10-26: Exports reproduce Bandage byte for byte
+
+- **Decision**: FASTA export follows Bandage's "Save selected node
+  sequences": `>NODE_<name>+_length_<length>_cov_<depth>` headers, sequences
+  wrapped at 70 columns, N for every base of a segment without a sequence,
+  segments in `compareNodePointers` order (numeric when both names are
+  integers that differ, else by name with its sign). Depth prints as
+  `QByteArray::number(double)` does (printf `%g`, 6 significant digits), and
+  an unknown depth prints as Bandage's default, 1. Copying sequences joins
+  them with newlines and no headers, as Bandage's copy does. FASTG segments
+  known only from their reverse record are reverse-complemented with
+  Bandage's table, which keeps case and drops characters it does not know.
+  Gzipped input now keeps lowercase spans next to the 2-bit bases so decoded
+  sequences keep the file's case.
+- **Reason**: owner's choice: people moving from Bandage must get the same
+  files. Bandage's defaults apply only when exporting; stored data keeps
+  GRAPE's own (depth NaN when unknown). Sources: `getFasta` and
+  `getNodeNameForFasta` (graph/debruijnnode.cpp), `addNewlinesToSequence`
+  and `getReverseComplement` (graph/assemblygraph.cpp),
+  `saveSelectedSequencesToFile` and `copySelectedSequencesToClipboard`
+  (ui/mainwindow.cpp), `compareNodePointers` (ui/mygraphicsscene.cpp).
+- **Alternatives**: `>name` with GRAPE's own wrapping; name plus `LN`/`DP`
+  tags.
+
+## 2026-10-26: Segment line offsets for plain files
+
+- **Decision**: the parser stores each segment's `S` line (or FASTG header)
+  offset, 8 bytes per segment, for plain input only. The raw line in the info
+  panel keeps 100 bases at each end of a longer sequence and up to 64 KB of
+  tags.
+- **Reason**: the spec's raw line; gzipped files cannot be read at an offset.
+  The fixed memory per segment for plain input rises from 44.8 to 52.8 bytes,
+  still under the 64-byte target.
+
+## 2026-10-26: Picking
+
+- **Decision**: ribbons are drawn again into an `r32uint` texture at half the
+  canvas resolution, holding segment id plus one, 0 for background. A texel
+  belongs to a ribbon when its centre lies inside the capsule, with no
+  antialiasing; the last piece drawn wins, as on screen. Links are not
+  pickable. The texture is redrawn only when the view or positions changed,
+  and a pick reads back one texel. Hover picks at most once a frame, one in
+  flight, and again after the camera moves under a still pointer. A press
+  that moves less than 4 CSS pixels is a click. Measured on the 200k graph:
+  a pick answers in 2.4 ms (median of 25), 32 ms at most.
+- **Reason**: the spec's picking. A centre test is what the CPU reference
+  can reproduce exactly, so the GPU check compares every texel not within
+  0.02 units of a capsule's edge.

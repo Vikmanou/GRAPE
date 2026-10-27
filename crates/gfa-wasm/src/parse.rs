@@ -47,6 +47,12 @@ pub struct Loaded {
     graph: Graph,
 }
 
+impl Loaded {
+    pub(crate) fn graph(&self) -> &Graph {
+        &self.graph
+    }
+}
+
 /// Numbers cross as `f64`, exact up to 2^53.
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
