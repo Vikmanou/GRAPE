@@ -20,7 +20,10 @@ export type EngineCommand =
   /** CSS pixels of the canvas covered by panels, kept clear when fitting. */
   | { type: 'set-insets'; insets: Insets }
   /** Answered by a `picked` event: the segment drawn at canvas pixel `x, y`. */
-  | { type: 'pick'; x: number; y: number };
+  | { type: 'pick'; x: number; y: number }
+  | { type: 'select'; segments: Uint32Array; mode: 'replace' | 'add' }
+  | { type: 'clear-selection' }
+  | { type: 'invert-selection' };
 
 export type EngineEvent =
   | { type: 'resize'; width: number; height: number }
@@ -34,4 +37,6 @@ export type EngineEvent =
   | { type: 'positions'; positions: Float32Array<ArrayBuffer> }
   | { type: 'picked'; x: number; y: number; segment: number | undefined }
   /** The segment under the pointer changed. */
-  | { type: 'hover'; segment: number | undefined };
+  | { type: 'hover'; segment: number | undefined }
+  /** One bit per segment. `single` is the selected segment when exactly one is. */
+  | { type: 'selection'; count: number; single: number | undefined; bits: Uint32Array<ArrayBuffer> };

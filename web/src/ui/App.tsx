@@ -3,6 +3,7 @@ import { useApp } from '../state/store';
 import { EmptyState } from './overlays/EmptyState';
 import { EngineHost } from './EngineHost';
 import { usePanelInsets } from './insets';
+import { Info } from './panels/Info';
 import { Sidebar } from './panels/Sidebar';
 import { StatusBar } from './bars/StatusBar';
 import { TopBar } from './bars/TopBar';
@@ -25,7 +26,8 @@ export function App() {
   );
   const dragging = useFileDrop(openFile);
   const sidebarOpen = useApp((s) => s.sidebar.open);
-  usePanelInsets(`${load.state}:${String(sidebarOpen)}`);
+  const infoOpen = useApp((s) => s.selection.count > 0);
+  usePanelInsets(`${load.state}:${String(sidebarOpen)}:${String(infoOpen)}`);
 
   const unsupported = renderer === 'none' || engineError !== undefined;
   const file = load.state === 'idle' ? undefined : load.file;
@@ -43,6 +45,7 @@ export function App() {
         </div>
       )}
       {load.state === 'loaded' && <Sidebar result={load.result} />}
+      {load.state === 'loaded' && <Info />}
       {load.state === 'loaded' && showWarnings && (
         <Warnings
           warnings={load.result.warnings}

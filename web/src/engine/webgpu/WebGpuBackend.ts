@@ -1,7 +1,7 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { Backend, BackendEvents, Style, View } from '../core/backend';
 import { palettes } from '../style/palette';
-import { LINK_WIDTH, linkFade, RIBBON_WIDTH } from '../style/widths';
+import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH } from '../style/widths';
 import { createGpuContext } from './device';
 import { PassTiming } from './layout/gpu';
 import { GpuLayoutDriver } from './layout/GpuLayoutDriver';
@@ -16,6 +16,7 @@ export class WebGpuBackend implements Backend {
   private readonly picker: Picker;
   private style: Style = { theme: 'light' };
   private lastView: View | undefined;
+  private hover: number | undefined;
   /** A new graph's position buffer holds zeros until positions arrive; drawing them stacks every ribbon on one point. */
   private positioned = false;
   private destroyed = false;
@@ -84,6 +85,14 @@ export class WebGpuBackend implements Backend {
     this.picker.invalidate();
   }
 
+  setSelection(bits: Uint32Array<ArrayBuffer>, count: number): void {
+    this.renderer.setSelection(bits, count);
+  }
+
+  setHover(segment: number | undefined): void {
+    this.hover = segment;
+  }
+
   draw(view: View): void {
     const palette = palettes[this.style.theme];
     const [r, g, b, a] = palette.background;
@@ -131,12 +140,17 @@ export class WebGpuBackend implements Backend {
   }
 
   private drawn(view: View): DrawnView {
+    const palette = palettes[this.style.theme];
     return {
       ...view,
       ribbonHalf: RIBBON_WIDTH / 2,
       linkHalf: LINK_WIDTH / 2,
       linkAlpha: linkFade(view.zoom),
-      linkColor: palettes[this.style.theme].link,
+      linkColor: palette.link,
+      outline: palette.selection,
+      hoverOutline: palette.hover,
+      outlineWidth: outlineWidth(view.zoom),
+      hover: this.hover,
     };
   }
 

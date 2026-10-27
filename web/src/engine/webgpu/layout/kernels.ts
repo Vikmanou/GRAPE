@@ -31,6 +31,7 @@ const ENTRY_POINTS = {
   bound: ['present', 'bound'],
   markPieces: ['cull', 'mark_pieces'],
   markLinks: ['cull', 'mark_links'],
+  markHighlight: ['cull', 'mark_highlight'],
   compact: ['cull', 'compact'],
 } as const satisfies Record<string, readonly [keyof typeof SOURCES, string]>;
 

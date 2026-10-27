@@ -9,6 +9,9 @@ export type Rgba = readonly [number, number, number, number];
 export interface Palette {
   background: Rgba;
   link: Rgba;
+  /** Around selected segments; the hovered one gets the lighter `hover`. */
+  selection: Rgba;
+  hover: Rgba;
 }
 
 function hex(value: string): Rgba {
@@ -16,9 +19,28 @@ function hex(value: string): Rgba {
   return [((n >> 16) & 0xff) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255, 1];
 }
 
+function faded([r, g, b]: Rgba, alpha: number): Rgba {
+  return [r, g, b, alpha];
+}
+
+// Light uses Bandage's `selectionColour` (0, 0, 255, program/settings.cpp);
+// pure blue barely shows on the dark background, so dark uses a lighter blue.
+const LIGHT_SELECTION = hex('#0000ff');
+const DARK_SELECTION = hex('#7aa2ff');
+
 export const palettes: Record<Theme, Palette> = {
-  light: { background: hex('#f7f7f5'), link: hex('#3d3d3a') },
-  dark: { background: hex('#17161a'), link: hex('#c9c7d1') },
+  light: {
+    background: hex('#f7f7f5'),
+    link: hex('#3d3d3a'),
+    selection: LIGHT_SELECTION,
+    hover: faded(LIGHT_SELECTION, 0.45),
+  },
+  dark: {
+    background: hex('#17161a'),
+    link: hex('#c9c7d1'),
+    selection: DARK_SELECTION,
+    hover: faded(DARK_SELECTION, 0.5),
+  },
 };
 
 // Bandage's default random colours: a random hue at saturation 127 and

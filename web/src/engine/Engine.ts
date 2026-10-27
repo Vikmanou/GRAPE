@@ -2,6 +2,7 @@ import type { EngineCommand, EngineEvent } from './commands';
 import type { Backend } from './core/backend';
 import { boundsOf, type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './core/camera';
 import { FrameCounter } from './core/frames';
+import { Pointer } from './core/Pointer';
 import { attachInput } from './core/input';
 import { randomColors } from './style/palette';
 import { WebGpuBackend } from './webgpu/WebGpuBackend';
@@ -55,18 +56,24 @@ export class Engine {
   private dirty = true;
   /** Layout positions moved since they were last presented. */
   private stale = false;
-  /** Canvas pixel under the pointer, while it is over the canvas. */
-  private pointer: [number, number] | undefined;
-  /** What is under the pointer must be picked again at the next frame. */
-  private hoverStale = false;
-  private hoverPicking = false;
-  private hovered: number | undefined;
+  private readonly pointer: Pointer;
 
   private constructor(
     host: HTMLElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly backend: Backend,
   ) {
+    this.pointer = new Pointer(backend, canvas, {
+      emit: (event) => {
+        this.emit(event);
+      },
+      redraw: () => {
+        this.requestFrame();
+      },
+      wake: () => {
+        this.scheduleFrame();
+      },
+    });
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) this.resize(entry);
     });
@@ -94,15 +101,16 @@ export class Engine {
         this.send({ type: 'fit' });
       },
       hover: (x, y) => {
-        this.pointer = [x, y];
-        this.hoverStale = true;
-        this.scheduleFrame();
+        this.pointer.moved(x, y);
       },
       leave: () => {
-        this.pointer = undefined;
-        this.setHovered(undefined);
+        this.pointer.left();
       },
-      click: () => undefined,
+      click: (x, y, shift) => {
+        // Panels that open for the selection must not refit the view under the pointer.
+        this.autoFit = false;
+        this.pointer.click(x, y, shift);
+      },
     });
   }
 
@@ -138,7 +146,7 @@ export class Engine {
         break;
       case 'set-graph':
         this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
-        this.setHovered(undefined);
+        this.pointer.reset(command.geometry.segments);
         this.positions = undefined;
         this.bounds = undefined;
         this.autoFit = true;
@@ -180,6 +188,21 @@ export class Engine {
         this.insets = command.insets;
         if (this.autoFit) this.fitView();
         break;
+      case 'select': {
+        const selection = this.pointer.selection;
+        if (command.mode === 'replace') selection.replace(command.segments);
+        else selection.add(command.segments);
+        this.pointer.selectionChanged();
+        break;
+      }
+      case 'clear-selection':
+        this.pointer.selection.clear();
+        this.pointer.selectionChanged();
+        break;
+      case 'invert-selection':
+        this.pointer.selection.invert();
+        this.pointer.selectionChanged();
+        break;
       case 'pick': {
         const { x, y } = command;
         void this.backend.pick(x, y).then((segment) => {
@@ -202,6 +225,7 @@ export class Engine {
     this.resizeObserver.disconnect();
     this.detachInput();
     this.listeners.clear();
+    this.pointer.destroy();
     this.backend.destroy();
     this.canvas.remove();
   }
@@ -223,7 +247,7 @@ export class Engine {
     this.lastInteraction = performance.now();
     this.autoFit = false;
     this.camera = camera;
-    this.hoverStale = this.pointer !== undefined;
+    this.pointer.viewMoved();
     this.requestFrame();
   }
 
@@ -231,27 +255,6 @@ export class Engine {
     if (factor <= 1 || this.backend.layout.usable || !this.bounds) return factor;
     const fitted = fit(this.bounds, this.viewport(), FIT_MARGIN * window.devicePixelRatio).zoom;
     return Math.max(1, Math.min(factor, (fitted * COARSE_MAX_ZOOM) / this.camera.zoom));
-  }
-
-  /** At most one pick in flight, for the latest pointer position. */
-  private pickHover(): void {
-    const pointer = this.pointer;
-    if (!this.hoverStale || this.hoverPicking || !pointer) return;
-    this.hoverStale = false;
-    this.hoverPicking = true;
-    void this.backend.pick(...pointer).then((segment) => {
-      this.hoverPicking = false;
-      if (this.destroyed) return;
-      if (this.pointer) this.setHovered(segment);
-      if (this.hoverStale) this.scheduleFrame();
-    });
-  }
-
-  private setHovered(segment: number | undefined): void {
-    if (segment === this.hovered) return;
-    this.hovered = segment;
-    this.canvas.style.cursor = segment === undefined ? '' : 'pointer';
-    this.emit({ type: 'hover', segment });
   }
 
   private fitView(): void {
@@ -323,7 +326,7 @@ export class Engine {
     const busy = layout.busy;
     const redraw = Math.max(LAYOUT_REDRAW_MS, this.backend.drawMs * LAYOUT_DRAW_SHARE);
     if (this.dirty || (this.stale && (!busy || now - this.lastDraw >= redraw))) this.draw(now);
-    this.pickHover();
+    this.pointer.pickHover();
     if (busy) this.scheduleFrame();
   }
 

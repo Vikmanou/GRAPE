@@ -72,6 +72,9 @@ export class Bridge {
       case 'hover':
         set({ hovered: event.segment });
         break;
+      case 'selection':
+        set({ selection: { count: event.count, single: event.single, bits: event.bits } });
+        break;
       case 'device-lost':
         get().engineFailed(`GPU device lost: ${event.message}`);
         break;

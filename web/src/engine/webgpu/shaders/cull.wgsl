@@ -13,6 +13,8 @@ struct Cull {
   count: u32,
   // Where the draw's instance count sits in `indirect`.
   slot: u32,
+  // The segment under the pointer, or 0xffffffff.
+  hover: u32,
 }
 
 @group(0) @binding(0) var<uniform> cull: Cull;
@@ -24,6 +26,8 @@ struct Cull {
 @group(0) @binding(4) var<storage, read_write> marks: array<u32>;
 @group(0) @binding(5) var<storage, read_write> visible: array<u32>;
 @group(0) @binding(6) var<storage, read_write> indirect: array<u32>;
+// One bit per segment.
+@group(0) @binding(7) var<storage, read> selected: array<u32>;
 
 fn touches(lo: vec2f, hi: vec2f) -> u32 {
   let inside = all(hi >= cull.center - cull.half) && all(lo <= cull.center + cull.half);
@@ -37,6 +41,27 @@ fn mark_pieces(@builtin(global_invocation_id) id: vec3u) {
     if (i == cull.count) {
       marks[i] = 0u;
     }
+    return;
+  }
+  let a = positions[pieces[i].x];
+  let b = positions[pieces[i].x + 1u];
+  marks[i] = touches(min(a, b) - cull.pad, max(a, b) + cull.pad);
+}
+
+// Pieces of selected or hovered segments, drawn again on top with an outline.
+@compute @workgroup_size(256)
+fn mark_highlight(@builtin(global_invocation_id) id: vec3u) {
+  let i = id.x;
+  if (i >= cull.count) {
+    if (i == cull.count) {
+      marks[i] = 0u;
+    }
+    return;
+  }
+  let segment = pieces[i].y;
+  let lit = segment == cull.hover || ((selected[segment >> 5u] >> (segment & 31u)) & 1u) == 1u;
+  if (!lit) {
+    marks[i] = 0u;
     return;
   }
   let a = positions[pieces[i].x];

@@ -10,6 +10,12 @@ struct View {
   link_half: f32,
   link_alpha: f32,
   link_color: vec4f,
+  outline: vec4f,
+  hover_outline: vec4f,
+  // Added to the ribbon's half width: the highlight passes draw an outline
+  // capsule this much wider, then the fill this much narrower.
+  grow: f32,
+  hover: u32,
 }
 
 @group(0) @binding(0) var<uniform> view: View;
@@ -59,7 +65,7 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
   let length_ab = length(b - a);
   let along = select(vec2f(1.0, 0.0), (b - a) / length_ab, length_ab > 1e-6);
   let across = vec2f(-along.y, along.x);
-  let half = max(view.ribbon_half, view.world_per_pixel * 0.5);
+  let half = max(max(view.ribbon_half, view.world_per_pixel * 0.5) + view.grow, 0.0);
   let pad = half + view.world_per_pixel;
   let corner = QUAD[v];
   let local = vec2f(mix(-pad, length_ab + pad, corner.x), corner.y * pad);
@@ -80,6 +86,17 @@ fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
     discard;
   }
   return vec4f(in.color.rgb * alpha, alpha);
+}
+
+@fragment
+fn ribbon_outline_fragment(in: Ribbon) -> @location(0) vec4f {
+  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
+  let color = select(view.outline, view.hover_outline, in.segment == view.hover);
+  let alpha = coverage(in.size.y - length(in.local - nearest)) * color.a;
+  if alpha <= 0.0 {
+    discard;
+  }
+  return vec4f(color.rgb * alpha, alpha);
 }
 
 // Segment id plus one into the picking texture, 0 where nothing is drawn.

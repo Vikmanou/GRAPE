@@ -63,7 +63,7 @@ export function createAppStore(services: Services): AppStore {
       ...createLayoutSlice(ctx),
       ...createDisplaySlice(ctx),
       ...createToastSlice(ctx),
-      ...createSelectionSlice(),
+      ...createSelectionSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));
