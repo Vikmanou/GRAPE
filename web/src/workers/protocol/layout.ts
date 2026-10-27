@@ -14,8 +14,8 @@ export type LayoutRequest =
   | { type: 'layout'; id: number; topology: Topology; options: LayoutOptions }
   /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
   | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
-  /** `x0, y0, x1, y1` per component. */
-  | { type: 'pack'; id: number; boxes: Float32Array }
+  /** `x0, y0, x1, y1` per component, and 1 per component laid out straight. */
+  | { type: 'pack'; id: number; boxes: Float32Array; frozen: Uint8Array }
   | { type: 'memory'; id: number };
 
 export interface Geometry {

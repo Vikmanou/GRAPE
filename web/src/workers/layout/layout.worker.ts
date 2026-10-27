@@ -9,7 +9,6 @@ import { iterationsFor } from './quality';
 const POST_INTERVAL_MS = 100;
 
 const ready = init({ module_or_path: wasmUrl });
-let frozen = new Uint8Array();
 
 function post(message: LayoutResponse, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer });
@@ -77,7 +76,7 @@ async function handle(request: LayoutRequest): Promise<void> {
     return;
   }
   if (request.type === 'pack') {
-    const offsets = pack(request.boxes, frozen);
+    const offsets = pack(request.boxes, request.frozen);
     post({ type: 'packed', id: request.id, offsets }, [offsets.buffer]);
     return;
   }
@@ -100,7 +99,6 @@ async function handle(request: LayoutRequest): Promise<void> {
   const wasm = layout.intoHierarchy();
   try {
     const hierarchy = takeHierarchy(wasm);
-    frozen = hierarchy.frozen.slice();
     post({ type: 'hierarchy', id: request.id, hierarchy }, transfers(hierarchy));
   } finally {
     wasm.free();
