@@ -20,7 +20,7 @@ export async function skipWithoutWebGpu(page: Page): Promise<void> {
   test.skip(renderer !== 'webgpu', 'needs a WebGPU adapter (npm run check:headed)');
 }
 
-export async function showTab(page: Page, tab: 'overview' | 'display'): Promise<void> {
+export async function showTab(page: Page, tab: 'overview' | 'display' | 'find'): Promise<void> {
   await page.getByTestId(`tab-${tab}`).click();
 }
 

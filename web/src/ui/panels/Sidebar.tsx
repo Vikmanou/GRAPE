@@ -3,11 +3,13 @@ import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { Tabs } from '../controls/Tabs';
 import { Display } from './Display';
+import { Find } from './Find';
 import { Overview } from './Overview';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'display', label: 'Display' },
+  { id: 'find', label: 'Find' },
 ] as const satisfies readonly { id: SidebarTab; label: string }[];
 
 export function Sidebar({ result }: { result: ParseResult }) {
@@ -39,6 +41,7 @@ export function Sidebar({ result }: { result: ParseResult }) {
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tab-panel">
         {tab === 'overview' && <Overview result={result} />}
         {tab === 'display' && <Display />}
+        {tab === 'find' && <Find />}
       </div>
     </aside>
   );

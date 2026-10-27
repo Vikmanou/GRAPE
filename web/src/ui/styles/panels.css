@@ -167,3 +167,38 @@
   word-break: break-all;
   font-size: 12px;
 }
+
+.find label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.find .row label {
+  display: inline;
+}
+
+.find textarea {
+  width: 100%;
+  font:
+    12px ui-monospace,
+    monospace;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px;
+  resize: vertical;
+}
+
+.find .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.missing {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 12px;
+}

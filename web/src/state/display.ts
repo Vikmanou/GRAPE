@@ -3,7 +3,7 @@ import type { BackendKind } from '../engine/core/detect';
 import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
 
-export type SidebarTab = 'overview' | 'display';
+export type SidebarTab = 'overview' | 'display' | 'find';
 
 export interface DisplaySlice {
   renderer: BackendKind | 'detecting';

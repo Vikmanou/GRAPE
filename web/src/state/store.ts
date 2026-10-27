@@ -9,6 +9,7 @@ import { Bridge, type EngineLike } from './bridge';
 import { createDetailsSlice, type DetailsSlice } from './details';
 import { createDisplaySlice, type DisplaySlice } from './display';
 import { createLayoutSlice, type LayoutSlice } from './layout';
+import { createFindSlice, type FindSlice } from './find';
 import { createFileSlice, type FileSlice } from './load';
 import { createSelectionSlice, type SelectionSlice } from './selection';
 import { exposeForTests } from './testHooks';
@@ -43,7 +44,7 @@ export interface Services {
   search: string;
 }
 
-export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice & DetailsSlice;
+export type AppState = FileSlice & LayoutSlice & DisplaySlice & ToastSlice & SelectionSlice & DetailsSlice & FindSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -66,6 +67,7 @@ export function createAppStore(services: Services): AppStore {
       ...createToastSlice(ctx),
       ...createSelectionSlice(ctx),
       ...createDetailsSlice(ctx),
+      ...createFindSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => services.createEngine(host));

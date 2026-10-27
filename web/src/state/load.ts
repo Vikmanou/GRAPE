@@ -56,7 +56,7 @@ export function createFileSlice(ctx: Context): FileSlice {
       parsing = file;
       get().stopLayout();
       const info = { name: file.name, size: file.size };
-      set({ load: { state: 'parsing', file: info, fraction: 0 } });
+      set({ load: { state: 'parsing', file: info, fraction: 0 }, findResult: { state: 'idle' } });
       graph
         .parse(file, (bytesRead, totalBytes) => {
           if (parsing !== file) return;
