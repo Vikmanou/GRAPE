@@ -1,4 +1,4 @@
-import type { Hierarchy } from '../../../workers/protocol/layout';
+import type { Hierarchy, HierarchyLevel } from '../../../workers/protocol/layout';
 import { bind, Buffers, groups, Passes, type PassTiming, readBuffer } from './gpu';
 import type { Kernels } from './kernels';
 import { GpuLevel } from './level';
@@ -10,6 +10,8 @@ export interface Measured {
   /** Mean displacement in the last iteration. */
   energy: number;
 }
+
+const empty = () => new Uint32Array();
 
 function levelSeed(seed: number, level: number): number {
   return (seed ^ Math.imul(level + 1, 0x9e3779b1)) >>> 0;
@@ -45,14 +47,16 @@ export class GpuLayout {
   private readonly boxes: GPUBuffer;
   readonly components: number;
   private readonly pointCount: number;
+  /** The hierarchy's levels, each emptied of its arrays once the GPU holds them. */
+  private readonly input: HierarchyLevel[];
 
   constructor(
     private readonly device: GPUDevice,
     private readonly kernels: Kernels,
-    private readonly hierarchy: Hierarchy,
+    hierarchy: Hierarchy,
     private readonly seed: number,
   ) {
-    const levels = hierarchy.levels;
+    const levels = (this.input = hierarchy.levels.map((l) => ({ ...l })));
     const top = levels.length - 1;
     const first = levels[0];
     const coarsest = levels[top];
@@ -101,7 +105,7 @@ export class GpuLayout {
   }
 
   get levels(): number {
-    return this.hierarchy.levels.length;
+    return this.input.length;
   }
 
   /** Level 0's buffers, once the layout has reached it. */
@@ -218,19 +222,21 @@ export class GpuLayout {
   }
 
   private budget(level: number): number {
-    return this.hierarchy.levels[level]?.iterations ?? 0;
+    return this.input[level]?.iterations ?? 0;
   }
 
   private createLevel(index: number): GpuLevel {
-    const input = this.hierarchy.levels[index];
+    const input = this.input[index];
     if (!input) throw new Error(`no level ${index}`);
-    return new GpuLevel(
+    const level = new GpuLevel(
       this.kernels,
       this.device,
       input,
       { state: this.state, energy: this.energy },
       levelSeed(this.seed, index),
     );
+    this.input[index] = { ...input, nodes: empty(), edges: empty(), heat: new Float32Array() };
+    return level;
   }
 
   private descend(): void {
@@ -238,8 +244,12 @@ export class GpuLayout {
     const coarse = this.level;
     const finer = this.createLevel(index);
     const temporary = new Buffers(this.device);
-    const parent = temporary.upload('parent', this.hierarchy.levels[index]?.parent ?? new Uint32Array());
-    const children = temporary.upload('children', this.hierarchy.levels[index + 1]?.children ?? new Uint32Array());
+    const finerInput = this.input[index];
+    const coarseInput = this.input[index + 1];
+    const parent = temporary.upload('parent', finerInput?.parent ?? empty());
+    const children = temporary.upload('children', coarseInput?.children ?? empty());
+    if (finerInput) finerInput.parent = empty();
+    if (coarseInput) coarseInput.children = empty();
     const pull = temporary.storage('pull', finer.count * 8);
     this.device.queue.writeBuffer(this.walk, 0, new Uint32Array([this.pointCount, index]));
 
