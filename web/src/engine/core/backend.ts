@@ -1,3 +1,4 @@
+import type { SegmentAttributes } from '../../workers/protocol/graph';
 import type { Geometry, Hierarchy } from '../../workers/protocol/layout';
 import type { Theme } from '../style/palette';
 import type { Bounds } from './camera';
@@ -10,6 +11,13 @@ export interface View {
   zoom: number;
   width: number;
   height: number;
+}
+
+/** Per segment, what segments are coloured and sized by. */
+export interface SegmentData extends SegmentAttributes {
+  lengths: Uint32Array;
+  /** Component rank, largest first. */
+  components: Uint32Array;
 }
 
 export interface Style {

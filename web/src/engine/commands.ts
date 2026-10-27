@@ -2,12 +2,11 @@ import type { Geometry, Hierarchy } from '../workers/protocol/layout';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { Theme } from './style/palette';
-import type { LayoutProgress, LevelRecord } from './core/backend';
+import type { LayoutProgress, LevelRecord, SegmentData } from './core/backend';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
-  /** `components`: rank per segment. */
-  | { type: 'set-graph'; geometry: Geometry; seed: number; components: Uint32Array }
+  | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
   /** `x, y` per point, in layout units, from a layout run elsewhere. */
   | { type: 'set-positions'; positions: Float32Array }
   /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */

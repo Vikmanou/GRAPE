@@ -96,7 +96,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
             type: 'set-graph',
             geometry: response.geometry,
             seed,
-            components: load.result.topology.components,
+            segments: { ...load.result.attributes, ...load.result.topology },
           });
           status({ state: 'running', iteration: 0, total });
           break;

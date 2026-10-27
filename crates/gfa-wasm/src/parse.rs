@@ -51,6 +51,15 @@ impl Loaded {
     pub(crate) fn graph(&self) -> &Graph {
         &self.graph
     }
+
+    fn tag_colors(&self, second: bool) -> &[(u32, u32)] {
+        let custom = &self.graph.custom;
+        if second {
+            &custom.color2
+        } else {
+            &custom.color
+        }
+    }
 }
 
 /// Numbers cross as `f64`, exact up to 2^53.
@@ -82,6 +91,18 @@ pub struct Summary {
     pub containments: f64,
     #[wasm_bindgen(js_name = duplicateLinks)]
     pub duplicate_links: f64,
+    #[wasm_bindgen(js_name = depthQ1)]
+    pub depth_q1: f64,
+    #[wasm_bindgen(js_name = depthQ3)]
+    pub depth_q3: f64,
+    #[wasm_bindgen(js_name = depthMin)]
+    pub depth_min: f64,
+    #[wasm_bindgen(js_name = depthMax)]
+    pub depth_max: f64,
+    #[wasm_bindgen(js_name = gcMin)]
+    pub gc_min: f64,
+    #[wasm_bindgen(js_name = gcMax)]
+    pub gc_max: f64,
     #[wasm_bindgen(js_name = bytesPerSegment)]
     pub bytes_per_segment: f64,
     #[wasm_bindgen(js_name = nameBytes)]
@@ -131,6 +152,12 @@ impl Loaded {
             walks: g.paths.count(PathKind::Walk) as f64,
             containments: n(g.counts.containments),
             duplicate_links: n(g.counts.duplicate_links),
+            depth_q1: s.depth_q1,
+            depth_q3: s.depth_q3,
+            depth_min: s.depth_min,
+            depth_max: s.depth_max,
+            gc_min: s.gc_min,
+            gc_max: s.gc_max,
             bytes_per_segment: memory.per_segment,
             name_bytes: memory.name_bytes as f64,
             sequence_bytes: memory.sequence_bytes as f64,
@@ -146,6 +173,28 @@ impl Loaded {
     #[wasm_bindgen(js_name = segmentComponents)]
     pub fn segment_components(&self) -> Vec<u32> {
         self.graph.segments.component.clone()
+    }
+
+    #[wasm_bindgen(js_name = segmentDepths)]
+    pub fn segment_depths(&self) -> Vec<f32> {
+        self.graph.segments.depth.clone()
+    }
+
+    #[wasm_bindgen(js_name = segmentGc)]
+    pub fn segment_gc(&self) -> Vec<f32> {
+        self.graph.segments.gc.clone()
+    }
+
+    /// Segments with a CL tag, ascending; `second` for C2.
+    #[wasm_bindgen(js_name = tagColorSegments)]
+    pub fn tag_color_segments(&self, second: bool) -> Vec<u32> {
+        self.tag_colors(second).iter().map(|e| e.0).collect()
+    }
+
+    /// RGBA8 with red in the low byte, matching `tagColorSegments`.
+    #[wasm_bindgen(js_name = tagColors)]
+    pub fn tag_colors_rgba(&self, second: bool) -> Vec<u32> {
+        self.tag_colors(second).iter().map(|e| e.1).collect()
     }
 
     #[wasm_bindgen(js_name = linkFrom)]

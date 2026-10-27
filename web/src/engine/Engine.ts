@@ -145,7 +145,7 @@ export class Engine {
         break;
       case 'set-graph':
         this.backend.setGraph(command.geometry, randomColors(command.geometry.segments, command.seed));
-        this.pointer.reset(command.components);
+        this.pointer.reset(command.segments.components);
         this.positions = undefined;
         framing.autoFit = true;
         framing.setBounds(undefined);

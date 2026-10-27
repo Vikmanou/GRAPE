@@ -3,7 +3,7 @@
 import init, { coreVersion, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { plain } from '../plain';
-import type { GraphRequest, GraphResponse, ParseResult } from '../protocol/graph';
+import type { GraphRequest, GraphResponse, ParseResult, SegmentAttributes } from '../protocol/graph';
 import { type SequenceSource, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
 import { type Compression, detectCompression, readFile } from './readFile';
@@ -56,7 +56,7 @@ async function parse(id: number, file: File): Promise<void> {
     parser.free();
   }
   const result = describe(current, compression, performance.now() - start);
-  const { components, warnings, topology } = result;
+  const { components, warnings, topology, attributes } = result;
   const sequences = sequenceSource(current, file, compression);
   post({ type: 'parsed', id, result, sequences }, [
     ...sourceTransfers(sequences),
@@ -69,7 +69,12 @@ async function parse(id: number, file: File): Promise<void> {
     topology.linkFrom.buffer,
     topology.linkTo.buffer,
     topology.linkBits.buffer,
+    ...attributeTransfers(attributes),
   ]);
+}
+
+function attributeTransfers({ depth, gc, tagColors, tagColors2 }: SegmentAttributes): ArrayBuffer[] {
+  return [depth, gc, tagColors.segments, tagColors.colors, tagColors2.segments, tagColors2.colors].map((a) => a.buffer);
 }
 
 /** Moves the sequences out to hand to the sequence worker; packed bases leave this worker. */
@@ -121,6 +126,12 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
       walks: s.walks,
       containments: s.containments,
       duplicateLinks: s.duplicateLinks,
+      depthQ1: s.depthQ1,
+      depthQ3: s.depthQ3,
+      depthMin: s.depthMin,
+      depthMax: s.depthMax,
+      gcMin: s.gcMin,
+      gcMax: s.gcMax,
     },
     components: { segments: loaded.componentSegments(), lengths: loaded.componentLengths() },
     warnings: {
@@ -135,6 +146,12 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
       linkFrom: loaded.linkFrom(),
       linkTo: loaded.linkTo(),
       linkBits: loaded.linkBits(),
+    },
+    attributes: {
+      depth: plain(loaded.segmentDepths()),
+      gc: plain(loaded.segmentGc()),
+      tagColors: { segments: plain(loaded.tagColorSegments(false)), colors: plain(loaded.tagColors(false)) },
+      tagColors2: { segments: plain(loaded.tagColorSegments(true)), colors: plain(loaded.tagColors(true)) },
     },
     memory: {
       bytesPerSegment: s.bytesPerSegment,

@@ -81,6 +81,14 @@ export interface GraphStats {
   walks: number;
   containments: number;
   duplicateLinks: number;
+  /** Bandage's automatic depth range, over segments with a depth; NaN when none has one. */
+  depthQ1: number;
+  depthQ3: number;
+  depthMin: number;
+  depthMax: number;
+  /** NaN when no segment has a sequence. */
+  gcMin: number;
+  gcMax: number;
 }
 
 export interface ParseWarnings {
@@ -101,6 +109,24 @@ export interface Topology {
   linkBits: Uint8Array;
 }
 
+/** Bandage's CL or C2 tags: segments in ascending order and their colours, RGBA8 with red in the low byte. */
+export interface TagColors {
+  segments: Uint32Array<ArrayBuffer>;
+  colors: Uint32Array<ArrayBuffer>;
+}
+
+/** What segments are coloured and sized by. */
+export interface SegmentAttributes {
+  /** NaN when unknown. */
+  depth: Float32Array<ArrayBuffer>;
+  /** NaN without a sequence. */
+  gc: Float32Array<ArrayBuffer>;
+  /** CL tags. */
+  tagColors: TagColors;
+  /** C2 tags, for the reverse strand. */
+  tagColors2: TagColors;
+}
+
 export interface ParseResult {
   format: 'gfa' | 'fastg';
   version: string | undefined;
@@ -110,6 +136,7 @@ export interface ParseResult {
   components: { segments: Uint32Array; lengths: Float64Array };
   warnings: ParseWarnings;
   topology: Topology;
+  attributes: SegmentAttributes;
   memory: { bytesPerSegment: number; nameBytes: number; sequenceBytes: number; sequencesDropped: boolean };
   parseMs: number;
 }

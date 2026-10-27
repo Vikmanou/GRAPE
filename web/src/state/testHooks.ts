@@ -53,10 +53,11 @@ function ask<T extends EngineEvent['type']>(
 
 async function memory(ctx: Context): Promise<MemoryReport> {
   const { load } = ctx.get();
-  const t = load.state === 'loaded' ? load.result.topology : undefined;
-  const topology = t
-    ? [t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits].reduce((sum, a) => sum + a.byteLength, 0)
-    : 0;
+  const r = load.state === 'loaded' ? load.result : undefined;
+  const t = r?.topology;
+  const held: ArrayBufferView[] =
+    r && t ? [t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, r.attributes.depth, r.attributes.gc] : [];
+  const arrays = held.reduce((sum, a) => sum + a.byteLength, 0);
   const [engine, graph, sequence, layout] = await Promise.all([
     ask(ctx.bridge, { type: 'report-memory' }, 'memory'),
     ctx.services.graph.memory(),
@@ -67,7 +68,7 @@ async function memory(ctx: Context): Promise<MemoryReport> {
   const heap = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
   return {
     mainHeap: heap?.usedJSHeapSize ?? 0,
-    mainArrays: topology + engine.cpu,
+    mainArrays: arrays + engine.cpu,
     gpu: engine.gpu,
     graph,
     sequence,
