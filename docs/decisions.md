@@ -614,3 +614,18 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   an empty screen. `bench:layout` still zooms toward the centre, so its 200k
   zoomed-in figure in `bench/results.md` may share that flaw; milestone 5
   should re-measure it with the anchored helper.
+
+## 2026-10-27: Coarsening visits nodes in index order
+
+- **Decision**: heavy-edge matching visits nodes in index order instead of
+  Walshaw's random order. Coarsening no longer depends on the seed; the
+  coarsest level's start positions still do.
+- **Reason**: a chain's points are numbered along it on every level, so in
+  order they pair up completely, while random order on a path leaves about
+  one node in seven unmatched. Measured natively on the 1M synthetic graph:
+  coarsening fell from 8.9 to 3.3 s (random order missed the cache on every
+  node), and the work before the layout is usable from 376M to 283M
+  node-iterations.
+- **Alternatives**: random order with unmatched nodes joining a neighbour's
+  pair (triples, a new prolongation step); pairing chain points by hand on
+  level 0 only.

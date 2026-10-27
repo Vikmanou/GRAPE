@@ -94,7 +94,7 @@ impl Layout {
         let mut splits = Vec::new();
         let mut rng = Rng::new(options.seed);
         while largest_active(&levels[levels.len() - 1], &frozen) > COARSEST_NODES {
-            let Some((coarse, split)) = levels[levels.len() - 1].coarsen(&frozen, &mut rng) else {
+            let Some((coarse, split)) = levels[levels.len() - 1].coarsen(&frozen) else {
                 break;
             };
             levels.push(coarse);

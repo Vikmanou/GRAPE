@@ -3,7 +3,6 @@
 
 use super::COLD;
 use super::points::{NODE_SEGMENT_LENGTH, Springs};
-use super::rng::Rng;
 
 pub(crate) const NONE: u32 = u32::MAX;
 
@@ -72,19 +71,17 @@ impl Level {
     }
 
     /// `None` once a level no longer shrinks enough to pay off.
-    pub fn coarsen(&self, frozen: &[bool], rng: &mut Rng) -> Option<(Level, Split)> {
+    ///
+    /// Nodes are visited in index order, not Walshaw's random order: a
+    /// chain's points are numbered along it on every level, so in order they
+    /// pair up completely (random order leaves about one in seven alone), and
+    /// memory is read in order.
+    pub fn coarsen(&self, frozen: &[bool]) -> Option<(Level, Split)> {
         let n = self.len();
         let (offsets, edges) = self.adjacency();
-        let mut order: Vec<u32> = (0..n as u32).collect();
-        for i in (1..n).rev() {
-            let j = (rng.next_u64() % (i as u64 + 1)) as usize;
-            order.swap(i, j);
-        }
-
         let mut partner = vec![NONE; n];
         let mut joined_by = vec![0.0f32; n];
-        for &u in &order {
-            let u = u as usize;
+        for u in 0..n {
             if partner[u] != NONE || frozen[self.component[u] as usize] {
                 continue;
             }
@@ -240,9 +237,8 @@ mod tests {
     #[test]
     fn merging_a_chain_keeps_its_length() {
         let mut level = chain(64);
-        let mut rng = Rng::new(3);
         for _ in 0..4 {
-            let (coarse, split) = level.coarsen(&[false], &mut rng).unwrap();
+            let (coarse, split) = level.coarsen(&[false]).unwrap();
             assert!(coarse.len() * 4 <= level.len() * 3);
             assert_eq!(coarse.mass.iter().sum::<f32>(), 64.0);
             assert!(split.parent.iter().all(|&p| (p as usize) < coarse.len()));
@@ -257,6 +253,6 @@ mod tests {
     #[test]
     fn frozen_components_are_left_alone() {
         let fine = chain(8);
-        assert!(fine.coarsen(&[true], &mut Rng::new(1)).is_none());
+        assert!(fine.coarsen(&[true]).is_none());
     }
 }
