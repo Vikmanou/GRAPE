@@ -29,7 +29,7 @@ export class WorkerTerminatedError extends Error {
   }
 }
 
-type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
+export type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
 
 export interface RequestOptions<Res> {
   transfer?: Transferable[];

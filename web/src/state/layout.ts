@@ -104,15 +104,17 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
         case 'hierarchy':
           bridge.send({ type: 'start-layout', hierarchy: response.hierarchy, seed });
           break;
-        case 'positions':
+        case 'positions': {
+          const p = response.progress;
           bridge.send({ type: 'set-positions', positions: response.positions });
-          if (response.done) exposeSettledLayout({ seed, quality, positions: response.positions });
+          if (p.done) exposeSettledLayout({ seed, quality, positions: response.positions });
           status(
-            response.done
+            p.done
               ? { state: 'done', total, ms: performance.now() - start }
-              : { state: 'running', iteration: response.iteration, total },
+              : { state: 'running', iteration: p.iteration, total, level: p.level, levels: p.levels },
           );
           break;
+        }
         case 'error':
           status({ state: 'failed', message: response.message });
           break;

@@ -1,12 +1,10 @@
 import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { Topology } from '../protocol/graph';
-import type { Hierarchy, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
+import type { Hierarchy, LayoutControl, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
 import { plain } from '../plain';
+import { CpuRun } from './cpuRun';
 import { iterationsFor } from './quality';
-
-/** How often positions are posted while the CPU layout runs. */
-const POST_INTERVAL_MS = 100;
 
 const ready = init({ module_or_path: wasmUrl });
 
@@ -21,7 +19,7 @@ function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
 
 function postGeometry(id: number, layout: Layout, segments: number): void {
   const pieces = plain(layout.pieces());
-  const links = plain(layout.takeLinks());
+  const links = plain(layout.links());
   const segmentStarts = plain(layout.segmentStarts());
   const segmentPieces = plain(layout.segmentPieces());
   const geometry = { segments, points: layout.points(), pieces, links, segmentStarts, segmentPieces };
@@ -33,21 +31,8 @@ function postGeometry(id: number, layout: Layout, segments: number): void {
   ]);
 }
 
-function runCpu(id: number, layout: Layout): void {
-  let positions = layout.positions();
-  post({ type: 'positions', id, positions, iteration: 0, done: false }, [positions.buffer]);
-  let last = performance.now();
-  let done = false;
-  while (!done) {
-    done = layout.step(1);
-    const now = performance.now();
-    if (done || now - last >= POST_INTERVAL_MS) {
-      last = now;
-      positions = layout.positions();
-      post({ type: 'positions', id, positions, iteration: layout.iteration(), done }, [positions.buffer]);
-    }
-  }
-}
+/** The CPU layout this worker runs, which control requests act on. */
+let cpu: CpuRun | undefined;
 
 /** Takes each array out of WASM, so none is held there and here at once for long. */
 function takeHierarchy(h: WasmHierarchy): Hierarchy {
@@ -69,8 +54,30 @@ function transfers(h: Hierarchy): Transferable[] {
   return [...arrays, h.start].map((a) => a.buffer);
 }
 
+function control(request: LayoutControl): void {
+  switch (request.type) {
+    case 'pause':
+      cpu?.setPaused(request.paused);
+      break;
+    case 'drag':
+      cpu?.drag(request.segment, request.dx, request.dy);
+      break;
+    case 'unpin':
+      cpu?.unpinAll();
+      break;
+    case 'refine':
+      cpu?.refine(request.selected);
+      break;
+  }
+  post({ type: 'ok', id: request.id });
+}
+
 async function handle(request: LayoutRequest): Promise<void> {
   await ready;
+  if (request.type === 'pause' || request.type === 'drag' || request.type === 'unpin' || request.type === 'refine') {
+    control(request);
+    return;
+  }
   if (request.type === 'memory') {
     post({ type: 'memory', id: request.id, memory: { wasm: (await ready).memory.buffer.byteLength, held: 0 } });
     return;
@@ -84,11 +91,12 @@ async function handle(request: LayoutRequest): Promise<void> {
   if (request.type === 'layout') {
     try {
       postGeometry(request.id, layout, request.topology.lengths.length);
-      runCpu(request.id, layout);
+      cpu = new CpuRun(request.id, layout, post);
+      await cpu.run();
     } finally {
+      cpu = undefined;
       layout.free();
     }
-    return;
   }
   try {
     postGeometry(request.id, layout, request.topology.lengths.length);

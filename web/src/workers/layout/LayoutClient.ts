@@ -1,6 +1,6 @@
 import type { Topology } from '../protocol/graph';
-import type { LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
-import { expect, RpcClient, type WorkerMemory } from '../rpc';
+import type { LayoutControl, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
+import { expect, RpcClient, type WithoutId, type WorkerMemory } from '../rpc';
 
 export type LayoutListener = (response: LayoutResponse) => void;
 
@@ -8,7 +8,7 @@ function spawn(): RpcClient<LayoutRequest, LayoutResponse> {
   return new RpcClient<LayoutRequest, LayoutResponse>({
     name: 'layout',
     spawn: () => new Worker(new URL('./layout.worker.ts', import.meta.url), { type: 'module', name: 'layout' }),
-    isUpdate: (response) => response.type === 'geometry' || (response.type === 'positions' && !response.done),
+    isUpdate: (response) => response.type === 'geometry' || response.type === 'positions',
   });
 }
 
@@ -49,6 +49,30 @@ export class LayoutClient {
     if (!rpc) throw new Error('no layout is running');
     const response = await rpc.request({ type: 'pack', boxes, frozen: this.frozen }, { transfer: [boxes.buffer] });
     return expect(response, 'packed').offsets;
+  }
+
+  /** The CPU layout only. */
+  setPaused(paused: boolean): void {
+    this.control({ type: 'pause', paused });
+  }
+
+  /** Moves a segment by `dx, dy` and pins it; the CPU layout only. */
+  drag(segment: number, dx: number, dy: number): void {
+    this.control({ type: 'drag', segment, dx, dy });
+  }
+
+  unpinAll(): void {
+    this.control({ type: 'unpin' });
+  }
+
+  /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
+  refine(selected: Uint32Array<ArrayBuffer> | undefined): void {
+    const copy = selected?.slice();
+    this.control({ type: 'refine', selected: copy }, copy ? [copy.buffer] : []);
+  }
+
+  private control(request: WithoutId<LayoutControl>, transfer: Transferable[] = []): void {
+    this.rpc?.request(request, { transfer }).catch(() => undefined);
   }
 
   /** Nothing when no worker is running. */

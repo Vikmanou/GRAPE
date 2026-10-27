@@ -10,13 +10,25 @@ export interface LayoutOptions {
 }
 
 export type LayoutRequest =
-  /** Runs the CPU layout to the end, posting positions as it goes. */
+  /**
+   * Runs the CPU layout, posting positions as it goes, and keeps answering
+   * the control requests below until the worker ends; it never resolves.
+   */
   | { type: 'layout'; id: number; topology: Topology; options: LayoutOptions }
+  | { type: 'pause'; id: number; paused: boolean }
+  /** Moves a segment by `dx, dy` layout units and pins it. */
+  | { type: 'drag'; id: number; segment: number; dx: number; dy: number }
+  | { type: 'unpin'; id: number }
+  /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
+  | { type: 'refine'; id: number; selected: Uint32Array<ArrayBuffer> | undefined }
   /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
   | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
   /** `x0, y0, x1, y1` per component, and 1 per component laid out straight. */
   | { type: 'pack'; id: number; boxes: Float32Array; frozen: Uint8Array }
   | { type: 'memory'; id: number };
+
+/** Requests that steer a running CPU layout. */
+export type LayoutControl = Extract<LayoutRequest, { type: 'pause' | 'drag' | 'unpin' | 'refine' }>;
 
 export interface Geometry {
   segments: number;
@@ -57,10 +69,49 @@ export interface Hierarchy {
   frozen: Uint8Array<ArrayBuffer>;
 }
 
+/** For each grid cell, row major, the items whose box overlaps it. */
+export interface CellLists {
+  /** `starts[c]` to `starts[c + 1]` index `items` for cell `c`. */
+  starts: Uint32Array<ArrayBuffer>;
+  items: Uint32Array<ArrayBuffer>;
+  /** Items too large for the grid, which every query returns. */
+  wide: Uint32Array<ArrayBuffer>;
+}
+
+/** A uniform grid over the ribbon pieces and links, in layout units (gfa-core `layout::Grid`). */
+export interface PositionGrid {
+  minX: number;
+  minY: number;
+  cell: number;
+  columns: number;
+  rows: number;
+  pieces: CellLists;
+  links: CellLists;
+}
+
+/** Where a CPU layout stands. */
+export interface CpuProgress {
+  iteration: number;
+  level: number;
+  levels: number;
+  pinned: number;
+  /** A refinement after a drag or of the selection is running. */
+  refining: boolean;
+  /** Settled, and no refinement runs. */
+  done: boolean;
+}
+
 export type LayoutResponse =
   | { type: 'geometry'; id: number; geometry: Geometry; totalIterations: number }
-  /** `x, y` per point. */
-  | { type: 'positions'; id: number; positions: Float32Array; iteration: number; done: boolean }
+  /** `x, y` per point, packed, and a grid over them. */
+  | {
+      type: 'positions';
+      id: number;
+      positions: Float32Array<ArrayBuffer>;
+      grid: PositionGrid;
+      progress: CpuProgress;
+    }
+  | { type: 'ok'; id: number }
   | { type: 'hierarchy'; id: number; hierarchy: Hierarchy }
   /** `dx, dy` per component. */
   | { type: 'packed'; id: number; offsets: Float32Array }

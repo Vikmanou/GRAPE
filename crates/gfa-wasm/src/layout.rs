@@ -1,3 +1,4 @@
+use gfa_core::layout::Grid as CoreGrid;
 use gfa_core::layout::{LayoutOptions, Topology, link_geometry};
 use wasm_bindgen::prelude::*;
 
@@ -5,6 +6,7 @@ use wasm_bindgen::prelude::*;
 pub struct Layout {
     inner: gfa_core::layout::Layout,
     links: Vec<u32>,
+    pieces: Vec<u32>,
     positions: Vec<f32>,
 }
 
@@ -38,9 +40,11 @@ impl Layout {
         let inner = gfa_core::layout::Layout::new(topology, options)
             .map_err(|e| JsError::new(&e.to_string()))?;
         let links = link_geometry(&topology, &inner.chains);
+        let pieces = inner.chains.pieces();
         Ok(Layout {
             inner,
             links,
+            pieces,
             positions: Vec::new(),
         })
     }
@@ -71,7 +75,7 @@ impl Layout {
 
     /// `(first point, segment)` per ribbon piece.
     pub fn pieces(&self) -> Vec<u32> {
-        self.inner.chains.pieces()
+        self.pieces.clone()
     }
 
     /// First point of each segment's chain.
@@ -86,10 +90,56 @@ impl Layout {
         self.inner.chains.pieces.clone()
     }
 
-    /// `[end a, inner a, end b, inner b]` per link; empty when asked again.
-    #[wasm_bindgen(js_name = takeLinks)]
-    pub fn take_links(&mut self) -> Vec<u32> {
-        std::mem::take(&mut self.links)
+    /// `[end a, inner a, end b, inner b]` per link.
+    pub fn links(&self) -> Vec<u32> {
+        self.links.clone()
+    }
+
+    pub fn level(&self) -> usize {
+        self.inner.level()
+    }
+
+    pub fn levels(&self) -> usize {
+        self.inner.levels()
+    }
+
+    #[wasm_bindgen(js_name = atLevelZero)]
+    pub fn at_level_zero(&self) -> bool {
+        self.inner.at_level_zero()
+    }
+
+    pub fn pinned(&self) -> usize {
+        self.inner.pinned()
+    }
+
+    pub fn refining(&self) -> bool {
+        self.inner.refining()
+    }
+
+    /// Moves a segment and pins it; false before level 0.
+    pub fn drag(&mut self, segment: u32, dx: f32, dy: f32) -> bool {
+        self.inner.drag(segment, dx, dy)
+    }
+
+    #[wasm_bindgen(js_name = unpinAll)]
+    pub fn unpin_all(&mut self) {
+        self.inner.unpin_all();
+    }
+
+    /// Refines level 0 again, moving only the segments whose bit is set in
+    /// `selected` when it is given; false before level 0.
+    pub fn refine(&mut self, selected: Option<Vec<u32>>) -> bool {
+        self.inner.refine(selected.as_deref())
+    }
+
+    /// A grid over the positions last returned by `positions`.
+    pub fn grid(&self, ribbon_half: f32) -> Grid {
+        Grid(CoreGrid::build(
+            &self.positions,
+            &self.pieces,
+            &self.links,
+            ribbon_half,
+        ))
     }
 
     /// Only meaningful before the first step; consumes the layout.
@@ -159,6 +209,48 @@ impl Hierarchy {
 
     fn level(&mut self, level: usize) -> Option<&mut gfa_core::layout::HierarchyLevel> {
         self.0.levels.get_mut(level)
+    }
+}
+
+#[wasm_bindgen]
+pub struct Grid(CoreGrid);
+
+#[wasm_bindgen]
+impl Grid {
+    /// `min x, min y, cell side, columns, rows`.
+    pub fn frame(&self) -> Vec<f32> {
+        let g = &self.0;
+        vec![g.min_x, g.min_y, g.cell, g.columns as f32, g.rows as f32]
+    }
+
+    #[wasm_bindgen(js_name = pieceStarts)]
+    pub fn piece_starts(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.pieces.starts)
+    }
+
+    #[wasm_bindgen(js_name = pieceItems)]
+    pub fn piece_items(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.pieces.items)
+    }
+
+    #[wasm_bindgen(js_name = pieceWide)]
+    pub fn piece_wide(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.pieces.wide)
+    }
+
+    #[wasm_bindgen(js_name = linkStarts)]
+    pub fn link_starts(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.links.starts)
+    }
+
+    #[wasm_bindgen(js_name = linkItems)]
+    pub fn link_items(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.links.items)
+    }
+
+    #[wasm_bindgen(js_name = linkWide)]
+    pub fn link_wide(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.0.links.wide)
     }
 }
 
