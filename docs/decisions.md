@@ -602,3 +602,15 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   unpinned.
 - **Alternatives**: a pinned bitset read by `pull_and_move` (a ninth storage
   buffer); a separate refinement kernel with its own temperature.
+
+## 2026-10-27: Interaction benchmark zooms in on a segment
+
+- **Decision**: `npm run bench:interaction` zooms toward a segment it finds on
+  screen, times hover, clicks and box select while that view holds segments,
+  then measures frame rates. Its pan clears hover first, because a press on a
+  hovered segment now drags and pins it.
+- **Reason**: zooming toward the canvas centre landed in a gap between the
+  200k graph's ten components, so the "zoomed in" frame rate was measured on
+  an empty screen. `bench:layout` still zooms toward the centre, so its 200k
+  zoomed-in figure in `bench/results.md` may share that flaw; milestone 5
+  should re-measure it with the anchored helper.
