@@ -80,6 +80,14 @@ impl Builder {
         }
     }
 
+    /// For a graph built from another one: no file lines and no sequences.
+    pub(crate) fn bare() -> Self {
+        let mut b = Self::new(SeqMode::Packed { budget_bytes: 0 });
+        b.segments = Segments::new(false);
+        b.packed = None;
+        b
+    }
+
     pub(crate) fn warn(&mut self, line: u64, kind: WarningKind, message: impl FnOnce() -> String) {
         self.warnings.push(line, kind, message);
     }

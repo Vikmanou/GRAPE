@@ -803,3 +803,31 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: chosen by the owner; the GPU layout and the CPU layout differ,
   so only a shared layout compares renderers; CI has no WebGPU.
 - **Alternatives**: only the headed comparison; baselines for both backends.
+
+## 2026-10-27: Chain merging follows Bandage's "Merge all possible nodes"
+
+- **Decision**: gfa-core `analysis/chains.rs` and `analysis/merge.rs` copy
+  Bandage's `mergeAllPossible`, `mergeNodes` and `getUniqueNodeName`
+  (graph/assemblygraph.cpp). Segments are visited in the order of
+  Bandage's node map (name plus sign, byte order of UTF-8, which matches
+  QString order outside the supplementary planes); each unvisited one grows
+  forward, then backward, through links that are the only one at both ends.
+  A merged segment's name joins its members' names with `_`, with `_2`,
+  `_3`… while the name is taken; its depth is the members' depth weighted by
+  their lengths; its sequence is the first member's followed by each next
+  member's less the overlap of the link into it, untrimmed when the overlap
+  is longer than the member (`modifySequenceUsingOverlap`, graph/path.cpp).
+  Links from a chain back into itself are dropped, so a chain that is a whole
+  circle loses its closing link, as in Bandage (chosen by the owner). Merged
+  segments carry no custom colours or labels. Paths are mapped onto the
+  merged segments, consecutive steps through one merged segment collapsing.
+- **Where GRAPE differs**: an unknown depth is left out of the weighted mean
+  instead of counting as Bandage's 1.0 (the same whenever every member has a
+  depth or none does); segments with `*` sequences keep their `LN` lengths,
+  where Bandage gives the merged node an empty sequence and length 0; GC is
+  the members' GC weighted by the bases each keeps, an estimate.
+- **Reason**: users moving from Bandage get the same merged graph; the
+  property test (`tests/chains.rs`) checks that every walk through the
+  merged graph spells the bases of the original walk it stands for.
+- **Alternatives**: keeping a circle's closing link (recommended, declined
+  by the owner); merging only for display, keeping the original segments.

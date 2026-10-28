@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc df02d053e5201ccad90a17875f7dd8e40a38f85589fdc237398fc29d1b5a8570 # shrinks to c = Case { sequences: [[65], [65], [65, 65], [65]], links: [(2, false, 3, false), (3, true, 1, false), (0, true, 2, false)] }, choices = [0]
+cc 4b0342b56a9dd44e2b88f82864b3d1fb970efe3cec4f976bc594ee71ac286412 # shrinks to c = Case { sequences: [[67], [67]], links: [(0, false, 1, false)] }, choices = []
