@@ -15,7 +15,7 @@ pub use parse::colors::parse_color;
 pub use parse::parser::{ParseOptions, Parser, parse};
 pub use parse::warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warnings};
 pub use store::bases::{bases_from_file, bases_from_packed, reverse_complement};
-pub use store::graph::{Format, Graph, MemoryReport};
+pub use store::graph::{DepthTag, Format, Graph, MemoryReport};
 pub use store::names::{Arena, Names};
 pub use store::paths::{PathKind, Paths, REVERSE};
 pub use store::seq::{DEFAULT_BUDGET, Packed, Run, SeqMode, Span};

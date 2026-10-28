@@ -109,6 +109,7 @@ pub fn merge(g: &Graph) -> Result<Merged, FatalError> {
     add_paths(&mut b, g, &place);
     add_custom(&mut b, g, &place, &in_chain);
     b.version = g.version.clone();
+    b.depth_tag = g.depth_tag;
     Ok(Merged {
         graph: Graph::build(b, g.format, g.seq_mode)?,
         step_ends,

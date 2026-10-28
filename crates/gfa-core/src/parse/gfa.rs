@@ -6,6 +6,7 @@ use crate::parse::builder::Builder;
 use crate::parse::colors::parse_color;
 use crate::parse::fields::{self, Overlap};
 use crate::parse::warnings::{FatalError, WarningKind, show};
+use crate::store::graph::DepthTag;
 use crate::store::paths::{PathKind, REVERSE, walk_steps};
 use crate::store::seg_flags;
 use crate::store::seq::BaseCount;
@@ -170,6 +171,20 @@ fn segment<'a>(
     };
     b.segments.length[i] = clamp_length(b, length, name, no);
     b.segments.depth[i] = depth(&tags, length);
+    if let Some(tag) = depth_tag(&tags) {
+        b.depth_tag = tag;
+    }
+}
+
+fn depth_tag(tags: &SegmentTags) -> Option<DepthTag> {
+    [
+        (tags.dp, DepthTag::Dp),
+        (tags.kc, DepthTag::Kc),
+        (tags.rc, DepthTag::Rc),
+        (tags.fc, DepthTag::Fc),
+    ]
+    .into_iter()
+    .find_map(|(value, tag)| value.map(|_| tag))
 }
 
 fn color_tag(b: &mut Builder, no: u64, field: &[u8], value: &[u8]) -> Option<u32> {

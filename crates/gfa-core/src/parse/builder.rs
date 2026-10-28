@@ -1,5 +1,6 @@
 use crate::parse::fields::Overlap;
 use crate::parse::warnings::{FatalError, WarningKind, Warnings, show};
+use crate::store::graph::DepthTag;
 use crate::store::names::{MAX_ID, Names};
 use crate::store::paths::Paths;
 use crate::store::seq::{Packed, SeqMode};
@@ -44,6 +45,7 @@ pub(crate) struct Builder {
     pub warnings: Warnings,
     pub counts: RecordCounts,
     pub version: Option<String>,
+    pub depth_tag: DepthTag,
     pub fatal: Option<FatalError>,
     /// The line that first named each segment, for reporting the ones never
     /// defined. Indexed by id, dropped once parsing ends.
@@ -71,6 +73,7 @@ impl Builder {
             warnings: Warnings::default(),
             counts: RecordCounts::default(),
             version: None,
+            depth_tag: DepthTag::None,
             fatal: None,
             first_reference: Vec::new(),
             unknown: Vec::new(),

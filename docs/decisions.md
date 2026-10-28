@@ -831,3 +831,24 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   merged graph spells the bases of the original walk it stands for.
 - **Alternatives**: keeping a circle's closing link (recommended, declined
   by the owner); merging only for display, keeping the original segments.
+
+## 2026-10-27: The GFA writer is Bandage's "Save entire graph to GFA"
+
+- **Decision**: gfa-core `write/gfa.rs` writes what Bandage's
+  `saveEntireGraphToGfa` writes (graph/assemblygraph.cpp,
+  graph/debruijnnode.cpp, graph/debruijnedge.cpp, program/globals.cpp):
+  `S` lines in the order of Bandage's node map (name plus `+`), each with
+  its sequence or `*`, `LN:i`, the depth in the file's depth tag (`DP:f` as
+  printf's `%g`, or `KC`/`RC`/`FC` as `int(depth × length + 0.5)`; the tag
+  is the one the last segment with a depth used, KC for FASTG, none when no
+  segment had one; an unknown depth counts as Bandage's 1.0), then
+  `LB:z`, `L2:z`, `CL:z` and `C2:z` with Bandage's colour names
+  (`getColourName`, first match in its list, else `#rrggbb`). Each link is
+  written once as its positive edge (`isPositiveEdge`) with the overlap of
+  the first line that gave it, `nM`, sorted by `compareEdgePointers`.
+- **Where GRAPE differs**: a segment without a sequence keeps its real
+  `LN` and counts from it, where Bandage measures the `*` and writes
+  `LN:i:1` (chosen by the owner); edges Bandage's sort leaves tied are
+  ordered by their names with signs; a link of unknown overlap is `0M`.
+- **Reason**: exports match Bandage byte for byte for the same graph.
+- **Alternatives**: writing `LN:i:1` as Bandage does; GRAPE's own order.

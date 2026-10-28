@@ -15,9 +15,22 @@ pub enum Format {
     Fastg,
 }
 
+/// The tag Bandage writes depths back with: the one the last segment with a
+/// depth used (`m_depthTag` in graph/assemblygraph.cpp), KC for FASTG.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum DepthTag {
+    #[default]
+    None,
+    Dp,
+    Kc,
+    Rc,
+    Fc,
+}
+
 #[derive(Debug)]
 pub struct Graph {
     pub format: Format,
+    pub depth_tag: DepthTag,
     pub version: Option<String>,
     pub seq_mode: SeqMode,
     pub names: Names,
@@ -63,6 +76,11 @@ impl Graph {
         let stats = stats::compute(&b.segments, &adjacency, &components, b.links.len());
         let mut graph = Self {
             format,
+            depth_tag: if format == Format::Fastg {
+                DepthTag::Kc
+            } else {
+                b.depth_tag
+            },
             version: b.version,
             seq_mode,
             names: b.names,
