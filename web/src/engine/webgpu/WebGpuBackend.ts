@@ -118,6 +118,10 @@ export class WebGpuBackend implements Backend {
     this.hover = segment;
   }
 
+  setPathColors(colors: Uint32Array<ArrayBuffer>): void {
+    this.renderer.setPathColors(colors);
+  }
+
   draw(view: View): void {
     const palette = palettes[this.style.theme];
     const [r, g, b, a] = palette.background;

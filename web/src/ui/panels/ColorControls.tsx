@@ -1,6 +1,6 @@
 import type { ColorMode } from '../../engine/style/colors';
 import { packRgba, palettes } from '../../engine/style/palette';
-import { cssColor } from '../../engine/style/colors';
+import { cssColor, pathColor } from '../../engine/style/colors';
 import { useApp } from '../../state/store';
 import { Legend } from '../controls/Legend';
 
@@ -12,6 +12,7 @@ const MODES: [ColorMode, string][] = [
   ['length', 'Length'],
   ['component', 'Component'],
   ['tags', 'Tag colours (CL, C2)'],
+  ['path', 'Path membership'],
 ];
 
 export function ColorControls() {
@@ -20,6 +21,10 @@ export function ColorControls() {
   const setOptions = useApp((s) => s.setDisplayOptions);
   const setMode = useApp((s) => s.setColorMode);
   const resetRange = useApp((s) => s.resetColorRange);
+  const paths = useApp((s) => s.paths);
+  const highlighted = useApp((s) => s.highlightedPaths);
+  const names = paths.state === 'ready' ? paths.list.names : [];
+  const pathSwatches = highlighted.map((p) => ({ label: names[p] ?? '', color: cssColor(pathColor(p)) }));
   return (
     <section className="controls" aria-label="Colour">
       <h3>Colour</h3>
@@ -44,6 +49,7 @@ export function ColorControls() {
         mode={options.color}
         range={options.range}
         unknown={cssColor(packRgba(palettes[theme].unknown))}
+        paths={pathSwatches}
         onRange={(range) => {
           setOptions({ range });
         }}

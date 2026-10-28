@@ -22,6 +22,8 @@ interface Props {
   unknown: string;
   onRange: (range: ColorRange) => void;
   onAuto: () => void;
+  /** The highlighted paths, for the path mode. */
+  paths: { label: string; color: string }[];
 }
 
 function Swatch({ color, label }: { color: string; label: string }) {
@@ -33,7 +35,7 @@ function Swatch({ color, label }: { color: string; label: string }) {
   );
 }
 
-export function Legend({ mode, range, unknown, onRange, onAuto }: Props) {
+export function Legend({ mode, range, unknown, onRange, onAuto, paths }: Props) {
   const shown = SHOWN[mode];
   if (!shown) {
     return (
@@ -45,6 +47,15 @@ export function Legend({ mode, range, unknown, onRange, onAuto }: Props) {
           <>
             <span className="muted small">Colours from the CL and C2 tags.</span>
             <Swatch color={cssColor(NO_TAG_COLOR)} label="No tag" />
+          </>
+        )}
+        {mode === 'path' && (
+          <>
+            {paths.length === 0 && <span className="muted small">Highlight paths in the Paths tab.</span>}
+            {paths.map(({ label, color }) => (
+              <Swatch key={label} color={color} label={label} />
+            ))}
+            <Swatch color={cssColor(NO_TAG_COLOR)} label="On no highlighted path" />
           </>
         )}
       </div>

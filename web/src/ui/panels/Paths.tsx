@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../../state/store';
+import { cssColor, pathColor } from '../../engine/style/colors';
 import type { PathList } from '../../workers/protocol/graph';
 import { formatBases, formatCount } from '../format';
 
@@ -16,6 +17,8 @@ function matching(list: PathList, query: string): number[] {
 
 export function Paths() {
   const paths = useApp((s) => s.paths);
+  const highlighted = useApp((s) => s.highlightedPaths);
+  const clearHighlights = useApp((s) => s.clearHighlights);
   const [query, setQuery] = useState('');
   const list = paths.state === 'ready' ? paths.list : undefined;
   const found = useMemo(() => (list ? matching(list, query) : []), [list, query]);
@@ -41,19 +44,31 @@ export function Paths() {
           setQuery(event.target.value);
         }}
       />
-      <PathTable list={list} rows={found.slice(0, SHOWN)} />
+      {highlighted.length > 0 && (
+        <div className="row">
+          <span className="muted small">{formatCount(highlighted.length)} highlighted</span>
+          <button type="button" data-testid="paths-clear" onClick={clearHighlights}>
+            Clear highlights
+          </button>
+        </div>
+      )}
+      <PathTable list={list} rows={found.slice(0, SHOWN)} highlighted={highlighted} />
       {found.length > SHOWN && <p className="muted">and {formatCount(found.length - SHOWN)} more</p>}
       {found.length === 0 && <p className="muted">No path matches.</p>}
     </section>
   );
 }
 
-function PathTable({ list, rows }: { list: PathList; rows: number[] }) {
+function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]; highlighted: number[] }) {
   const selectPath = useApp((s) => s.selectPath);
+  const toggleHighlight = useApp((s) => s.toggleHighlight);
   return (
     <table className="components path-table" data-testid="paths">
       <thead>
         <tr>
+          <th scope="col">
+            <span className="visually-hidden">Highlight</span>
+          </th>
           <th scope="col">Name</th>
           <th scope="col">Steps</th>
           <th scope="col">Length</th>
@@ -62,6 +77,20 @@ function PathTable({ list, rows }: { list: PathList; rows: number[] }) {
       <tbody>
         {rows.map((i) => (
           <tr key={i} data-testid={`path-${i}`}>
+            <td>
+              <label className="swatch-toggle" title="Highlight this path in its own colour">
+                <input
+                  type="checkbox"
+                  data-testid={`path-highlight-${i}`}
+                  aria-label={`Highlight ${list.names[i] ?? ''}`}
+                  checked={highlighted.includes(i)}
+                  onChange={() => {
+                    toggleHighlight(i);
+                  }}
+                />
+                {highlighted.includes(i) && <span className="swatch" style={{ background: cssColor(pathColor(i)) }} />}
+              </label>
+            </td>
             <td>
               <button
                 type="button"

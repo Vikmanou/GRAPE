@@ -111,21 +111,34 @@ export class Resources {
     return texture;
   }
 
-  /** Writes items `0..` of `data` into a data texture, whole rows first, then the rest of the last. */
+  /** Writes every item of `data` into a data texture. */
   writeData(texture: WebGLTexture, format: Format, data: Uint32Array | Float32Array): void {
+    this.writeItems(texture, format, data, 0, Math.floor(data.length / COMPONENTS[format]));
+  }
+
+  /** Writes items `first..end` of `data`, which holds every item from 0: a partial first row, whole rows, then a partial last. */
+  writeItems(
+    texture: WebGLTexture,
+    format: Format,
+    data: Uint32Array | Float32Array,
+    first: number,
+    end: number,
+  ): void {
     const gl = this.gl;
     const layout = layoutOf(gl, format).format;
     const components = COMPONENTS[format];
     const type = data instanceof Float32Array ? gl.FLOAT : gl.UNSIGNED_INT;
-    const count = Math.floor(data.length / components);
-    const rows = Math.floor(count / TEXTURE_WIDTH);
-    const rest = count - rows * TEXTURE_WIDTH;
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
-    if (rows > 0) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, TEXTURE_WIDTH, rows, layout, type, data, 0);
-    if (rest > 0) {
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, rows, rest, 1, layout, type, data, rows * TEXTURE_WIDTH * components);
-    }
+    const write = (from: number, to: number) => {
+      const row = Math.floor(from / TEXTURE_WIDTH);
+      const x = from - row * TEXTURE_WIDTH;
+      const rows = x === 0 ? Math.floor((to - from) / TEXTURE_WIDTH) : 0;
+      const width = rows > 0 ? TEXTURE_WIDTH : Math.min(to, (row + 1) * TEXTURE_WIDTH) - from;
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, x, row, width, Math.max(rows, 1), layout, type, data, from * components);
+      return from + width * Math.max(rows, 1);
+    };
+    for (let at = first; at < end; ) at = write(at, end);
   }
 
   buffer(target: number, bytes: number, usage: number): WebGLBuffer {

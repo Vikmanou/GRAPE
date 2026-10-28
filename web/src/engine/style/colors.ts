@@ -2,7 +2,7 @@ import type { SegmentData } from '../core/backend';
 import { rampColor } from './ramps';
 import { type ColorRange, rangeFraction } from './scales';
 
-export type ColorMode = 'uniform' | 'random' | 'depth' | 'gc' | 'length' | 'component' | 'tags';
+export type ColorMode = 'uniform' | 'random' | 'depth' | 'gc' | 'length' | 'component' | 'tags' | 'path';
 
 /** Which copy of a segment is drawn: the one of single mode, or a strand of double mode. */
 export type Strand = 'single' | 'forward' | 'reverse';
@@ -50,6 +50,12 @@ export function hsl(h: number, s: number, l: number): [number, number, number] {
     return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
   };
   return [channel(0), channel(8), channel(4)];
+}
+
+/** The `k`th highlighted path's colour: vivid hues stepped by the golden ratio. */
+export function pathColor(k: number): number {
+  const [r, g, b] = hsl(goldenHue(0, k), 0.8, 0.5);
+  return rgba8(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
 }
 
 export function hueColor(hue: number, strand: Strand = 'single'): number {
@@ -108,6 +114,8 @@ export function segmentColor(style: ColorStyle, data: SegmentData, segment: numb
       return ramped(data.gc[segment] ?? NaN);
     case 'length':
       return ramped(data.lengths[segment] ?? NaN);
+    case 'path':
+      return data.pathColors?.[segment] || NO_TAG_COLOR;
   }
 }
 

@@ -96,7 +96,12 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
             type: 'set-graph',
             geometry: response.geometry,
             seed,
-            segments: { ...load.result.attributes, ...load.result.topology, meanDepth: load.result.stats.meanDepth },
+            segments: {
+              ...load.result.attributes,
+              ...load.result.topology,
+              meanDepth: load.result.stats.meanDepth,
+              pathColors: get().pathColors,
+            },
           });
           get().refreshLabels();
           status({ state: 'running', iteration: 0, total });

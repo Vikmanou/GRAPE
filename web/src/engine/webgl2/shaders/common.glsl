@@ -60,6 +60,7 @@ const uint TAG = 4u;
 const uint TAG2 = 5u;
 const uint START = 6u;
 const uint PIECES = 7u;
+const uint PATH = 8u;
 
 ivec2 texel(uint i) {
   return ivec2(int(i & 4095u), int(i >> 12u));
@@ -139,8 +140,12 @@ vec4 segment_color(uint segment, float strand) {
       return ramped(field(LENGTH, segment), false);
     case 5u:
       return golden_color(0u, field(COMPONENT, segment), strand);
-    default:
+    case 6u:
       return tag_color(segment, strand);
+    default: {
+      uint path = field(PATH, segment);
+      return unpack_rgba(path == 0u ? style.no_tag_color : path);
+    }
   }
 }
 

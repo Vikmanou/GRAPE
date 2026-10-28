@@ -16,6 +16,8 @@ export type EngineCommand =
   | { type: 'set-label-text'; generation: number; segments: Uint32Array; texts: string[] }
   | { type: 'set-label-options'; options: LabelOptions }
   | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
+  /** One RGBA8 colour per segment for the path colour mode, 0 off every highlighted path. */
+  | { type: 'set-path-colors'; colors: Uint32Array<ArrayBuffer> }
   /** `x, y` per point, in layout units, from a layout run in the worker, with its grid and progress. */
   | { type: 'set-positions'; positions: Float32Array; grid?: PositionGrid; progress?: CpuProgress }
   /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */

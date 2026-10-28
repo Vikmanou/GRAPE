@@ -98,7 +98,9 @@ export function packStyle(out: ArrayBuffer, style: Style, graph: StyledGraph, di
 }
 
 /** The fields of the shaders' segment table, each a run of one u32 per segment. */
-export const FIELDS = ['depth', 'gc', 'length', 'component', 'tag', 'tag2', 'start', 'pieces'] as const;
+export const FIELDS = ['depth', 'gc', 'length', 'component', 'tag', 'tag2', 'start', 'pieces', 'path'] as const;
+
+export type SegmentField = (typeof FIELDS)[number];
 
 function dense(segments: number, tags: SegmentData['tagColors']): Uint32Array<ArrayBuffer> {
   const out = new Uint32Array(segments);
@@ -111,7 +113,7 @@ function dense(segments: number, tags: SegmentData['tagColors']): Uint32Array<Ar
 /** Each field's run, in the order of `FIELDS`. */
 export function segmentRuns(geometry: Geometry, data: SegmentData): ArrayBufferView[] {
   const n = geometry.segments;
-  const runs: Record<(typeof FIELDS)[number], ArrayBufferView> = {
+  const runs: Record<SegmentField, ArrayBufferView> = {
     depth: data.depth,
     gc: data.gc,
     length: data.lengths,
@@ -120,6 +122,7 @@ export function segmentRuns(geometry: Geometry, data: SegmentData): ArrayBufferV
     tag2: dense(n, data.tagColors2),
     start: geometry.segmentStarts,
     pieces: Uint32Array.from(geometry.segmentPieces),
+    path: data.pathColors ?? new Uint32Array(n),
   };
   return FIELDS.map((field) => runs[field]);
 }

@@ -27,6 +27,7 @@ export const COLOR_MODES = [
   'length',
   'component',
   'tags',
+  'path',
 ] as const satisfies readonly ColorMode[];
 
 export const DEFAULT_DISPLAY: DisplayOptions = {

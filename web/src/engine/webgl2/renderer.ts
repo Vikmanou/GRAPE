@@ -3,6 +3,7 @@ import type { SegmentData, Style } from '../core/backend';
 import { DEFAULT_DISPLAY } from '../style/display';
 import {
   type DrawnView,
+  FIELDS,
   packStyle,
   packView,
   segmentRuns,
@@ -32,6 +33,8 @@ interface Graph {
   linkCount: number;
   /** In the order of `SAMPLERS`. */
   textures: WebGLTexture[];
+  /** What the segment table texture holds. */
+  table: Uint32Array;
   /** `x, y` per point relative to the view's origin; queries read it. */
   positions: Float32Array;
   geometry: Geometry;
@@ -83,7 +86,7 @@ export class Renderer {
     this.releaseGraph();
     const res = this.res;
     const n = geometry.segments;
-    const tableData = new Uint32Array(Math.max(1, 8 * n));
+    const tableData = new Uint32Array(Math.max(1, FIELDS.length * n));
     segmentRuns(geometry, data).forEach((run, i) => {
       tableData.set(new Uint32Array(run.buffer, run.byteOffset, Math.min(n, run.byteLength / 4)), i * n);
     });
@@ -105,6 +108,7 @@ export class Renderer {
       pieceCount,
       linkCount,
       textures: [positions, pieces, table, links, selected],
+      table: tableData,
       positions: relative,
       geometry,
       firstPiece,
@@ -147,6 +151,16 @@ export class Renderer {
     const changed = count > 0 !== this.selectedCount > 0;
     this.selectedCount = count;
     if (changed) this.writeStyle();
+  }
+
+  setPathColors(colors: Uint32Array): void {
+    const graph = this.graph;
+    const texture = graph?.textures[2];
+    const n = graph?.styled.segments ?? 0;
+    if (!graph || !texture || colors.length !== n) return;
+    const start = FIELDS.indexOf('path') * n;
+    graph.table.set(colors, start);
+    this.res.writeItems(texture, 'r32ui', graph.table, start, start + n);
   }
 
   draw(view: DrawnView): void {

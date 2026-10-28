@@ -194,6 +194,9 @@ export class Engine {
         framing.autoFit = true;
         framing.setBounds(undefined);
         break;
+      case 'set-path-colors':
+        this.backend.setPathColors(command.colors);
+        break;
       case 'set-positions':
         layout.stop();
         if (command.progress) layout.setProgress(command.progress);

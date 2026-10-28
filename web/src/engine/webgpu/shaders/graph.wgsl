@@ -70,6 +70,7 @@ const TAG = 4u;
 const TAG2 = 5u;
 const START = 6u;
 const PIECES = 7u;
+const PATH = 8u;
 
 fn field(f: u32, segment: u32) -> u32 {
   return segment_table[f * style.segments + segment];
@@ -143,8 +144,12 @@ fn segment_color(segment: u32, strand: f32) -> vec4f {
     case 5u: {
       return golden_color(0u, field(COMPONENT, segment), strand);
     }
-    default: {
+    case 6u: {
       return tag_color(segment, strand);
+    }
+    default: {
+      let path = field(PATH, segment);
+      return unpack4x8unorm(select(path, style.no_tag_color, path == 0u));
     }
   }
 }

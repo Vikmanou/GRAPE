@@ -23,6 +23,8 @@ export interface SegmentData extends SegmentAttributes {
   components: Uint32Array;
   /** Length-weighted, over segments with a depth; NaN when none has one. */
   meanDepth: number;
+  /** The highlighted path colour of each segment, RGBA8, 0 for none. */
+  pathColors?: Uint32Array | undefined;
 }
 
 export interface Style {
@@ -135,6 +137,8 @@ export interface Backend {
   /** One bit per segment, and how many are set. */
   setSelection(bits: Uint32Array<ArrayBuffer>, count: number): void;
   setHover(segment: number | undefined): void;
+  /** One RGBA8 colour per segment for the path colour mode, 0 for a segment on no highlighted path. */
+  setPathColors(colors: Uint32Array<ArrayBuffer>): void;
   draw(view: View): void;
   /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
   pick(x: number, y: number): Promise<number | undefined>;

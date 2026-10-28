@@ -121,6 +121,10 @@ export class WebGl2Backend implements Backend {
     this.hover = segment;
   }
 
+  setPathColors(colors: Uint32Array<ArrayBuffer>): void {
+    this.renderer.setPathColors(colors);
+  }
+
   draw(view: View): void {
     const gl = this.gl;
     const palette = palettes[this.style.theme];

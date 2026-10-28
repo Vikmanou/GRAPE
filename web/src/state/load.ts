@@ -34,6 +34,11 @@ export interface FileSlice {
   cancelLoad: () => void;
 }
 
+/** The graph on screen. */
+export function shownGraph(state: Pick<FileSlice, 'load'>): ParseResult | undefined {
+  return state.load.state === 'loaded' ? state.load.result : undefined;
+}
+
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
