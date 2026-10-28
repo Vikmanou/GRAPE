@@ -62,6 +62,8 @@ async function parse(id: number, file: File): Promise<void> {
     ...sourceTransfers(sequences),
     components.segments.buffer,
     components.lengths.buffer,
+    components.meanDepths.buffer,
+    components.circular.buffer,
     warnings.lines.buffer,
     warnings.severities.buffer,
     topology.lengths.buffer,
@@ -133,7 +135,12 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
       gcMin: s.gcMin,
       gcMax: s.gcMax,
     },
-    components: { segments: loaded.componentSegments(), lengths: loaded.componentLengths() },
+    components: {
+      segments: loaded.componentSegments(),
+      lengths: loaded.componentLengths(),
+      meanDepths: loaded.componentMeanDepths(),
+      circular: loaded.componentCircular(),
+    },
     warnings: {
       total: loaded.warningTotal(),
       lines: loaded.warningLines(),

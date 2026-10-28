@@ -255,6 +255,22 @@ impl Loaded {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = componentMeanDepths)]
+    pub fn component_mean_depths(&self) -> Vec<f64> {
+        self.graph.components.mean_depth.clone()
+    }
+
+    /// 1 per component that is a single loop.
+    #[wasm_bindgen(js_name = componentCircular)]
+    pub fn component_circular(&self) -> Vec<u8> {
+        self.graph
+            .components
+            .circular
+            .iter()
+            .map(|&c| u8::from(c))
+            .collect()
+    }
+
     #[wasm_bindgen(js_name = warningTotal)]
     pub fn warning_total(&self) -> f64 {
         self.graph.warnings.total as f64

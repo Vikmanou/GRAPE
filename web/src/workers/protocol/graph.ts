@@ -106,6 +106,16 @@ export interface GraphStats {
   gcMax: number;
 }
 
+/** Per component, by rank. */
+export interface ComponentTable {
+  segments: Uint32Array;
+  lengths: Float64Array;
+  /** Length-weighted over segments with a depth; NaN when none has one. */
+  meanDepths: Float64Array;
+  /** 1 when the component is a single loop. */
+  circular: Uint8Array;
+}
+
 export interface ParseWarnings {
   /** Includes warnings beyond the stored list. */
   total: number;
@@ -148,7 +158,7 @@ export interface ParseResult {
   compression: Compression;
   stats: GraphStats;
   /** By rank, largest total length first. */
-  components: { segments: Uint32Array; lengths: Float64Array };
+  components: ComponentTable;
   warnings: ParseWarnings;
   topology: Topology;
   attributes: SegmentAttributes;

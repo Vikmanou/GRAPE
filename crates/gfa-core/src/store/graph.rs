@@ -58,7 +58,8 @@ impl Graph {
             b.segments.seq.fill(NO_SEQ);
         }
         let adjacency = Adjacency::build(b.segments.len(), &b.links);
-        let components = components::compute(&mut b.segments, &b.links);
+        let mut components = components::compute(&mut b.segments, &b.links);
+        components::describe(&mut components, &b.segments, &adjacency);
         let stats = stats::compute(&b.segments, &adjacency, &components, b.links.len());
         let mut graph = Self {
             format,

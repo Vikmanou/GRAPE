@@ -240,3 +240,8 @@
   border-radius: 2px;
   border: 1px solid var(--border);
 }
+
+.components th button {
+  font: inherit;
+  font-weight: 600;
+}

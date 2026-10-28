@@ -1,10 +1,16 @@
+use crate::store::csr::{Adjacency, end};
 use crate::store::{Links, Segments};
 
 /// Indexed by rank, largest total length first.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Components {
     pub segments: Vec<u32>,
     pub length: Vec<u64>,
+    /// Weighted by length over segments with a known depth; NaN when none has one.
+    pub mean_depth: Vec<f64>,
+    /// The component is a single loop: every segment end has one link, to
+    /// another end.
+    pub circular: Vec<bool>,
 }
 
 impl Components {
@@ -79,5 +85,38 @@ pub(crate) fn compute(segments: &mut Segments, links: &Links) -> Components {
     Components {
         segments: order.iter().map(|&c| totals[c as usize].1).collect(),
         length: order.iter().map(|&c| totals[c as usize].0).collect(),
+        mean_depth: Vec::new(),
+        circular: Vec::new(),
     }
+}
+
+pub(crate) fn describe(components: &mut Components, segments: &Segments, adjacency: &Adjacency) {
+    let n = components.len();
+    let mut depth_sum = vec![0.0f64; n];
+    let mut depth_weight = vec![0.0f64; n];
+    let mut circular = vec![true; n];
+    for s in 0..segments.len() {
+        let c = segments.component[s] as usize;
+        let length = f64::from(segments.length[s]);
+        let depth = f64::from(segments.depth[s]);
+        if !depth.is_nan() {
+            depth_sum[c] += depth * length;
+            depth_weight[c] += length;
+        }
+        for right in [false, true] {
+            if !one_link_elsewhere(adjacency, end(s as u32, right)) {
+                circular[c] = false;
+            }
+        }
+    }
+    components.mean_depth = depth_sum
+        .iter()
+        .zip(&depth_weight)
+        .map(|(&sum, &w)| if w > 0.0 { sum / w } else { f64::NAN })
+        .collect();
+    components.circular = circular;
+}
+
+fn one_link_elsewhere(adjacency: &Adjacency, e: u32) -> bool {
+    matches!(adjacency.neighbours(e), [other] if *other != e)
 }

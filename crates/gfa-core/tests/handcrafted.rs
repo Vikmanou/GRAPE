@@ -105,6 +105,18 @@ fn two_components_ranked_by_length() {
 }
 
 #[test]
+fn component_depth_and_circularity() {
+    let g = load("circle.gfa");
+    assert_eq!(g.components.circular, [true]);
+    assert_eq!(g.components.mean_depth, [5.0]);
+    assert_eq!(load("self_loop.gfa").components.circular, [true]);
+    assert_eq!(load("palindrome.gfa").components.circular, [false]);
+    let two = load("two_components.gfa");
+    assert_eq!(two.components.circular, [false, false]);
+    assert!(two.components.mean_depth.iter().all(|d| d.is_nan()));
+}
+
+#[test]
 fn self_loop() {
     let g = load("self_loop.gfa");
     assert_eq!(links(&g), [link("1", '+', "1", '+')]);

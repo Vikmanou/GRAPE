@@ -1,8 +1,6 @@
-import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
-
-const TOP_COMPONENTS = 10;
+import { ComponentTable } from './ComponentTable';
 
 const compressionLabel = { none: '', gzip: ', gzipped', bgzf: ', bgzipped' } as const;
 
@@ -11,7 +9,6 @@ interface Props {
 }
 
 export function Overview({ result }: Props) {
-  const showComponent = useApp((s) => s.showComponent);
   const { stats, components } = result;
   const rows: [string, string, string][] = [
     ['segments', 'Segments', formatCount(stats.segments)],
@@ -33,7 +30,6 @@ export function Overview({ result }: Props) {
   if (stats.undefined > 0) rows.push(['undefined', 'Undefined segments', formatCount(stats.undefined)]);
 
   const format = result.format === 'fastg' ? 'FASTG' : `GFA ${result.version ?? '1'}`;
-  const shown = Math.min(components.segments.length, TOP_COMPONENTS);
 
   return (
     <section aria-label="Overview">
@@ -52,40 +48,8 @@ export function Overview({ result }: Props) {
           </div>
         ))}
       </dl>
-      <h3>Largest components</h3>
-      <table className="components" data-testid="components">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Segments</th>
-            <th scope="col">Length</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: shown }, (_, rank) => (
-            <tr key={rank}>
-              <td>
-                <button
-                  type="button"
-                  className="link"
-                  data-testid={`component-${rank + 1}`}
-                  title="Select and zoom to this component"
-                  onClick={() => {
-                    showComponent(rank);
-                  }}
-                >
-                  {rank + 1}
-                </button>
-              </td>
-              <td>{formatCount(components.segments[rank] ?? 0)}</td>
-              <td>{formatBases(components.lengths[rank] ?? 0)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {components.segments.length > shown && (
-        <p className="muted">and {formatCount(components.segments.length - shown)} more</p>
-      )}
+      <h3>Components</h3>
+      <ComponentTable components={components} />
       <p className="muted small">
         Memory: {result.memory.bytesPerSegment.toFixed(1)} B per segment, names {formatBytes(result.memory.nameBytes)}
         {result.memory.sequenceBytes > 0 ? `, sequences ${formatBytes(result.memory.sequenceBytes)}` : ''}
