@@ -1,4 +1,5 @@
 import type {
+  FastaAttached,
   GraphRequest,
   GraphResponse,
   LabelContent,
@@ -37,6 +38,22 @@ export class GraphClient {
     );
     const { result, sequences } = expect(response, 'parsed');
     return { result, sequences };
+  }
+
+  async addFasta(
+    file: File,
+    onProgress?: ProgressListener,
+  ): Promise<{ result: ParseResult; sequences: SequenceSource; attached: FastaAttached }> {
+    const response = await this.rpc.request(
+      { type: 'add-fasta', file },
+      {
+        onUpdate: (update) => {
+          if (update.type === 'progress') onProgress?.(update.bytesRead, update.totalBytes);
+        },
+      },
+    );
+    const { result, sequences, attached } = expect(response, 'fasta-added');
+    return { result, sequences, attached };
   }
 
   async info(segment: number): Promise<SegmentInfo | undefined> {

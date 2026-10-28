@@ -21,6 +21,8 @@ export type EngineCommand =
   | { type: 'set-filter'; filter: Filter }
   /** One RGBA8 colour per segment for the path colour mode, 0 off every highlighted path. */
   | { type: 'set-path-colors'; colors: Uint32Array<ArrayBuffer> }
+  /** New GC fractions per segment, NaN without a sequence, after sequences were added. */
+  | { type: 'set-gc'; gc: Float32Array<ArrayBuffer> }
   /** `x, y` per point, in layout units, from a layout run in the worker, with its grid and progress. */
   | { type: 'set-positions'; positions: Float32Array; grid?: PositionGrid; progress?: CpuProgress }
   /** Lays the graph out on the GPU; components overlap until `set-offsets` arrives. */

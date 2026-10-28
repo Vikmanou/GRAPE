@@ -185,7 +185,10 @@ export class Engine {
         this.filtering.setFilter(command.filter);
         break;
       case 'set-path-colors':
-        this.backend.setPathColors(command.colors);
+        this.backend.setSegmentRun('path', command.colors);
+        break;
+      case 'set-gc':
+        this.backend.setSegmentRun('gc', command.gc);
         break;
       case 'set-positions':
         layout.stop();

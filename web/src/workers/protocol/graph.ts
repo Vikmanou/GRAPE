@@ -22,7 +22,9 @@ export type GraphRequest =
   /** Shows the graph with its simple chains merged, or the graph as loaded. */
   | { type: 'merge'; id: number; on: boolean }
   /** What a GFA save of the shown graph needs, but for the sequences. */
-  | { type: 'gfa'; id: number };
+  | { type: 'gfa'; id: number }
+  /** Sequences for the graph as loaded, from a FASTA file whose records name its segments. */
+  | { type: 'add-fasta'; id: number; file: File };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -45,7 +47,19 @@ export type GraphResponse =
   /** The merged graph and how its segments are spelled; both undefined back on the graph as loaded. */
   | { type: 'merged'; id: number; result: ParseResult | undefined; map: ChainMap | undefined; chains: number }
   | { type: 'gfa'; id: number; records: GfaRecords }
+  | { type: 'fasta-added'; id: number; result: ParseResult; sequences: SequenceSource; attached: FastaAttached }
   | ErrorResponse;
+
+/** What attaching a FASTA file did (gfa-core `Attached`). */
+export interface FastaAttached {
+  matched: number;
+  /** Records naming no segment. */
+  unknown: number;
+  /** Segments whose length the record's replaced. */
+  resized: number;
+  /** Packed bases exceeded the memory budget. */
+  dropped: boolean;
+}
 
 /** `REVERSE` in gfa-core store/paths.rs. */
 export const REVERSE_STEP = 0x80000000;

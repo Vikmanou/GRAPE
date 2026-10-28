@@ -1,17 +1,12 @@
 // Owns the WASM module, so parsing never blocks the main thread.
 
-import init, { coreVersion, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
+import init, { coreVersion, FastaReader, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { plain } from '../plain';
-import type { GraphRequest, GraphResponse, ParseResult, SegmentAttributes } from '../protocol/graph';
-import {
-  type ChainMap,
-  chainTransfers,
-  type GfaRecords,
-  type SequenceSource,
-  sourceTransfers,
-} from '../protocol/sequence';
+import type { GraphRequest, GraphResponse } from '../protocol/graph';
+import { type ChainMap, chainTransfers, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
+import { describe, gfaRecords, resultTransfers, sequenceSource } from './results';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -31,15 +26,8 @@ function post(message: GraphResponse, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer });
 }
 
-async function parse(id: number, file: File): Promise<void> {
-  current?.free();
-  current = undefined;
-  merged?.loaded.free();
-  merged = undefined;
-  showMerged = false;
-  const start = performance.now();
-  compression = await detectCompression(file);
-  const parser = new Parser(compression !== 'none');
+/** Feeds `file` to `push` in pieces, posting progress for request `id`. */
+async function stream(id: number, file: File, kind: Compression, push: (piece: Uint8Array) => void): Promise<void> {
   let lastProgress = 0;
   let bytesRead = 0;
   const report = (read: number) => {
@@ -48,22 +36,40 @@ async function parse(id: number, file: File): Promise<void> {
     lastProgress = now;
     post({ type: 'progress', id, bytesRead: read, totalBytes: file.size });
   };
+  await readFile(
+    file,
+    kind,
+    (chunk) => {
+      for (let at = 0; at < chunk.length; at += PIECE_BYTES) {
+        push(chunk.subarray(at, at + PIECE_BYTES));
+        // Plain files map chunk bytes to file bytes one to one.
+        report(kind === 'none' ? bytesRead + Math.min(at + PIECE_BYTES, chunk.length) : bytesRead);
+      }
+    },
+    (read) => {
+      bytesRead = read;
+      report(read);
+    },
+  );
+}
+
+function dropMerged(): void {
+  merged?.loaded.free();
+  merged = undefined;
+  showMerged = false;
+}
+
+async function parse(id: number, file: File): Promise<void> {
+  current?.free();
+  current = undefined;
+  dropMerged();
+  const start = performance.now();
+  compression = await detectCompression(file);
+  const parser = new Parser(compression !== 'none');
   try {
-    await readFile(
-      file,
-      compression,
-      (chunk) => {
-        for (let at = 0; at < chunk.length; at += PIECE_BYTES) {
-          parser.push(chunk.subarray(at, at + PIECE_BYTES));
-          // Plain files map chunk bytes to file bytes one to one.
-          report(compression === 'none' ? bytesRead + Math.min(at + PIECE_BYTES, chunk.length) : bytesRead);
-        }
-      },
-      (read) => {
-        bytesRead = read;
-        report(read);
-      },
-    );
+    await stream(id, file, compression, (piece) => {
+      parser.push(piece);
+    });
     current = parser.finish();
   } finally {
     parser.free();
@@ -73,21 +79,29 @@ async function parse(id: number, file: File): Promise<void> {
   post({ type: 'parsed', id, result, sequences }, [...sourceTransfers(sequences), ...resultTransfers(result)]);
 }
 
-function resultTransfers({ components, warnings, topology, attributes }: ParseResult): Transferable[] {
-  return [
-    components.segments.buffer,
-    components.lengths.buffer,
-    components.meanDepths.buffer,
-    components.circular.buffer,
-    warnings.lines.buffer,
-    warnings.severities.buffer,
-    topology.lengths.buffer,
-    topology.components.buffer,
-    topology.linkFrom.buffer,
-    topology.linkTo.buffer,
-    topology.linkBits.buffer,
-    ...attributeTransfers(attributes),
-  ];
+/** Gives the graph as loaded the sequences of a FASTA file, matched by name. */
+async function addFasta(id: number, file: File): Promise<void> {
+  const graph = original();
+  dropMerged();
+  const start = performance.now();
+  const kind = await detectCompression(file);
+  const reader = new FastaReader(kind !== 'none');
+  let report: Float64Array;
+  try {
+    await stream(id, file, kind, (piece) => {
+      reader.push(piece);
+    });
+    report = graph.attachFasta(reader);
+  } finally {
+    reader.free();
+  }
+  const [matched = 0, unknown = 0, resized = 0, dropped = 0] = report;
+  const result = describe(graph, compression, performance.now() - start);
+  const sequences = sequenceSource(graph, file, kind, false);
+  post(
+    { type: 'fasta-added', id, result, sequences, attached: { matched, unknown, resized, dropped: dropped === 1 } },
+    [...sourceTransfers(sequences), ...resultTransfers(result)],
+  );
 }
 
 function merge(id: number, on: boolean): void {
@@ -116,117 +130,6 @@ function merge(id: number, on: boolean): void {
     ...resultTransfers(result),
     ...chainTransfers(map),
   ]);
-}
-
-function gfaRecords(loaded: Loaded): GfaRecords {
-  const segments = plain(loaded.gfaOrder());
-  const lengths = loaded.segmentLengths();
-  return {
-    segments,
-    names: loaded.names(segments),
-    lengths: Uint32Array.from(segments, (s) => lengths[s] ?? 0),
-    depths: plain(loaded.depths(segments)),
-    custom: loaded.gfaCustom(segments),
-    depthTag: loaded.depthTag(),
-    links: plain(loaded.gfaLinks()),
-  };
-}
-
-function attributeTransfers({ depth, gc, tagColors, tagColors2 }: SegmentAttributes): ArrayBuffer[] {
-  return [depth, gc, tagColors.segments, tagColors.colors, tagColors2.segments, tagColors2.colors].map((a) => a.buffer);
-}
-
-/** Moves the sequences out to hand to the sequence worker; packed bases leave this worker. */
-function sequenceSource(loaded: Loaded, file: File, compression: Compression): SequenceSource {
-  const lengths = plain(loaded.segmentLengths());
-  const offsets = plain(loaded.sequenceOffsets());
-  const flags = plain(loaded.segmentFlags());
-  if (compression === 'none')
-    return { kind: 'file', file, lengths, offsets, flags, lines: plain(loaded.lineOffsets()) };
-  const parts = loaded.takePacked();
-  if (!parts) return { kind: 'dropped' };
-  const packed = {
-    bits: plain(parts.bits()),
-    bases: parts.bases(),
-    runStarts: plain(parts.runStarts()),
-    runLengths: plain(parts.runLengths()),
-    runBytes: plain(parts.runBytes()),
-    lowerStarts: plain(parts.lowerStarts()),
-    lowerLengths: plain(parts.lowerLengths()),
-  };
-  parts.free();
-  return { kind: 'packed', packed, lengths, offsets, flags };
-}
-
-function describe(loaded: Loaded, compression: Compression, parseMs: number): ParseResult {
-  const s = loaded.summary();
-  const format = loaded.format() === 'fastg' ? 'fastg' : 'gfa';
-  const result: ParseResult = {
-    format,
-    version: loaded.version(),
-    compression,
-    stats: {
-      segments: s.segments,
-      undefined: s.undefined,
-      links: s.links,
-      totalLength: s.totalLength,
-      n50: s.n50,
-      n75: s.n75,
-      longest: s.longest,
-      shortest: s.shortest,
-      components: s.components,
-      largestComponentLength: s.largestComponentLength,
-      largestComponentSegments: s.largestComponentSegments,
-      deadEnds: s.deadEnds,
-      isolated: s.isolated,
-      meanDepth: s.meanDepth,
-      gc: s.gc,
-      paths: s.paths,
-      walks: s.walks,
-      containments: s.containments,
-      duplicateLinks: s.duplicateLinks,
-      depthQ1: s.depthQ1,
-      depthQ3: s.depthQ3,
-      depthMin: s.depthMin,
-      depthMax: s.depthMax,
-      gcMin: s.gcMin,
-      gcMax: s.gcMax,
-    },
-    components: {
-      segments: loaded.componentSegments(),
-      lengths: loaded.componentLengths(),
-      meanDepths: loaded.componentMeanDepths(),
-      circular: loaded.componentCircular(),
-    },
-    warnings: {
-      total: loaded.warningTotal(),
-      lines: loaded.warningLines(),
-      severities: loaded.warningSeverities(),
-      messages: loaded.warningMessages(),
-    },
-    topology: {
-      lengths: loaded.segmentLengths(),
-      components: loaded.segmentComponents(),
-      linkFrom: loaded.linkFrom(),
-      linkTo: loaded.linkTo(),
-      linkBits: loaded.linkBits(),
-    },
-    attributes: {
-      depth: plain(loaded.segmentDepths()),
-      gc: plain(loaded.segmentGc()),
-      tagColors: { segments: plain(loaded.tagColorSegments(false)), colors: plain(loaded.tagColors(false)) },
-      tagColors2: { segments: plain(loaded.tagColorSegments(true)), colors: plain(loaded.tagColors(true)) },
-    },
-    memory: {
-      bytesPerSegment: s.bytesPerSegment,
-      nameBytes: s.nameBytes,
-      sequenceBytes: s.sequenceBytes,
-      sequencesDropped: s.sequencesDropped,
-    },
-    parseMs,
-  };
-  s.free();
-  return result;
 }
 
 function original(): Loaded {
@@ -298,6 +201,9 @@ async function handle(request: GraphRequest): Promise<void> {
       }
       case 'merge':
         merge(id, request.on);
+        return;
+      case 'add-fasta':
+        await addFasta(id, request.file);
         return;
       case 'gfa': {
         const records = gfaRecords(loaded());

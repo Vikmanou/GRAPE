@@ -6,6 +6,7 @@ import {
   type DrawnView,
   FIELDS,
   packStyle,
+  type SegmentField,
   packView,
   segmentRuns,
   STYLE_BYTES,
@@ -169,13 +170,13 @@ export class Renderer {
     this.res.writeItems(texture, 'r32ui', graph.flags, words, graph.flags.length);
   }
 
-  setPathColors(colors: Uint32Array): void {
+  setSegmentRun(field: SegmentField, values: Uint32Array | Float32Array): void {
     const graph = this.graph;
     const texture = graph?.textures[2];
     const n = graph?.styled.segments ?? 0;
-    if (!graph || !texture || colors.length !== n) return;
-    const start = FIELDS.indexOf('path') * n;
-    graph.table.set(colors, start);
+    if (!graph || !texture || values.length !== n) return;
+    const start = FIELDS.indexOf(field) * n;
+    graph.table.set(new Uint32Array(values.buffer, values.byteOffset, n), start);
     this.res.writeItems(texture, 'r32ui', graph.table, start, start + n);
   }
 

@@ -1,5 +1,6 @@
 //! wasm-bindgen bindings around `gfa-core`: conversions and error mapping only.
 
+mod fasta;
 mod layout;
 mod merge;
 mod parse;
@@ -7,6 +8,7 @@ mod paths;
 mod query;
 mod sequence;
 
+pub use fasta::FastaReader;
 pub use layout::{Hierarchy, Layout, pack};
 pub use merge::MergeResult;
 pub use parse::{Loaded, Parser, Summary};

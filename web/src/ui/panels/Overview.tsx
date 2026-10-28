@@ -1,7 +1,9 @@
+import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
 import { ComponentTable } from './ComponentTable';
 import { MergeControls } from './MergeControls';
+import { SequenceFile } from './SequenceFile';
 
 const compressionLabel = { none: '', gzip: ', gzipped', bgzf: ', bgzipped' } as const;
 
@@ -11,6 +13,7 @@ interface Props {
 
 export function Overview({ result }: Props) {
   const { stats, components } = result;
+  const sequenceFile = useApp((s) => s.sequenceFile.state);
   const rows: [string, string, string][] = [
     ['segments', 'Segments', formatCount(stats.segments)],
     ['links', 'Links', formatCount(stats.links)],
@@ -41,6 +44,7 @@ export function Overview({ result }: Props) {
       {result.memory.sequencesDropped && (
         <p className="notice">Sequences exceeded the memory budget and were dropped.</p>
       )}
+      {(Number.isNaN(stats.gc) || sequenceFile !== 'none') && result.format === 'gfa' && <SequenceFile />}
       <MergeControls />
       <dl className="stats">
         {rows.map(([id, label, value]) => (

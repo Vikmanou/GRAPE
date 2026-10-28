@@ -1,4 +1,4 @@
-import type { ParseResult } from '../workers/protocol/graph';
+import type { FastaAttached, ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import type { MergeSlice } from './merge';
@@ -19,6 +19,12 @@ export type LoadState =
   | { state: 'loaded'; file: FileInfo; result: ParseResult }
   | { state: 'failed'; file: FileInfo; message: string };
 
+export type SequenceFileState =
+  | { state: 'none' }
+  | { state: 'reading'; name: string; fraction: number }
+  | { state: 'added'; name: string; attached: FastaAttached }
+  | { state: 'failed'; name: string; message: string };
+
 export type CoreStatus =
   | { state: 'loading' }
   | { state: 'ready'; version: string; roundTripMs: number }
@@ -33,6 +39,9 @@ export interface FileSlice {
   /** Opens one of the bundled examples, by id. */
   openExample: (id: string) => void;
   cancelLoad: () => void;
+  sequenceFile: SequenceFileState;
+  /** Sequences for a graph whose file has none, from a FASTA file naming its segments. */
+  addSequences: (file: File) => void;
 }
 
 /** The graph on screen: as loaded, or with its chains merged. */
@@ -51,6 +60,7 @@ export function createFileSlice(ctx: Context): FileSlice {
   return {
     core: { state: 'loading' },
     load: { state: 'idle' },
+    sequenceFile: { state: 'none' },
 
     startCore() {
       services.graph.ping().then(
@@ -87,6 +97,7 @@ export function createFileSlice(ctx: Context): FileSlice {
         findResult: { state: 'idle' },
         merged: undefined,
         mergeOn: false,
+        sequenceFile: { state: 'none' },
       });
       graph
         .parse(file, (bytesRead, totalBytes) => {
@@ -119,6 +130,36 @@ export function createFileSlice(ctx: Context): FileSlice {
             set({ load: { state: 'failed', file: info, message: message(error) } });
           },
         );
+    },
+
+    addSequences(file) {
+      const { load, merged } = get();
+      if (load.state !== 'loaded') return;
+      const name = file.name;
+      set({ sequenceFile: { state: 'reading', name, fraction: 0 } });
+      services.graph
+        .addFasta(file, (bytesRead, totalBytes) => {
+          if (get().sequenceFile.state !== 'reading') return;
+          set({ sequenceFile: { state: 'reading', name, fraction: totalBytes > 0 ? bytesRead / totalBytes : 0 } });
+        })
+        .then(async ({ result, sequences, attached }) => {
+          if (get().load !== load) return;
+          set({
+            load: { ...load, result },
+            merged: undefined,
+            mergeOn: false,
+            sequenceFile: { state: 'added', name, attached },
+          });
+          await services.sequence.load(sequences);
+          get().resetColorRange();
+          // New lengths change the layout; new GC only colours.
+          if (attached.resized > 0 || merged) get().restartLayout();
+          else ctx.bridge.send({ type: 'set-gc', gc: result.attributes.gc });
+        })
+        .catch((error: unknown) => {
+          if (error instanceof WorkerTerminatedError) return;
+          set({ sequenceFile: { state: 'failed', name, message: message(error) } });
+        });
     },
 
     cancelLoad() {

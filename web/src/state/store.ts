@@ -37,6 +37,7 @@ export type GraphService = Pick<
   | 'pathSteps'
   | 'merge'
   | 'gfa'
+  | 'addFasta'
   | 'memory'
 >;
 

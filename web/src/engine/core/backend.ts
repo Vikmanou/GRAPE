@@ -143,8 +143,11 @@ export interface Backend {
   setHover(segment: number | undefined): void;
   /** Segments and links a filter hides: they are not drawn, picked or labelled. */
   setVisibility(hidden: Hidden): void;
-  /** One RGBA8 colour per segment for the path colour mode, 0 for a segment on no highlighted path. */
-  setPathColors(colors: Uint32Array<ArrayBuffer>): void;
+  /**
+   * Replaces one run of the segment table: `path`, one RGBA8 colour per
+   * segment for the path colour mode (0 off every highlighted path), or `gc`.
+   */
+  setSegmentRun(field: 'path' | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void;
   draw(view: View): void;
   /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
   pick(x: number, y: number): Promise<number | undefined>;

@@ -852,3 +852,20 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   ordered by their names with signs; a link of unknown overlap is `0M`.
 - **Reason**: exports match Bandage byte for byte for the same graph.
 - **Alternatives**: writing `LN:i:1` as Bandage does; GRAPE's own order.
+
+## 2026-10-28: Sequences can come from a separate FASTA file
+
+- **Decision**: when a GFA file has no sequences (every `S` line `*`, as
+  ABySS writes them), the Overview offers "Add sequences from FASTA…". The
+  graph worker streams the FASTA file (plain or gzipped) through gfa-core's
+  `FastaIndexer`, matching each record to a segment by the first word of its
+  header; a matched segment takes the record's bases, length (replacing
+  `LN`, reported) and GC, and components and stats are counted again. Plain
+  FASTA is read back by offset from the file, gzipped FASTA is packed two
+  bits per base as gzipped GFA is. New lengths lay the graph out again; new
+  GC only recolours (`set-gc`). Raw `S` lines are no longer shown, since
+  the sequences come from another file. Records that name no segment are
+  counted, not kept.
+- **Reason**: chosen by the owner for milestone 8's open question.
+- **Alternatives**: no separate FASTA in v1 (recommended, declined by the
+  owner); asking for the FASTA while the GFA loads.

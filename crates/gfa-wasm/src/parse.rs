@@ -56,6 +56,10 @@ impl Loaded {
         &self.graph
     }
 
+    pub(crate) fn graph_mut(&mut self) -> &mut Graph {
+        &mut self.graph
+    }
+
     fn tag_colors(&self, second: bool) -> &[(u32, u32)] {
         let custom = &self.graph.custom;
         if second {

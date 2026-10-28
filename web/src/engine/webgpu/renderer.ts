@@ -3,7 +3,7 @@ import type { SegmentData, Style } from '../core/backend';
 import type { Hidden } from '../core/Visibility';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { MAX_RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
-import { type DrawnView, FIELDS, packView, type StyledGraph, VIEW_BYTES } from '../style/uniforms';
+import { type DrawnView, FIELDS, packView, type SegmentField, type StyledGraph, VIEW_BYTES } from '../style/uniforms';
 import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
@@ -233,10 +233,10 @@ export class Renderer {
     if (changed) this.writeStyle();
   }
 
-  setPathColors(colors: Uint32Array<ArrayBuffer>): void {
+  setSegmentRun(field: SegmentField, values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void {
     const graph = this.graph;
-    if (!graph || colors.length !== graph.segments) return;
-    this.device.queue.writeBuffer(graph.table, FIELDS.indexOf('path') * graph.segments * 4, colors);
+    if (!graph || values.length !== graph.segments) return;
+    this.device.queue.writeBuffer(graph.table, FIELDS.indexOf(field) * graph.segments * 4, values);
   }
 
   setVisibility(hidden: Hidden): void {

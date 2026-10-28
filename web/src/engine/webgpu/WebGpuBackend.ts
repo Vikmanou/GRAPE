@@ -119,8 +119,8 @@ export class WebGpuBackend implements Backend {
     this.hover = segment;
   }
 
-  setPathColors(colors: Uint32Array<ArrayBuffer>): void {
-    this.renderer.setPathColors(colors);
+  setSegmentRun(field: 'path' | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void {
+    this.renderer.setSegmentRun(field, values);
   }
 
   setVisibility(hidden: Hidden): void {

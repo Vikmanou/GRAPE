@@ -12,6 +12,7 @@ pub use analysis::components::Components;
 pub use analysis::stats::Stats;
 pub use parse::builder::RecordCounts;
 pub use parse::colors::parse_color;
+pub use parse::fasta::{Attached, FastaIndexer};
 pub use parse::parser::{ParseOptions, Parser, parse};
 pub use parse::warnings::{FatalError, MAX_STORED, Severity, Warning, WarningKind, Warnings};
 pub use store::bases::{bases_from_file, bases_from_packed, reverse_complement};

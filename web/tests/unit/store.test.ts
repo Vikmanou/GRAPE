@@ -123,6 +123,7 @@ function setup() {
       paths: () => Promise.reject(new Error('unused')),
       pathSteps: () => Promise.reject(new Error('unused')),
       merge: () => Promise.reject(new Error('unused')),
+      addFasta: () => Promise.reject(new Error('unused')),
       gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
       cancel: () => {
