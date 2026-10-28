@@ -7,7 +7,7 @@ import type {
   SegmentInfo,
   SelectionSummary,
 } from '../protocol/graph';
-import type { FastaRecords, SequenceSource } from '../protocol/sequence';
+import type { ChainMap, FastaRecords, GfaRecords, SequenceSource } from '../protocol/sequence';
 import type { FindQuery } from './findQuery';
 import { expect, RpcClient, type WorkerMemory } from '../rpc';
 
@@ -74,6 +74,15 @@ export class GraphClient {
 
   async pathSteps(path: number): Promise<Uint32Array<ArrayBuffer>> {
     return expect(await this.rpc.request({ type: 'path-steps', path }), 'path-steps').steps;
+  }
+
+  async merge(on: boolean): Promise<{ result: ParseResult | undefined; map: ChainMap | undefined; chains: number }> {
+    const { result, map, chains } = expect(await this.rpc.request({ type: 'merge', on }), 'merged');
+    return { result, map, chains };
+  }
+
+  async gfa(): Promise<GfaRecords> {
+    return expect(await this.rpc.request({ type: 'gfa' }), 'gfa').records;
   }
 
   async memory(): Promise<WorkerMemory> {

@@ -1,6 +1,7 @@
 import type { ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
+import type { MergeSlice } from './merge';
 import type { Context } from './store';
 
 /** The v1 ceiling (spec, Overview); larger graphs load with a warning. */
@@ -34,9 +35,9 @@ export interface FileSlice {
   cancelLoad: () => void;
 }
 
-/** The graph on screen. */
-export function shownGraph(state: Pick<FileSlice, 'load'>): ParseResult | undefined {
-  return state.load.state === 'loaded' ? state.load.result : undefined;
+/** The graph on screen: as loaded, or with its chains merged. */
+export function shownGraph(state: Pick<FileSlice, 'load'> & Pick<MergeSlice, 'merged'>): ParseResult | undefined {
+  return state.load.state === 'loaded' ? (state.merged?.result ?? state.load.result) : undefined;
 }
 
 function message(error: unknown): string {
@@ -81,7 +82,12 @@ export function createFileSlice(ctx: Context): FileSlice {
       parsing = file;
       get().stopLayout();
       const info = { name: file.name, size: file.size };
-      set({ load: { state: 'parsing', file: info, fraction: 0 }, findResult: { state: 'idle' } });
+      set({
+        load: { state: 'parsing', file: info, fraction: 0 },
+        findResult: { state: 'idle' },
+        merged: undefined,
+        mergeOn: false,
+      });
       graph
         .parse(file, (bytesRead, totalBytes) => {
           if (parsing !== file) return;

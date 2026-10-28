@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { shownGraph } from '../state/load';
 import { useApp } from '../state/store';
 import { EmptyState } from './overlays/EmptyState';
 import { EngineHost } from './EngineHost';
@@ -15,6 +16,7 @@ import { Warnings } from './overlays/Warnings';
 export function App() {
   const renderer = useApp((s) => s.renderer);
   const engineError = useApp((s) => s.engineError);
+  const shown = useApp(shownGraph);
   const load = useApp((s) => s.load);
   const open = useApp((s) => s.open);
   const [showWarnings, setShowWarnings] = useState(false);
@@ -52,7 +54,7 @@ export function App() {
           <p>{load.message}</p>
         </div>
       )}
-      {load.state === 'loaded' && <Sidebar result={load.result} />}
+      {shown && <Sidebar result={shown} />}
       {load.state === 'loaded' && <Info />}
       {load.state === 'loaded' && showWarnings && (
         <Warnings

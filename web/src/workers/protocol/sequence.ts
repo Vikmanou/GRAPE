@@ -40,6 +40,34 @@ export interface FastaRecords {
   depths: Float32Array<ArrayBuffer>;
 }
 
+/** For each segment of a merged graph, the steps through the original segments that spell it (gfa-core `Merged`). */
+export interface ChainMap {
+  /** `stepEnds[i - 1]` to `stepEnds[i]` index `steps` and `trims` for segment `i`. */
+  stepEnds: Uint32Array<ArrayBuffer>;
+  /** Original segment ids, with `REVERSE_STEP` set on reverse steps. */
+  steps: Uint32Array<ArrayBuffer>;
+  /** Bases cut from the start of each step. */
+  trims: Uint32Array<ArrayBuffer>;
+}
+
+export function chainTransfers(map: ChainMap): ArrayBuffer[] {
+  return [map.stepEnds.buffer, map.steps.buffer, map.trims.buffer];
+}
+
+/** What Bandage's GFA save writes, but for the sequences, in its order. */
+export interface GfaRecords {
+  segments: Uint32Array<ArrayBuffer>;
+  names: string[];
+  lengths: Uint32Array<ArrayBuffer>;
+  depths: Float32Array<ArrayBuffer>;
+  /** Each line's LB, L2, CL and C2 fields. */
+  custom: string[];
+  /** 0 none, 1 DP, 2 KC, 3 RC, 4 FC (gfa-wasm `depth_tag_code`). */
+  depthTag: number;
+  /** The L lines. */
+  links: Uint8Array<ArrayBuffer>;
+}
+
 export type SequenceRequest =
   | { type: 'load'; id: number; source: SequenceSource }
   | { type: 'memory'; id: number }
@@ -48,7 +76,10 @@ export type SequenceRequest =
   /** Sequences joined by newlines, as Bandage copies them. */
   | { type: 'sequence'; id: number; segments: Uint32Array<ArrayBuffer> }
   | { type: 'raw-line'; id: number; segment: number }
-  | { type: 'fasta'; id: number; records: FastaRecords };
+  | { type: 'fasta'; id: number; records: FastaRecords }
+  /** Serves a merged graph's segments from the original sequences; undefined goes back to the original graph. */
+  | { type: 'chains'; id: number; map: ChainMap | undefined }
+  | { type: 'gfa'; id: number; records: GfaRecords };
 
 export type SequenceResponse =
   | { type: 'loaded'; id: number }
@@ -59,4 +90,5 @@ export type SequenceResponse =
   /** `elided` bases were cut from the middle of a long sequence. Undefined for gzipped input. */
   | { type: 'raw-line'; id: number; line: { text: string; elided: number } | undefined }
   | { type: 'fasta'; id: number; blob: Blob }
+  | { type: 'gfa'; id: number; blob: Blob }
   | ErrorResponse;

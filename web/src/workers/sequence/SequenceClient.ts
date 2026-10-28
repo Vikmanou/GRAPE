@@ -1,5 +1,8 @@
 import {
+  type ChainMap,
+  chainTransfers,
   type FastaRecords,
+  type GfaRecords,
   type SequenceRequest,
   type SequenceResponse,
   type SequenceSource,
@@ -47,5 +50,14 @@ export class SequenceClient {
 
   async fasta(records: FastaRecords): Promise<Blob> {
     return expect(await this.rpc.request({ type: 'fasta', records }), 'fasta').blob;
+  }
+
+  async setChains(map: ChainMap | undefined): Promise<void> {
+    const transfer = map ? chainTransfers(map) : [];
+    expect(await this.rpc.request({ type: 'chains', map }, { transfer }), 'loaded');
+  }
+
+  async gfa(records: GfaRecords): Promise<Blob> {
+    return expect(await this.rpc.request({ type: 'gfa', records }, { transfer: [records.links.buffer] }), 'gfa').blob;
   }
 }

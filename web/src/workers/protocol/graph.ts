@@ -1,7 +1,7 @@
 import type { ErrorResponse, WorkerMemory } from '../rpc';
 import type { FindQuery } from '../graph/findQuery';
 import type { Compression } from '../graph/readFile';
-import type { FastaRecords, SequenceSource } from './sequence';
+import type { ChainMap, FastaRecords, GfaRecords, SequenceSource } from './sequence';
 
 export type GraphRequest =
   | { type: 'ping'; id: number }
@@ -18,7 +18,11 @@ export type GraphRequest =
   /** Steps from the selection, one bit per segment. */
   | { type: 'distances'; id: number; bits: Uint32Array<ArrayBuffer> }
   | { type: 'paths'; id: number }
-  | { type: 'path-steps'; id: number; path: number };
+  | { type: 'path-steps'; id: number; path: number }
+  /** Shows the graph with its simple chains merged, or the graph as loaded. */
+  | { type: 'merge'; id: number; on: boolean }
+  /** What a GFA save of the shown graph needs, but for the sequences. */
+  | { type: 'gfa'; id: number };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -38,6 +42,9 @@ export type GraphResponse =
   | { type: 'paths'; id: number; paths: PathList }
   /** Segment ids, with `REVERSE_STEP` set on reverse steps. */
   | { type: 'path-steps'; id: number; steps: Uint32Array<ArrayBuffer> }
+  /** The merged graph and how its segments are spelled; both undefined back on the graph as loaded. */
+  | { type: 'merged'; id: number; result: ParseResult | undefined; map: ChainMap | undefined; chains: number }
+  | { type: 'gfa'; id: number; records: GfaRecords }
   | ErrorResponse;
 
 /** `REVERSE` in gfa-core store/paths.rs. */

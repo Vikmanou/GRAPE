@@ -2,6 +2,7 @@ import type { ColorMode } from '../engine/style/colors';
 import { DEFAULT_DISPLAY, type DisplayOptions } from '../engine/style/display';
 import type { ColorRange } from '../engine/style/scales';
 import type { GraphStats } from '../workers/protocol/graph';
+import { shownGraph } from './load';
 import type { Context } from './store';
 
 export type RangedMode = 'depth' | 'gc' | 'length';
@@ -48,8 +49,9 @@ export function createDisplayOptionsSlice(ctx: Context): DisplayOptionsSlice {
     },
 
     setColorMode(color) {
-      const { displayOptions, load } = get();
-      const range = isRanged(color) && load.state === 'loaded' ? autoRange(color, load.result.stats) : undefined;
+      const { displayOptions } = get();
+      const stats = shownGraph(get())?.stats;
+      const range = isRanged(color) && stats ? autoRange(color, stats) : undefined;
       apply({ ...displayOptions, color, range: range ?? displayOptions.range });
     },
 

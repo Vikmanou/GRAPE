@@ -4,7 +4,13 @@ import init, { coreVersion, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm'
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { plain } from '../plain';
 import type { GraphRequest, GraphResponse, ParseResult, SegmentAttributes } from '../protocol/graph';
-import { type SequenceSource, sourceTransfers } from '../protocol/sequence';
+import {
+  type ChainMap,
+  chainTransfers,
+  type GfaRecords,
+  type SequenceSource,
+  sourceTransfers,
+} from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
 import { type Compression, detectCompression, readFile } from './readFile';
 
@@ -16,6 +22,10 @@ const ready = init({ module_or_path: wasmUrl });
 
 /** The parsed graph, answering queries until the next load frees it. */
 let current: Loaded | undefined;
+let compression: Compression = 'none';
+/** The parsed graph with its chains merged, made the first time it is asked for. */
+let merged: { loaded: Loaded; map: ChainMap; chains: number } | undefined;
+let showMerged = false;
 
 function post(message: GraphResponse, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer });
@@ -24,8 +34,11 @@ function post(message: GraphResponse, transfer: Transferable[] = []): void {
 async function parse(id: number, file: File): Promise<void> {
   current?.free();
   current = undefined;
+  merged?.loaded.free();
+  merged = undefined;
+  showMerged = false;
   const start = performance.now();
-  const compression = await detectCompression(file);
+  compression = await detectCompression(file);
   const parser = new Parser(compression !== 'none');
   let lastProgress = 0;
   let bytesRead = 0;
@@ -56,10 +69,12 @@ async function parse(id: number, file: File): Promise<void> {
     parser.free();
   }
   const result = describe(current, compression, performance.now() - start);
-  const { components, warnings, topology, attributes } = result;
   const sequences = sequenceSource(current, file, compression);
-  post({ type: 'parsed', id, result, sequences }, [
-    ...sourceTransfers(sequences),
+  post({ type: 'parsed', id, result, sequences }, [...sourceTransfers(sequences), ...resultTransfers(result)]);
+}
+
+function resultTransfers({ components, warnings, topology, attributes }: ParseResult): Transferable[] {
+  return [
     components.segments.buffer,
     components.lengths.buffer,
     components.meanDepths.buffer,
@@ -72,7 +87,49 @@ async function parse(id: number, file: File): Promise<void> {
     topology.linkTo.buffer,
     topology.linkBits.buffer,
     ...attributeTransfers(attributes),
+  ];
+}
+
+function merge(id: number, on: boolean): void {
+  showMerged = on;
+  if (!on) {
+    post({ type: 'merged', id, result: undefined, map: undefined, chains: 0 });
+    return;
+  }
+  const start = performance.now();
+  if (!merged) {
+    const made = original().merge();
+    const loaded = made.takeGraph();
+    const map = { stepEnds: plain(made.stepEnds()), steps: plain(made.steps()), trims: plain(made.trims()) };
+    const chains = made.chains();
+    made.free();
+    if (!loaded) throw new Error('the merged graph was already taken');
+    merged = { loaded, map, chains };
+  }
+  const result = describe(merged.loaded, compression, performance.now() - start);
+  const map = {
+    stepEnds: merged.map.stepEnds.slice(),
+    steps: merged.map.steps.slice(),
+    trims: merged.map.trims.slice(),
+  };
+  post({ type: 'merged', id, result, map, chains: merged.chains }, [
+    ...resultTransfers(result),
+    ...chainTransfers(map),
   ]);
+}
+
+function gfaRecords(loaded: Loaded): GfaRecords {
+  const segments = plain(loaded.gfaOrder());
+  const lengths = loaded.segmentLengths();
+  return {
+    segments,
+    names: loaded.names(segments),
+    lengths: Uint32Array.from(segments, (s) => lengths[s] ?? 0),
+    depths: plain(loaded.depths(segments)),
+    custom: loaded.gfaCustom(segments),
+    depthTag: loaded.depthTag(),
+    links: plain(loaded.gfaLinks()),
+  };
 }
 
 function attributeTransfers({ depth, gc, tagColors, tagColors2 }: SegmentAttributes): ArrayBuffer[] {
@@ -172,9 +229,14 @@ function describe(loaded: Loaded, compression: Compression, parseMs: number): Pa
   return result;
 }
 
-function loaded(): Loaded {
+function original(): Loaded {
   if (!current) throw new Error('no graph is loaded');
   return current;
+}
+
+/** The graph on screen, which queries are about. */
+function loaded(): Loaded {
+  return showMerged && merged ? merged.loaded : original();
 }
 
 async function handle(request: GraphRequest): Promise<void> {
@@ -232,6 +294,19 @@ async function handle(request: GraphRequest): Promise<void> {
       case 'path-steps': {
         const steps = plain(loaded().pathSteps(request.path));
         post({ type: 'path-steps', id, steps }, [steps.buffer]);
+        return;
+      }
+      case 'merge':
+        merge(id, request.on);
+        return;
+      case 'gfa': {
+        const records = gfaRecords(loaded());
+        post({ type: 'gfa', id, records }, [
+          records.segments.buffer,
+          records.lengths.buffer,
+          records.depths.buffer,
+          records.links.buffer,
+        ]);
         return;
       }
       case 'export': {

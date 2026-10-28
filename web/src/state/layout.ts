@@ -1,5 +1,6 @@
 import { USABLE_LEVEL } from '../engine/core/backend';
 import type { LayoutOptions } from '../workers/protocol/layout';
+import { shownGraph } from './load';
 import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
 
@@ -50,8 +51,9 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
   let stopRun: (() => void) | undefined;
 
   function run(): () => void {
-    const { load, gpuLayout: gpu, layoutOptions: options } = get();
-    if (load.state !== 'loaded') return ignore;
+    const { gpuLayout: gpu, layoutOptions: options } = get();
+    const graph = shownGraph(get());
+    if (!graph) return ignore;
     const bridge = ctx.bridge;
     const { seed, quality } = options;
     const client = services.layoutClient();
@@ -86,7 +88,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       }
     });
 
-    client.start(gpu ? 'gpu' : 'cpu', load.result.topology, options, (response) => {
+    client.start(gpu ? 'gpu' : 'cpu', graph.topology, options, (response) => {
       if (!live) return;
       switch (response.type) {
         case 'geometry':
@@ -97,9 +99,9 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
             geometry: response.geometry,
             seed,
             segments: {
-              ...load.result.attributes,
-              ...load.result.topology,
-              meanDepth: load.result.stats.meanDepth,
+              ...graph.attributes,
+              ...graph.topology,
+              meanDepth: graph.stats.meanDepth,
               pathColors: get().pathColors,
             },
           });

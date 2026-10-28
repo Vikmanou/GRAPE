@@ -1,4 +1,4 @@
-use gfa_core::write::fasta;
+use gfa_core::write::{fasta, gfa};
 use gfa_core::{Packed, Run, Span, bases_from_file, bases_from_packed};
 use wasm_bindgen::prelude::*;
 
@@ -89,6 +89,27 @@ impl PackedSequences {
 #[wasm_bindgen(js_name = basesFromFile)]
 pub fn bases_from_file_bytes(bytes: &[u8], length: u32, flags: u8) -> Option<Vec<u8>> {
     bases_from_file(bytes, length, flags)
+}
+
+#[wasm_bindgen(js_name = reverseComplement)]
+pub fn reverse_complement(bases: &[u8]) -> Vec<u8> {
+    gfa_core::reverse_complement(bases)
+}
+
+/// One S line as Bandage saves it; `depth_tag` as `Loaded::depth_tag`.
+#[wasm_bindgen(js_name = gfaSegmentLine)]
+pub fn gfa_segment_line(
+    name: &[u8],
+    length: u32,
+    bases: Option<Vec<u8>>,
+    depth_tag: u8,
+    depth: f32,
+    custom: &[u8],
+) -> Vec<u8> {
+    let mut out = Vec::new();
+    let tag = crate::merge::depth_tag(depth_tag);
+    gfa::write_segment(&mut out, name, length, bases.as_deref(), tag, depth, custom);
+    out
 }
 
 #[wasm_bindgen(js_name = fastaRecord)]

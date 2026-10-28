@@ -48,6 +48,10 @@ pub struct Loaded {
 }
 
 impl Loaded {
+    pub(crate) fn from_graph(graph: Graph) -> Self {
+        Self { graph }
+    }
+
     pub(crate) fn graph(&self) -> &Graph {
         &self.graph
     }

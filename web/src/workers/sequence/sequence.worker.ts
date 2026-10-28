@@ -1,14 +1,30 @@
 // Owns the sequences, so reading them and (from milestone 9) searching them
 // never holds up the graph worker's queries.
 
-import init, { basesFromFile, fastaRecord, PackedSequences } from '../../wasm/pkg/gfa_wasm';
+import init, {
+  basesFromFile,
+  fastaRecord,
+  gfaSegmentLine,
+  PackedSequences,
+  reverseComplement,
+} from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
-import type { FastaRecords, SequenceRequest, SequenceResponse, SequenceSource } from '../protocol/sequence';
+import type {
+  ChainMap,
+  FastaRecords,
+  GfaRecords,
+  SequenceRequest,
+  SequenceResponse,
+  SequenceSource,
+} from '../protocol/sequence';
+import { Chained } from './Chained';
 import { type HeldSource, Sequences } from './Sequences';
 
 const ready = init({ module_or_path: wasmUrl });
 const encoder = new TextEncoder();
 let sequences: Sequences | undefined;
+/** A merged graph's sequences, spelled from `sequences`. */
+let chained: Chained | undefined;
 let packed: PackedSequences | undefined;
 
 function post(message: SequenceResponse): void {
@@ -16,6 +32,7 @@ function post(message: SequenceResponse): void {
 }
 
 function load(source: SequenceSource): void {
+  chained = undefined;
   packed?.free();
   packed = undefined;
   let held: HeldSource = source;
@@ -31,12 +48,34 @@ function load(source: SequenceSource): void {
   });
 }
 
-function loaded(): Sequences {
+function setChains(map: ChainMap | undefined): void {
+  if (!sequences) throw new Error('no sequences are loaded');
+  chained = map && new Chained(sequences, map, reverseComplement);
+}
+
+/** The sequences of the graph on screen. */
+function loaded(): Sequences | Chained {
   if (!sequences) throw new Error('no sequences are loaded');
   if (!sequences.available) {
     throw new Error('Sequences exceeded the memory budget when the file was read, so they are not available.');
   }
-  return sequences;
+  return chained ?? sequences;
+}
+
+/** Without sequences a GFA still saves, with `*` for each. */
+async function gfa(records: GfaRecords): Promise<Blob> {
+  const s = sequences?.available ? loaded() : undefined;
+  const parts: Uint8Array<ArrayBuffer>[] = [];
+  for (const [i, segment] of records.segments.entries()) {
+    const bases = await s?.bases(segment);
+    const name = encoder.encode(records.names[i] ?? '');
+    const custom = encoder.encode(records.custom[i] ?? '');
+    const length = records.lengths[i] ?? 0;
+    const depth = records.depths[i] ?? NaN;
+    parts.push(gfaSegmentLine(name, length, bases, records.depthTag, depth, custom) as Uint8Array<ArrayBuffer>);
+  }
+  parts.push(records.links);
+  return new Blob(parts, { type: 'text/plain' });
 }
 
 /** Bandage copies sequences joined by newlines, a missing one as N for every base. */
@@ -69,7 +108,7 @@ async function handle(request: SequenceRequest): Promise<void> {
       post({
         type: 'memory',
         id: request.id,
-        memory: { wasm: (await ready).memory.buffer.byteLength, held: sequences?.heldBytes ?? 0 },
+        memory: { wasm: (await ready).memory.buffer.byteLength, held: (chained ?? sequences)?.heldBytes ?? 0 },
       });
       return;
     case 'load':
@@ -94,7 +133,14 @@ async function handle(request: SequenceRequest): Promise<void> {
       post({ type: 'sequence', id: request.id, text: await joined(request.segments) });
       return;
     case 'raw-line':
-      post({ type: 'raw-line', id: request.id, line: await sequences?.rawLine(request.segment, 100) });
+      post({ type: 'raw-line', id: request.id, line: await (chained ?? sequences)?.rawLine(request.segment, 100) });
+      return;
+    case 'chains':
+      setChains(request.map);
+      post({ type: 'loaded', id: request.id });
+      return;
+    case 'gfa':
+      post({ type: 'gfa', id: request.id, blob: await gfa(request.records) });
       return;
     case 'fasta':
       post({ type: 'fasta', id: request.id, blob: await fasta(request.records) });

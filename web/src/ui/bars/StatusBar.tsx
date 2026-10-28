@@ -1,6 +1,7 @@
 import type { BackendKind } from '../../engine/core/detect';
 import type { LayoutStatus } from '../../state/layout';
 import type { CoreStatus } from '../../state/load';
+import { shownGraph } from '../../state/load';
 import { useApp } from '../../state/store';
 import { formatCount, formatPercent, formatSeconds } from '../format';
 
@@ -56,6 +57,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const fps = useApp((s) => s.fps);
   const refining = useApp((s) => s.refining);
   const visible = useApp((s) => s.visibleSegments);
+  const segments = useApp((s) => shownGraph(s)?.stats.segments ?? 0);
   const onCancel = useApp((s) => s.cancelLoad);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
@@ -72,8 +74,8 @@ export function StatusBar({ onToggleWarnings }: Props) {
       {load.state === 'loaded' && (
         <span data-testid="status-segments" data-visible={visible}>
           {visible === undefined
-            ? `${formatCount(load.result.stats.segments)} segments`
-            : `${formatCount(visible)} of ${formatCount(load.result.stats.segments)} segments shown`}
+            ? `${formatCount(segments)} segments`
+            : `${formatCount(visible)} of ${formatCount(segments)} segments shown`}
         </span>
       )}
       {layoutText && (

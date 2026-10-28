@@ -1,6 +1,7 @@
 import type { ParseResult } from '../../workers/protocol/graph';
 import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
 import { ComponentTable } from './ComponentTable';
+import { MergeControls } from './MergeControls';
 
 const compressionLabel = { none: '', gzip: ', gzipped', bgzf: ', bgzipped' } as const;
 
@@ -40,6 +41,7 @@ export function Overview({ result }: Props) {
       {result.memory.sequencesDropped && (
         <p className="notice">Sequences exceeded the memory budget and were dropped.</p>
       )}
+      <MergeControls />
       <dl className="stats">
         {rows.map(([id, label, value]) => (
           <div key={id}>

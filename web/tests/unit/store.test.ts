@@ -102,6 +102,8 @@ function setup() {
       sequence: () => Promise.reject(new Error('unused')),
       rawLine: () => Promise.reject(new Error('unused')),
       fasta: () => Promise.reject(new Error('unused')),
+      setChains: () => Promise.reject(new Error('unused')),
+      gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
     },
     graph: {
@@ -120,6 +122,8 @@ function setup() {
       distances: () => Promise.reject(new Error('unused')),
       paths: () => Promise.reject(new Error('unused')),
       pathSteps: () => Promise.reject(new Error('unused')),
+      merge: () => Promise.reject(new Error('unused')),
+      gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;

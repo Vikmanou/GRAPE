@@ -36,7 +36,7 @@ export async function skipUnlessBackend(page: Page): Promise<void> {
   test.skip(renderer !== backend(), `needs ${backend()} (WebGPU needs npm run check:headed)`);
 }
 
-export async function showTab(page: Page, tab: 'overview' | 'display' | 'find'): Promise<void> {
+export async function showTab(page: Page, tab: 'overview' | 'display' | 'find' | 'paths'): Promise<void> {
   await page.getByTestId(`tab-${tab}`).click();
 }
 
