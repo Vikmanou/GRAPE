@@ -47,7 +47,8 @@ export type EngineCommand =
   | { type: 'select-components' }
   | { type: 'clear-selection' }
   | { type: 'invert-selection' }
-  | { type: 'zoom-to-selection' }
+  /** `follow` centres the selection, zooming out only if it does not fit. */
+  | { type: 'zoom-to-selection'; follow?: boolean }
   | { type: 'unpin-all' }
   | { type: 'relayout-selection' }
   | { type: 'zoom-to-component'; component: number };

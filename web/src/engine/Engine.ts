@@ -254,7 +254,7 @@ export class Engine {
         this.pointer.apply(command);
         return;
       case 'zoom-to-selection':
-        void this.zoomTo(this.pointer.selection.snapshot());
+        void this.zoomTo(this.pointer.selection.snapshot(), command.follow);
         return;
       case 'unpin-all':
         layout.unpinAll();
@@ -296,8 +296,8 @@ export class Engine {
     this.canvas.remove();
   }
 
-  /** Frames the drawn extent of the segments whose bit is set. */
-  private async zoomTo(bits: Uint32Array<ArrayBuffer>): Promise<void> {
+  /** Frames the drawn extent of the segments whose bit is set, or only centres it when `follow`. */
+  private async zoomTo(bits: Uint32Array<ArrayBuffer>, follow = false): Promise<void> {
     const origin = this.origin;
     const box = await this.backend.bounds(bits);
     if (!box || this.destroyed) return;
@@ -308,7 +308,8 @@ export class Engine {
       maxX: box.maxX + origin.x + pad,
       maxY: box.maxY + origin.y + pad,
     };
-    this.framing.frame(world);
+    if (follow) this.framing.follow(world);
+    else this.framing.frame(world);
     this.viewMoved();
   }
 

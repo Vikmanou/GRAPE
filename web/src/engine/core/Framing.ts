@@ -52,6 +52,11 @@ export class Framing {
     this.camera = this.fitted(bounds);
   }
 
+  /** Centres a part of the graph, zooming out only if it does not fit. */
+  follow(bounds: Bounds): void {
+    this.take(this.fitted(bounds, true, this.camera.zoom));
+  }
+
   pan(dx: number, dy: number): void {
     this.take(pan(this.camera, dx, dy));
   }
@@ -71,14 +76,20 @@ export class Framing {
     this.camera = camera;
   }
 
-  private fitted(bounds: Bounds, insets = true): Camera {
+  private fitted(bounds: Bounds, insets = true, maxZoom = Infinity): Camera {
     const dpr = window.devicePixelRatio;
     const { top, right, bottom, left } = insets ? this.insets : NO_INSETS;
-    return fit(bounds, this.viewport, FIT_MARGIN * dpr, {
-      top: top * dpr,
-      right: right * dpr,
-      bottom: bottom * dpr,
-      left: left * dpr,
-    });
+    return fit(
+      bounds,
+      this.viewport,
+      FIT_MARGIN * dpr,
+      {
+        top: top * dpr,
+        right: right * dpr,
+        bottom: bottom * dpr,
+        left: left * dpr,
+      },
+      maxZoom,
+    );
   }
 }

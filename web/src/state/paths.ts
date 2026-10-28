@@ -22,6 +22,18 @@ export interface PathsSlice {
   clearHighlights: () => void;
   /** Selects every segment the path visits and frames them. */
   selectPath: (path: number) => void;
+  /** The path being stepped through and the step selected, from 0. */
+  pathStep: PathStep | undefined;
+  /** Selects one step of a path, clamped to its steps, and centres the camera on it. */
+  stepPath: (path: number, step: number) => void;
+  stopStepping: () => void;
+}
+
+export interface PathStep {
+  path: number;
+  step: number;
+  count: number;
+  reverse: boolean;
 }
 
 export function segmentsOf(steps: Uint32Array): Uint32Array {
@@ -74,11 +86,12 @@ export function createPathsSlice(ctx: Context): PathsSlice {
     paths: { state: 'none' },
     highlightedPaths: [],
     pathColors: undefined,
+    pathStep: undefined,
 
     loadPaths() {
       const ticket = ++request;
       steps = new Map();
-      set({ paths: { state: 'loading' }, highlightedPaths: [], pathColors: undefined });
+      set({ paths: { state: 'loading' }, highlightedPaths: [], pathColors: undefined, pathStep: undefined });
       services.graph.paths().then(
         (list) => {
           if (ticket === request) set({ paths: { state: 'ready', list } });
@@ -96,6 +109,26 @@ export function createPathsSlice(ctx: Context): PathsSlice {
 
     clearHighlights() {
       highlight([]);
+    },
+
+    stepPath(path, step) {
+      stepsOf(path).then(
+        (all) => {
+          if (all.length === 0) return;
+          const at = Math.max(0, Math.min(step, all.length - 1));
+          const value = all[at] ?? 0;
+          set({ pathStep: { path, step: at, count: all.length, reverse: (value & REVERSE_STEP) !== 0 } });
+          get().select(Uint32Array.of((value & ~REVERSE_STEP) >>> 0), 'replace');
+          ctx.bridge.send({ type: 'zoom-to-selection', follow: true });
+        },
+        (error: unknown) => {
+          get().toast('The path could not be read', message(error));
+        },
+      );
+    },
+
+    stopStepping() {
+      set({ pathStep: undefined });
     },
 
     selectPath(path) {

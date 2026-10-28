@@ -44,6 +44,7 @@ export function Paths() {
           setQuery(event.target.value);
         }}
       />
+      <Stepper list={list} />
       {highlighted.length > 0 && (
         <div className="row">
           <span className="muted small">{formatCount(highlighted.length)} highlighted</span>
@@ -62,6 +63,7 @@ export function Paths() {
 function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]; highlighted: number[] }) {
   const selectPath = useApp((s) => s.selectPath);
   const toggleHighlight = useApp((s) => s.toggleHighlight);
+  const stepPath = useApp((s) => s.stepPath);
   return (
     <table className="components path-table" data-testid="paths">
       <thead>
@@ -72,6 +74,9 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
           <th scope="col">Name</th>
           <th scope="col">Steps</th>
           <th scope="col">Length</th>
+          <th scope="col">
+            <span className="visually-hidden">Step through</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -106,9 +111,65 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
             </td>
             <td>{formatCount(list.steps[i] ?? 0)}</td>
             <td>{formatBases(list.lengths[i] ?? 0)}</td>
+            <td>
+              <button
+                type="button"
+                className="link"
+                data-testid={`path-step-${i}`}
+                title="Step through this path segment by segment"
+                onClick={() => {
+                  stepPath(i, 0);
+                }}
+              >
+                Step
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
     </table>
+  );
+}
+
+function Stepper({ list }: { list: PathList }) {
+  const current = useApp((s) => s.pathStep);
+  const stepPath = useApp((s) => s.stepPath);
+  const stop = useApp((s) => s.stopStepping);
+  if (!current) return null;
+  const { path, step, count, reverse } = current;
+  return (
+    <div className="stepper" data-testid="path-stepper">
+      <p className="mono">{list.names[path]}</p>
+      <div className="row">
+        <button
+          type="button"
+          data-testid="step-previous"
+          aria-label="Previous step"
+          disabled={step === 0}
+          onClick={() => {
+            stepPath(path, step - 1);
+          }}
+        >
+          ‹
+        </button>
+        <span data-testid="step-position">
+          Step {formatCount(step + 1)} of {formatCount(count)} ({reverse ? '−' : '+'})
+        </span>
+        <button
+          type="button"
+          data-testid="step-next"
+          aria-label="Next step"
+          disabled={step + 1 >= count}
+          onClick={() => {
+            stepPath(path, step + 1);
+          }}
+        >
+          ›
+        </button>
+        <button type="button" onClick={stop}>
+          Done
+        </button>
+      </div>
+    </div>
   );
 }
