@@ -245,10 +245,9 @@ export class Renderer {
     const words = Math.ceil(graph.segments / 32);
     const queue = this.device.queue;
     if (hidden.segments.length === words) queue.writeBuffer(graph.selected, words * 4, hidden.segments);
-    const linkWords = graph.selected.size / 4 - 2 * words;
-    if (hidden.links.length === linkWords && linkWords > 0) {
-      queue.writeBuffer(graph.selected, 2 * words * 4, hidden.links);
-    }
+    // The buffer is padded to 16 bytes, so its size does not give the link count.
+    const linkWords = Math.min(hidden.links.length, graph.selected.size / 4 - 2 * words);
+    if (linkWords > 0) queue.writeBuffer(graph.selected, 2 * words * 4, hidden.links, 0, linkWords);
   }
 
   /** Finds what is in view; runs before the render pass that draws it. */
