@@ -9,22 +9,36 @@ assembly graphs. Drop a GFA file on the page and see it laid out and drawn on th
 Nothing is installed and nothing is uploaded: parsing, layout and rendering
 all run on your machine.
 
-![GRAPE showing an Acacia mitochondrion assembly graph](assets/acacia-mitochondrion.png)
+![GRAPE showing an Acacia mitochondrion assembly graph with three of its paths highlighted](assets/acacia-mitochondrion.png)
 
-<sub>Acacia mitochondrion assembled by SPAdes, from
-[Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622) (CC-BY-4.0).</sub>
+<sub>Acacia mitochondrion assembled by SPAdes, with three of its contig paths
+highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
+(CC-BY-4.0). It is one of the bundled examples under Load example.</sub>
 
 ## Features
 
 - GFA 1.0 and 1.1 and SPAdes-style FASTG, plain, gzipped or bgzipped, up to
   1 million segments and 1.5 million links. Larger graphs still load, with a
   warning.
-- Graph stats, components and parse warnings with line numbers.
+- Graph stats, a sortable table of components (length, mean depth, whether
+  it closes into a circle) and parse warnings with line numbers.
+- Four bundled example graphs under Load example.
 - Segments drawn as ribbons and links as curves, in Bandage's style.
 - Multilevel force-directed layout on the GPU that you watch settle, with
   pause, resume, a seed you can set (the same seed gives the same layout) and
   Fast, Balanced and Best presets. A 200k-segment graph settles in under a
   minute on integrated graphics; see [bench/results.md](bench/results.md).
+- Colour by depth (linear or log, adjustable range), GC, length, component,
+  path, Bandage's CL/C2 tags or at random, with legends; width by depth;
+  labels that never overlap; Bandage's double mode with both strands; light
+  and dark themes.
+- Paths (P) and walks (W): search them, highlight several in their own
+  colours and step through one segment by segment.
+- Filters that hide without a new layout: within N steps of the selection,
+  only the selected components, components under a size, a depth range.
+- Merge simple chains as Bandage's "Merge all possible nodes" does, and save
+  the merged graph as GFA in Bandage's format.
+- Graphs saved without sequences (ABySS style) take them from a FASTA file.
 - Drag to pan, scroll or pinch to zoom, arrow keys and +/-, F to fit.
 - Click a segment to see its length, depth, GC, component, neighbours, its
   line in the file and the ends of its sequence; shift-click to add or
@@ -36,7 +50,9 @@ all run on your machine.
   out just the selection again.
 - Keyboard shortcuts for all of the above; press `?` for the list.
 
-GRAPE needs WebGPU: current desktop Chrome or Edge. Try it at
+GRAPE draws with WebGPU where the browser has it (current desktop Chrome and
+Edge, Safari 26, Firefox on Windows) and with WebGL2 everywhere else, with the
+same features: Chrome 56, Edge 79, Firefox 51, Safari 15 or later. Try it at
 [vikmanou.github.io/GRAPE](https://vikmanou.github.io/GRAPE/).
 
 ## Development
