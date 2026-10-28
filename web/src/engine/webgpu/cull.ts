@@ -45,10 +45,10 @@ export class Cull {
     items: GPUBuffer,
     indirect: GPUBuffer,
     slot: number,
+    /** Selected, then hidden segments, then hidden links, one bit each. */
+    flags: GPUBuffer,
     /** Pieces only: the segment table of segments.ts. */
     table?: GPUBuffer,
-    /** Highlight only: one bit per selected segment. */
-    selected?: GPUBuffer,
   ) {
     const marks = buffers.storage(`${kind} marks`, (count + 1) * 4);
     this.visible = buffers.storage(`visible ${kind}`, count * 4);
@@ -63,7 +63,7 @@ export class Cull {
       [kind === 'links' ? 3 : 2]: items,
       4: marks,
     };
-    if (selected) entries[7] = selected;
+    entries[7] = flags;
     if (table) entries[8] = table;
     this.mark = bind(device, this.pipeline(), entries);
     this.compactGroup = bind(device, kernels.compact, { 0: this.uniform, 4: marks, 5: this.visible, 6: indirect });

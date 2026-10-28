@@ -14,10 +14,14 @@ const float DIMMED = 0.25;
 
 // Each piece is a capsule cut from a quad by a signed distance, as
 // `ribbon_vertex` in graph.wgsl. Pieces of a segment drawn as a dot, but its
-// first, collapse to nothing: the WebGPU cull drops them.
+// first, collapse to nothing, as do hidden segments: the WebGPU cull drops them.
 void main() {
   uint index = every_item ? uint(gl_InstanceID) : item;
   uvec2 piece = texelFetch(pieces, texel(index), 0).xy;
+  if (is_hidden(piece.y)) {
+    gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
+    return;
+  }
   vec2 a = position(piece.x);
   vec2 b = position(piece.x + 1u);
   vec3 sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);

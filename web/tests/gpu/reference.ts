@@ -48,6 +48,8 @@ export function plainSegments(segments: number): SegmentData {
     gc: new Float32Array(segments).fill(NaN),
     tagColors: none,
     tagColors2: none,
+    linkFrom: new Uint32Array(0),
+    linkTo: new Uint32Array(0),
     meanDepth: NaN,
   };
 }

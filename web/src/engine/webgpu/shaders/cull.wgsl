@@ -29,8 +29,8 @@ struct Cull {
 @group(0) @binding(4) var<storage, read_write> marks: array<u32>;
 @group(0) @binding(5) var<storage, read_write> visible: array<u32>;
 @group(0) @binding(6) var<storage, read_write> indirect: array<u32>;
-// One bit per segment.
-@group(0) @binding(7) var<storage, read> selected: array<u32>;
+// One bit per selected segment, then per hidden segment, then per hidden link.
+@group(0) @binding(7) var<storage, read> flags: array<u32>;
 // The segment table of graph.wgsl.
 @group(0) @binding(8) var<storage, read> segment_table: array<u32>;
 
@@ -43,6 +43,18 @@ fn sprite_extent(segment: u32) -> f32 {
   let pieces = segment_table[PIECES * cull.segments + segment];
   let mid = start + pieces / 2u;
   return max(length(positions[mid] - positions[start]), length(positions[start + pieces] - positions[mid]));
+}
+
+fn segment_words() -> u32 {
+  return (cull.segments + 31u) / 32u;
+}
+
+fn bit(word: u32, i: u32) -> bool {
+  return ((flags[word + (i >> 5u)] >> (i & 31u)) & 1u) == 1u;
+}
+
+fn hidden(segment: u32) -> bool {
+  return bit(segment_words(), segment);
 }
 
 fn touches(lo: vec2f, hi: vec2f) -> u32 {
@@ -61,7 +73,7 @@ fn mark_pieces(@builtin(global_invocation_id) id: vec3u) {
   }
   let segment = pieces[i].y;
   let start = segment_table[START * cull.segments + segment];
-  if sprite_extent(segment) < cull.sprite_world && pieces[i].x != start {
+  if hidden(segment) || (sprite_extent(segment) < cull.sprite_world && pieces[i].x != start) {
     marks[i] = 0u;
     return;
   }
@@ -81,8 +93,8 @@ fn mark_highlight(@builtin(global_invocation_id) id: vec3u) {
     return;
   }
   let segment = pieces[i].y;
-  let lit = segment == cull.hover || ((selected[segment >> 5u] >> (segment & 31u)) & 1u) == 1u;
-  if (!lit) {
+  let lit = segment == cull.hover || bit(0u, segment);
+  if (!lit || hidden(segment)) {
     marks[i] = 0u;
     return;
   }
@@ -100,6 +112,10 @@ fn mark_links(@builtin(global_invocation_id) id: vec3u) {
     if (i == cull.count) {
       marks[i] = 0u;
     }
+    return;
+  }
+  if bit(2u * segment_words(), i) {
+    marks[i] = 0u;
     return;
   }
   let a = positions[links[i].x];

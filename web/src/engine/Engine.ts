@@ -1,6 +1,7 @@
 import type { EngineCommand, EngineEvent } from './commands';
-import type { Backend, BackendEvents, Style } from './core/backend';
+import type { Backend, Style } from './core/backend';
 import { boundsOf, type Bounds } from './core/camera';
+import { Filtering } from './core/Filtering';
 import { Framing } from './core/Framing';
 import { FrameCounter } from './core/frames';
 import { gestures } from './core/gestures';
@@ -13,8 +14,7 @@ import { RIBBON_WIDTH } from './style/widths';
 import { Atlas } from './text/Atlas';
 import { Labels } from './text/Labels';
 import type { PositionGrid } from '../workers/protocol/layout';
-import { WebGl2Backend } from './webgl2/WebGl2Backend';
-import { WebGpuBackend } from './webgpu/WebGpuBackend';
+import { openBackend } from './openBackend';
 
 type Listener = (event: EngineEvent) => void;
 
@@ -63,6 +63,7 @@ export class Engine {
   private reported = { x: NaN, y: NaN, zoom: NaN };
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
   private readonly labels: Labels;
+  private readonly filtering: Filtering;
   private readonly cameraReport = throttle(() => {
     const camera = this.framing.camera;
     const last = this.reported;
@@ -88,6 +89,9 @@ export class Engine {
         this.requestFrame();
       },
     );
+    this.filtering = new Filtering(backend, this.labels, (visible, total) => {
+      this.emit({ type: 'visibility', visible, total });
+    });
     this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
@@ -116,7 +120,7 @@ export class Engine {
         pointer: this.pointer,
         band: this.band,
         layout: () => this.backend.layout,
-        selectBox: (box) => this.backend.selectBox(box),
+        selectBox: (box) => this.backend.selectBox(box).then((bits) => this.filtering.shown(bits)),
         viewMoved: () => {
           this.viewMoved();
         },
@@ -135,25 +139,7 @@ export class Engine {
     const emit = (event: EngineEvent) => {
       if (relay.to && !relay.to.destroyed) relay.to.emit(event);
     };
-    const events: BackendEvents = {
-      error: (message) => {
-        emit({ type: 'error', message });
-      },
-      lost: (message) => {
-        emit({ type: 'device-lost', message });
-      },
-      measured: (boxes, progress) => {
-        emit({ type: 'layout-measured', boxes, progress });
-      },
-      refining: (active) => {
-        emit({ type: 'refining', active });
-      },
-      control: (request) => {
-        emit({ type: 'layout-control', request });
-      },
-    };
-    const backend =
-      kind === 'webgpu' ? await WebGpuBackend.create(canvas, events) : await WebGl2Backend.create(canvas, events);
+    const backend = await openBackend(canvas, kind, emit);
     const atlas = await Atlas.load(import.meta.env.BASE_URL);
     if (atlas) backend.setAtlas(atlas);
     relay.to = new Engine(host, canvas, backend, atlas);
@@ -188,11 +174,15 @@ export class Engine {
         this.backend.setGraph(command.geometry, command.segments, command.seed);
         this.pointer.reset(command.segments.components);
         this.labels.clear();
+        this.filtering.setGraph(command.segments);
         this.positions = undefined;
         this.grid = undefined;
         this.positionsSettled = false;
         framing.autoFit = true;
         framing.setBounds(undefined);
+        break;
+      case 'set-filter':
+        this.filtering.setFilter(command.filter);
         break;
       case 'set-path-colors':
         this.backend.setPathColors(command.colors);
@@ -233,6 +223,10 @@ export class Engine {
         this.emit({ type: 'memory', gpu: this.backend.gpuBytes, cpu: this.positions?.byteLength ?? 0 });
         return;
       case 'fit':
+        if (this.filtering.active) {
+          void this.zoomTo(this.filtering.visibleBits());
+          return;
+        }
         framing.fitGraph();
         break;
       case 'pan-view':

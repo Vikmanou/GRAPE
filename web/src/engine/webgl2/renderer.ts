@@ -1,5 +1,6 @@
 import type { Geometry, PositionGrid } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
+import type { Hidden } from '../core/Visibility';
 import { DEFAULT_DISPLAY } from '../style/display';
 import {
   type DrawnView,
@@ -40,6 +41,8 @@ interface Graph {
   geometry: Geometry;
   firstPiece: Uint32Array;
   visible: Visible;
+  /** One bit per selected segment, then per hidden segment, then per hidden link. */
+  flags: Uint32Array;
   selected: Uint32Array;
   grid: PositionGrid | undefined;
 }
@@ -94,7 +97,9 @@ export class Renderer {
     const pieces = res.dataTexture('rg32ui', geometry.pieces.length / 2);
     const table = res.dataTexture('r32ui', tableData.length);
     const links = res.dataTexture('rgba32ui', geometry.links.length / 4);
-    const selected = res.dataTexture('r32ui', Math.ceil(n / 32));
+    const words = Math.ceil(n / 32);
+    const flags = new Uint32Array(2 * words + Math.ceil(geometry.links.length / 4 / 32));
+    const selected = res.dataTexture('r32ui', Math.max(1, flags.length));
     res.writeData(pieces, 'rg32ui', geometry.pieces);
     res.writeData(table, 'r32ui', tableData);
     res.writeData(links, 'rgba32ui', geometry.links);
@@ -113,11 +118,12 @@ export class Renderer {
       geometry,
       firstPiece,
       visible: new Visible(g, firstPiece, pieceCount, linkCount),
-      selected: new Uint32Array(Math.ceil(n / 32)),
+      flags,
+      selected: flags.subarray(0, words),
       grid: undefined,
     };
     this.selectedCount = 0;
-    res.writeData(selected, 'r32ui', this.graph.selected);
+    res.writeData(selected, 'r32ui', flags);
     this.ensureItems(Math.max(pieceCount, linkCount));
     this.writeStyle();
   }
@@ -147,10 +153,20 @@ export class Renderer {
     graph.selected.fill(0);
     graph.selected.set(bits.subarray(0, graph.selected.length));
     const texture = graph.textures[4];
-    if (texture) this.res.writeData(texture, 'r32ui', graph.selected);
+    if (texture) this.res.writeItems(texture, 'r32ui', graph.flags, 0, graph.selected.length);
     const changed = count > 0 !== this.selectedCount > 0;
     this.selectedCount = count;
     if (changed) this.writeStyle();
+  }
+
+  setVisibility(hidden: Hidden): void {
+    const graph = this.graph;
+    const texture = graph?.textures[4];
+    const words = graph?.selected.length ?? 0;
+    if (!graph || !texture || hidden.segments.length !== words) return;
+    graph.flags.set(hidden.segments, words);
+    graph.flags.set(hidden.links.subarray(0, graph.flags.length - 2 * words), 2 * words);
+    this.res.writeItems(texture, 'r32ui', graph.flags, words, graph.flags.length);
   }
 
   setPathColors(colors: Uint32Array): void {

@@ -35,6 +35,8 @@ export async function culling(device: GPUDevice, kernels: Kernels): Promise<void
   try {
     const at = buffers.upload('positions', positions);
     const indirect = buffers.upload('indirect', new Uint32Array(8), GPUBufferUsage.INDIRECT);
+    const words = Math.ceil(segments / 32);
+    const flags = buffers.storage('flags', (2 * words + Math.ceil(links.length / 4 / 32)) * 4);
     const pieceCull = new Cull(
       kernels,
       buffers,
@@ -45,6 +47,7 @@ export async function culling(device: GPUDevice, kernels: Kernels): Promise<void
       buffers.upload('pieces', pieces),
       indirect,
       5,
+      flags,
       buffers.upload('segments', table),
     );
     const linkCull = new Cull(
@@ -57,6 +60,7 @@ export async function culling(device: GPUDevice, kernels: Kernels): Promise<void
       buffers.upload('links', links),
       indirect,
       1,
+      flags,
     );
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginComputePass();

@@ -5,6 +5,7 @@ import type { FrameStats } from './core/frames';
 import type { DisplayOptions } from './style/display';
 import type { Theme } from './style/palette';
 import type { LabelOptions } from './text/Labels';
+import type { Filter } from './core/Visibility';
 import type { LayoutProgress, LevelRecord, SegmentData } from './core/backend';
 
 export type EngineCommand =
@@ -16,6 +17,8 @@ export type EngineCommand =
   | { type: 'set-label-text'; generation: number; segments: Uint32Array; texts: string[] }
   | { type: 'set-label-options'; options: LabelOptions }
   | { type: 'set-graph'; geometry: Geometry; seed: number; segments: SegmentData }
+  /** Hides segments, and the links that touch them, without touching the layout. */
+  | { type: 'set-filter'; filter: Filter }
   /** One RGBA8 colour per segment for the path colour mode, 0 off every highlighted path. */
   | { type: 'set-path-colors'; colors: Uint32Array<ArrayBuffer> }
   /** `x, y` per point, in layout units, from a layout run in the worker, with its grid and progress. */
@@ -79,6 +82,8 @@ export type EngineEvent =
   | { type: 'hover'; segment: number | undefined }
   /** Placed labels lack their text. */
   | { type: 'labels-needed'; generation: number; segments: Uint32Array<ArrayBuffer> }
+  /** How many segments the filter leaves shown, of all of them. */
+  | { type: 'visibility'; visible: number; total: number }
   /** The segments whose labels show. */
   | { type: 'labels'; segments: Uint32Array<ArrayBuffer> }
   /** One bit per segment. `single` is the selected segment when exactly one is. */

@@ -34,6 +34,10 @@ void controls(uvec4 link, out vec2 c0, out vec2 c1, out vec2 c2, out vec2 c3) {
 
 void main() {
   uint index = every_item ? uint(gl_InstanceID) : item;
+  if (link_hidden(index)) {
+    gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
+    return;
+  }
   vec2 c0, c1, c2, c3;
   controls(texelFetch(links, texel(index), 0), c0, c1, c2, c3);
   vec2 corner = quad(gl_VertexID);

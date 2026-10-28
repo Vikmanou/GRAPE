@@ -1,5 +1,6 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
+import type { Hidden } from '../core/Visibility';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { MAX_RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import { type DrawnView, FIELDS, packView, type StyledGraph, VIEW_BYTES } from '../style/uniforms';
@@ -24,7 +25,7 @@ export interface Drawn {
   pieces: GPUBuffer;
   pieceCount: number;
   segments: number;
-  /** One bit per selected segment. */
+  /** One bit per selected segment, then one per hidden segment, then one per hidden link. */
   selected: GPUBuffer;
   /** The segment table of segments.ts. */
   table: GPUBuffer;
@@ -130,7 +131,8 @@ export class Renderer {
     const positions = b.storage('positions', geometry.points * 8);
     const pieces = b.upload('pieces', geometry.pieces);
     const links = b.upload('links', geometry.links);
-    const selected = b.storage('selected segments', Math.ceil(geometry.segments / 32) * 4);
+    const segmentWords = Math.ceil(geometry.segments / 32);
+    const selected = b.storage('segment and link flags', (2 * segmentWords + Math.ceil(linkCount / 32)) * 4);
     const indirect = b.upload('draw arguments', Uint32Array.from(INDIRECT), GPUBufferUsage.INDIRECT);
     const cull = (kind: 'pieces' | 'links' | 'highlight', count: number, items: GPUBuffer, slot: number) =>
       count > 0
@@ -144,8 +146,8 @@ export class Renderer {
             items,
             indirect,
             slot,
+            selected,
             kind === 'pieces' ? table : undefined,
-            kind === 'highlight' ? selected : undefined,
           )
         : undefined;
     const pieceCull = cull('pieces', pieceCount, pieces, PIECES_INDIRECT / 4 + 1);
@@ -223,9 +225,9 @@ export class Renderer {
 
   /** One bit per segment, and how many are set. */
   setSelection(bits: Uint32Array<ArrayBuffer>, count: number): void {
-    const target = this.graph?.selected;
-    if (!target) return;
-    this.device.queue.writeBuffer(target, 0, bits, 0, Math.min(bits.length, target.size / 4));
+    const graph = this.graph;
+    if (!graph) return;
+    this.device.queue.writeBuffer(graph.selected, 0, bits, 0, Math.min(bits.length, Math.ceil(graph.segments / 32)));
     const changed = count > 0 !== this.selectedCount > 0;
     this.selectedCount = count;
     if (changed) this.writeStyle();
@@ -235,6 +237,18 @@ export class Renderer {
     const graph = this.graph;
     if (!graph || colors.length !== graph.segments) return;
     this.device.queue.writeBuffer(graph.table, FIELDS.indexOf('path') * graph.segments * 4, colors);
+  }
+
+  setVisibility(hidden: Hidden): void {
+    const graph = this.graph;
+    if (!graph) return;
+    const words = Math.ceil(graph.segments / 32);
+    const queue = this.device.queue;
+    if (hidden.segments.length === words) queue.writeBuffer(graph.selected, words * 4, hidden.segments);
+    const linkWords = graph.selected.size / 4 - 2 * words;
+    if (hidden.links.length === linkWords && linkWords > 0) {
+      queue.writeBuffer(graph.selected, 2 * words * 4, hidden.links);
+    }
   }
 
   /** Finds what is in view; runs before the render pass that draws it. */

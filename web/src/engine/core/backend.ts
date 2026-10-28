@@ -5,6 +5,7 @@ import type { DisplayOptions } from '../style/display';
 import type { Atlas } from '../text/Atlas';
 import type { Theme } from '../style/palette';
 import type { Bounds } from './camera';
+import type { Hidden } from './Visibility';
 
 /** What a backend draws: the camera relative to the positions' origin, in canvas pixels. */
 export interface View {
@@ -21,6 +22,9 @@ export interface SegmentData extends SegmentAttributes {
   lengths: Uint32Array;
   /** Component rank, largest first. */
   components: Uint32Array;
+  /** The segments each link joins, in the geometry's link order. */
+  linkFrom: Uint32Array;
+  linkTo: Uint32Array;
   /** Length-weighted, over segments with a depth; NaN when none has one. */
   meanDepth: number;
   /** The highlighted path colour of each segment, RGBA8, 0 for none. */
@@ -137,6 +141,8 @@ export interface Backend {
   /** One bit per segment, and how many are set. */
   setSelection(bits: Uint32Array<ArrayBuffer>, count: number): void;
   setHover(segment: number | undefined): void;
+  /** Segments and links a filter hides: they are not drawn, picked or labelled. */
+  setVisibility(hidden: Hidden): void;
   /** One RGBA8 colour per segment for the path colour mode, 0 for a segment on no highlighted path. */
   setPathColors(colors: Uint32Array<ArrayBuffer>): void;
   draw(view: View): void;

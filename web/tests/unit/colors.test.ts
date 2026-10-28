@@ -32,6 +32,8 @@ const data: SegmentData = {
     [0, BLUE],
     [1, BLUE],
   ]),
+  linkFrom: new Uint32Array(0),
+  linkTo: new Uint32Array(0),
   meanDepth: 20,
 };
 

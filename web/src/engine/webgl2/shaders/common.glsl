@@ -49,7 +49,7 @@ uniform highp usampler2D pieces;
 uniform highp usampler2D segment_table;
 // End and inner point of each side of each link.
 uniform highp usampler2D links;
-// One bit per selected segment.
+// One bit per selected segment, then per hidden segment, then per hidden link.
 uniform highp usampler2D selected;
 
 const uint DEPTH = 0u;
@@ -74,8 +74,26 @@ uint field(uint f, uint segment) {
   return texelFetch(segment_table, texel(f * style.segments + segment), 0).x;
 }
 
+bool flag_bit(uint word, uint i) {
+  return ((texelFetch(selected, texel(word + (i >> 5u)), 0).x >> (i & 31u)) & 1u) == 1u;
+}
+
 bool is_selected(uint segment) {
-  return ((texelFetch(selected, texel(segment >> 5u), 0).x >> (segment & 31u)) & 1u) == 1u;
+  return flag_bit(0u, segment);
+}
+
+// The selection's words are followed by one bit per hidden segment, then
+// one per hidden link, as `flags` in cull.wgsl.
+uint segment_words() {
+  return (style.segments + 31u) / 32u;
+}
+
+bool is_hidden(uint segment) {
+  return flag_bit(segment_words(), segment);
+}
+
+bool link_hidden(uint link) {
+  return flag_bit(2u * segment_words(), link);
 }
 
 vec4 unpack_rgba(uint c) {

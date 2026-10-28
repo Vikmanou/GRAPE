@@ -1,6 +1,7 @@
 import type { EngineEvent } from '../commands';
 import type { Backend, View } from '../core/backend';
 import { RIBBON_WIDTH } from '../style/widths';
+import { shownLabelSizes } from '../core/Visibility';
 import type { Atlas } from './Atlas';
 import { labelMetrics, layoutLabels } from './layoutLabels';
 
@@ -30,7 +31,9 @@ const CACHE = 20_000;
  */
 export class Labels {
   private generation = -1;
-  private sized = false;
+  private sizes: Uint32Array<ArrayBuffer> | undefined;
+  /** Segments a filter hides get no label. */
+  private hidden: Uint32Array | undefined;
   private options = DEFAULT_LABEL_OPTIONS;
   private readonly texts = new Map<number, string>();
   private shown = new Uint32Array(0);
@@ -49,11 +52,25 @@ export class Labels {
 
   setSizes(generation: number, sizes: Uint32Array<ArrayBuffer> | undefined): void {
     this.generation = generation;
-    this.sized = sizes !== undefined;
+    this.sizes = sizes;
     this.texts.clear();
-    this.backend.setLabelSizes(sizes);
+    this.upload();
+  }
+
+  setHidden(hidden: Uint32Array | undefined): void {
+    this.hidden = hidden;
+    this.upload();
+  }
+
+  private upload(): void {
+    const { sizes, hidden } = this;
+    this.backend.setLabelSizes(sizes && hidden ? shownLabelSizes(sizes, hidden) : sizes);
     this.show(new Uint32Array(0));
     this.changed(performance.now());
+  }
+
+  private get sized(): boolean {
+    return this.sizes !== undefined;
   }
 
   setText(generation: number, segments: Uint32Array, texts: string[]): void {
@@ -95,7 +112,7 @@ export class Labels {
 
   destroy(): void {
     clearTimeout(this.timer);
-    this.sized = false;
+    this.sizes = undefined;
   }
 
   private async place(): Promise<void> {

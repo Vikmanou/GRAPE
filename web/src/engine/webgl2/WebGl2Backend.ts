@@ -1,6 +1,7 @@
 import type { Geometry, PositionGrid } from '../../workers/protocol/layout';
 import type { Backend, BackendEvents, LabelMetrics, PlacedLabels, SegmentData, Style, View } from '../core/backend';
 import type { Bounds } from '../core/camera';
+import type { Hidden } from '../core/Visibility';
 import { CpuLayoutDriver } from '../core/CpuLayoutDriver';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
@@ -123,6 +124,11 @@ export class WebGl2Backend implements Backend {
 
   setPathColors(colors: Uint32Array<ArrayBuffer>): void {
     this.renderer.setPathColors(colors);
+  }
+
+  setVisibility(hidden: Hidden): void {
+    this.renderer.setVisibility(hidden);
+    this.picker.invalidate();
   }
 
   draw(view: View): void {
