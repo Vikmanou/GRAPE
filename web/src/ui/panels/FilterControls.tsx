@@ -129,7 +129,9 @@ export function FilterControls() {
       )}
       <div className="row">
         <span className="muted small" data-testid="filter-visible">
-          {visible === undefined ? 'Everything is shown.' : `${formatCount(visible)} segments shown.`}
+          {visible === undefined
+            ? 'Everything is shown.'
+            : `${formatCount(visible)} ${visible === 1 ? 'segment' : 'segments'} shown.`}
         </span>
         <button type="button" data-testid="filter-clear" disabled={visible === undefined} onClick={clearFilters}>
           Clear filters
