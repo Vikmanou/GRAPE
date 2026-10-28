@@ -4,7 +4,7 @@ import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
 import { resolveTheme, type ThemeChoice } from './theme';
 
-export type SidebarTab = 'overview' | 'display' | 'find';
+export type SidebarTab = 'overview' | 'display' | 'find' | 'paths';
 
 export interface DisplaySlice {
   renderer: BackendKind | 'detecting';

@@ -14,13 +14,25 @@ import { createLabelSlice, type LabelSlice } from './labels';
 import { createLayoutSlice, type LayoutSlice } from './layout';
 import { createFindSlice, type FindSlice } from './find';
 import { createFileSlice, type FileSlice } from './load';
+import { createPathsSlice, type PathsSlice } from './paths';
 import { createSelectionSlice, type SelectionSlice } from './selection';
 import { exposeForTests } from './testHooks';
 import { createToastSlice, type ToastSlice } from './toasts';
 
 export type GraphService = Pick<
   GraphClient,
-  'ping' | 'parse' | 'cancel' | 'info' | 'summary' | 'find' | 'exportRecords' | 'labelSizes' | 'labelText' | 'memory'
+  | 'ping'
+  | 'parse'
+  | 'cancel'
+  | 'info'
+  | 'summary'
+  | 'find'
+  | 'exportRecords'
+  | 'labelSizes'
+  | 'labelText'
+  | 'paths'
+  | 'pathSteps'
+  | 'memory'
 >;
 
 export type SequenceService = Pick<SequenceClient, 'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta' | 'memory'>;
@@ -58,7 +70,8 @@ export type AppState = FileSlice &
   SelectionSlice &
   DetailsSlice &
   FindSlice &
-  LabelSlice;
+  LabelSlice &
+  PathsSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -86,6 +99,7 @@ export function createAppStore(services: Services): AppStore {
       ...createDetailsSlice(ctx),
       ...createFindSlice(ctx),
       ...createLabelSlice(ctx),
+      ...createPathsSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => {

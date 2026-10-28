@@ -5,11 +5,13 @@ import { Tabs } from '../controls/Tabs';
 import { Display } from './Display';
 import { Find } from './Find';
 import { Overview } from './Overview';
+import { Paths } from './Paths';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'display', label: 'Display' },
   { id: 'find', label: 'Find' },
+  { id: 'paths', label: 'Paths' },
 ] as const satisfies readonly { id: SidebarTab; label: string }[];
 
 export function Sidebar({ result }: { result: ParseResult }) {
@@ -42,6 +44,7 @@ export function Sidebar({ result }: { result: ParseResult }) {
         {tab === 'overview' && <Overview result={result} />}
         {tab === 'display' && <Display />}
         {tab === 'find' && <Find />}
+        {tab === 'paths' && <Paths />}
       </div>
     </aside>
   );

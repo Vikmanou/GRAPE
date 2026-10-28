@@ -14,7 +14,9 @@ export type GraphRequest =
   /** Names and depths for a FASTA export, in Bandage's order. */
   | { type: 'export'; id: number; segments: Uint32Array<ArrayBuffer> }
   | { type: 'label-sizes'; id: number; content: LabelContent }
-  | { type: 'label-text'; id: number; segments: Uint32Array<ArrayBuffer>; content: LabelContent };
+  | { type: 'label-text'; id: number; segments: Uint32Array<ArrayBuffer>; content: LabelContent }
+  | { type: 'paths'; id: number }
+  | { type: 'path-steps'; id: number; path: number };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -29,7 +31,23 @@ export type GraphResponse =
   | { type: 'label-sizes'; id: number; sizes: Uint32Array<ArrayBuffer> }
   /** Each segment's label, lines joined by newlines. */
   | { type: 'label-text'; id: number; texts: string[] }
+  | { type: 'paths'; id: number; paths: PathList }
+  /** Segment ids, with `REVERSE_STEP` set on reverse steps. */
+  | { type: 'path-steps'; id: number; steps: Uint32Array<ArrayBuffer> }
   | ErrorResponse;
+
+/** `REVERSE` in gfa-core store/paths.rs. */
+export const REVERSE_STEP = 0x80000000;
+
+/** The P and W records, in file order. */
+export interface PathList {
+  names: string[];
+  /** 1 for a walk (W), 0 for a path (P). */
+  walks: Uint8Array<ArrayBuffer>;
+  steps: Uint32Array<ArrayBuffer>;
+  /** Segment lengths less the overlaps between steps. */
+  lengths: Float64Array<ArrayBuffer>;
+}
 
 /** Which lines a label shows, in Bandage's order (`getNodeText`). */
 export interface LabelContent {

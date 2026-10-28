@@ -213,6 +213,22 @@ async function handle(request: GraphRequest): Promise<void> {
         post({ type: 'label-text', id, texts: loaded().labelText(request.segments, custom, name, length, depth) });
         return;
       }
+      case 'paths': {
+        const g = loaded();
+        const paths = {
+          names: g.pathNames(),
+          walks: plain(g.pathKinds()),
+          steps: plain(g.pathStepCounts()),
+          lengths: plain(g.pathLengths()),
+        };
+        post({ type: 'paths', id, paths }, [paths.walks.buffer, paths.steps.buffer, paths.lengths.buffer]);
+        return;
+      }
+      case 'path-steps': {
+        const steps = plain(loaded().pathSteps(request.path));
+        post({ type: 'path-steps', id, steps }, [steps.buffer]);
+        return;
+      }
       case 'export': {
         const records = exportRecords(loaded(), request.segments);
         post({ type: 'export', id, records }, [records.segments.buffer, records.depths.buffer]);

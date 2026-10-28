@@ -117,6 +117,8 @@ function setup() {
       exportRecords: () => Promise.reject(new Error('unused')),
       labelSizes: () => Promise.reject(new Error('unused')),
       labelText: () => Promise.reject(new Error('unused')),
+      paths: () => Promise.reject(new Error('unused')),
+      pathSteps: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;

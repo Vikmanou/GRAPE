@@ -3,6 +3,7 @@ import type {
   GraphResponse,
   LabelContent,
   ParseResult,
+  PathList,
   SegmentInfo,
   SelectionSummary,
 } from '../protocol/graph';
@@ -61,6 +62,14 @@ export class GraphClient {
 
   async labelText(segments: Uint32Array<ArrayBuffer>, content: LabelContent): Promise<string[]> {
     return expect(await this.rpc.request({ type: 'label-text', segments, content }), 'label-text').texts;
+  }
+
+  async paths(): Promise<PathList> {
+    return expect(await this.rpc.request({ type: 'paths' }), 'paths').paths;
+  }
+
+  async pathSteps(path: number): Promise<Uint32Array<ArrayBuffer>> {
+    return expect(await this.rpc.request({ type: 'path-steps', path }), 'path-steps').steps;
   }
 
   async memory(): Promise<WorkerMemory> {

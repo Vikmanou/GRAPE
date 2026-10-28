@@ -6,7 +6,7 @@ import type { ThemeChoice } from './theme';
 
 const KEY = 'grape.settings';
 const THEMES: ThemeChoice[] = ['system', 'light', 'dark'];
-const TABS: SidebarTab[] = ['overview', 'display', 'find'];
+const TABS: SidebarTab[] = ['overview', 'display', 'find', 'paths'];
 
 /** What the next visit starts with. Colour ranges belong to a graph and are left out. */
 export interface Settings {

@@ -245,3 +245,20 @@
   font: inherit;
   font-weight: 600;
 }
+
+.paths input[type='search'] {
+  width: 100%;
+  margin-bottom: 6px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.path-table td:first-child {
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

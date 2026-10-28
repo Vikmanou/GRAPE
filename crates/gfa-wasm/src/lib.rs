@@ -2,6 +2,7 @@
 
 mod layout;
 mod parse;
+mod paths;
 mod query;
 mod sequence;
 
