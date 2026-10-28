@@ -1,5 +1,6 @@
 use crate::parse::Loaded;
 use gfa_core::analysis::labels::{self, LabelContent};
+use gfa_core::analysis::neighbourhood;
 use gfa_core::analysis::query::{self, SegmentInfo};
 use wasm_bindgen::prelude::*;
 
@@ -102,6 +103,11 @@ impl Loaded {
     pub fn selection_summary(&self, bits: &[u32]) -> Vec<f64> {
         let s = query::selection_summary(self.graph(), bits);
         vec![s.count as f64, s.total_length as f64, s.mean_depth]
+    }
+
+    /// Steps from the nearest set bit's segment, 255 beyond 254.
+    pub fn distances(&self, bits: &[u32]) -> Vec<u8> {
+        neighbourhood::distances(self.graph(), bits)
     }
 
     #[wasm_bindgen(js_name = findNames)]

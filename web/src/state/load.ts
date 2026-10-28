@@ -94,6 +94,7 @@ export function createFileSlice(ctx: Context): FileSlice {
             set({ load: { state: 'loaded', file: info, result } });
             get().resetColorRange();
             get().loadPaths();
+            get().clearFilters();
             const { segments, links } = result.stats;
             if (segments > MAX_SEGMENTS || links > MAX_LINKS) {
               get().toast(

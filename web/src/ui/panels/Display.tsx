@@ -2,6 +2,7 @@ import { useApp } from '../../state/store';
 import { formatCount } from '../format';
 import { ColorControls } from './ColorControls';
 import { DetailControls } from './DetailControls';
+import { FilterControls } from './FilterControls';
 import { LabelControls } from './LabelControls';
 import { LayoutControls } from './LayoutControls';
 
@@ -16,6 +17,7 @@ export function Display() {
   return (
     <>
       <ColorControls />
+      <FilterControls />
       <LabelControls />
       <DetailControls />
       <LayoutControls />

@@ -55,6 +55,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const paused = useApp((s) => s.layoutPaused);
   const fps = useApp((s) => s.fps);
   const refining = useApp((s) => s.refining);
+  const visible = useApp((s) => s.visibleSegments);
   const onCancel = useApp((s) => s.cancelLoad);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
@@ -69,7 +70,11 @@ export function StatusBar({ onToggleWarnings }: Props) {
         </span>
       )}
       {load.state === 'loaded' && (
-        <span data-testid="status-segments">{formatCount(load.result.stats.segments)} segments</span>
+        <span data-testid="status-segments" data-visible={visible}>
+          {visible === undefined
+            ? `${formatCount(load.result.stats.segments)} segments`
+            : `${formatCount(visible)} of ${formatCount(load.result.stats.segments)} segments shown`}
+        </span>
       )}
       {layoutText && (
         <span

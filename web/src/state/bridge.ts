@@ -92,6 +92,9 @@ export class Bridge {
       case 'labels-needed':
         get().fetchLabelText(event.generation, event.segments);
         break;
+      case 'visibility':
+        set({ visibleSegments: event.visible < event.total ? event.visible : undefined });
+        break;
       case 'labels':
         set({ labelCount: event.segments.length });
         break;

@@ -12,6 +12,7 @@ import { createDisplaySlice, type DisplaySlice } from './display';
 import { createDisplayOptionsSlice, type DisplayOptionsSlice } from './displayOptions';
 import { createLabelSlice, type LabelSlice } from './labels';
 import { createLayoutSlice, type LayoutSlice } from './layout';
+import { createFilterSlice, type FilterSlice } from './filters';
 import { createFindSlice, type FindSlice } from './find';
 import { createFileSlice, type FileSlice } from './load';
 import { createPathsSlice, type PathsSlice } from './paths';
@@ -30,6 +31,7 @@ export type GraphService = Pick<
   | 'exportRecords'
   | 'labelSizes'
   | 'labelText'
+  | 'distances'
   | 'paths'
   | 'pathSteps'
   | 'memory'
@@ -71,7 +73,8 @@ export type AppState = FileSlice &
   DetailsSlice &
   FindSlice &
   LabelSlice &
-  PathsSlice;
+  PathsSlice &
+  FilterSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -100,6 +103,7 @@ export function createAppStore(services: Services): AppStore {
       ...createFindSlice(ctx),
       ...createLabelSlice(ctx),
       ...createPathsSlice(ctx),
+      ...createFilterSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => {

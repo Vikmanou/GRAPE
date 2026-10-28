@@ -15,6 +15,8 @@ export type GraphRequest =
   | { type: 'export'; id: number; segments: Uint32Array<ArrayBuffer> }
   | { type: 'label-sizes'; id: number; content: LabelContent }
   | { type: 'label-text'; id: number; segments: Uint32Array<ArrayBuffer>; content: LabelContent }
+  /** Steps from the selection, one bit per segment. */
+  | { type: 'distances'; id: number; bits: Uint32Array<ArrayBuffer> }
   | { type: 'paths'; id: number }
   | { type: 'path-steps'; id: number; path: number };
 
@@ -31,6 +33,8 @@ export type GraphResponse =
   | { type: 'label-sizes'; id: number; sizes: Uint32Array<ArrayBuffer> }
   /** Each segment's label, lines joined by newlines. */
   | { type: 'label-text'; id: number; texts: string[] }
+  /** Per segment, `UNREACHED` (core/Visibility.ts) beyond 254. */
+  | { type: 'distances'; id: number; distances: Uint8Array<ArrayBuffer> }
   | { type: 'paths'; id: number; paths: PathList }
   /** Segment ids, with `REVERSE_STEP` set on reverse steps. */
   | { type: 'path-steps'; id: number; steps: Uint32Array<ArrayBuffer> }

@@ -64,6 +64,10 @@ export class GraphClient {
     return expect(await this.rpc.request({ type: 'label-text', segments, content }), 'label-text').texts;
   }
 
+  async distances(bits: Uint32Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+    return expect(await this.rpc.request({ type: 'distances', bits }), 'distances').distances;
+  }
+
   async paths(): Promise<PathList> {
     return expect(await this.rpc.request({ type: 'paths' }), 'paths').paths;
   }

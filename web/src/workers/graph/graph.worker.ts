@@ -213,6 +213,11 @@ async function handle(request: GraphRequest): Promise<void> {
         post({ type: 'label-text', id, texts: loaded().labelText(request.segments, custom, name, length, depth) });
         return;
       }
+      case 'distances': {
+        const distances = plain(loaded().distances(request.bits));
+        post({ type: 'distances', id, distances }, [distances.buffer]);
+        return;
+      }
       case 'paths': {
         const g = loaded();
         const paths = {
