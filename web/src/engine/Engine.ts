@@ -1,6 +1,7 @@
 import type { EngineCommand, EngineEvent } from './commands';
 import type { Backend, Style } from './core/backend';
 import { boundsOf, type Bounds } from './core/camera';
+import { Bands } from './core/Bands';
 import { Filtering } from './core/Filtering';
 import { Framing } from './core/Framing';
 import { FrameCounter } from './core/frames';
@@ -64,6 +65,7 @@ export class Engine {
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
   private readonly labels: Labels;
   private readonly filtering: Filtering;
+  private readonly bands: Bands;
   private readonly cameraReport = throttle(() => {
     const camera = this.framing.camera;
     const last = this.reported;
@@ -92,6 +94,7 @@ export class Engine {
     this.filtering = new Filtering(backend, this.labels, (visible, total) => {
       this.emit({ type: 'visibility', visible, total });
     });
+    this.bands = new Bands(backend);
     this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
@@ -175,6 +178,7 @@ export class Engine {
         this.pointer.reset(command.segments.components);
         this.labels.clear();
         this.filtering.setGraph(command.segments);
+        this.bands.setGeometry(command.geometry);
         this.positions = undefined;
         this.grid = undefined;
         this.positionsSettled = false;
@@ -183,6 +187,9 @@ export class Engine {
         break;
       case 'set-filter':
         this.filtering.setFilter(command.filter);
+        break;
+      case 'set-bands':
+        this.bands.set(command.bands);
         break;
       case 'set-path-colors':
         this.backend.setSegmentRun('path', command.colors);

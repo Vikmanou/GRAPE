@@ -123,6 +123,10 @@ export class WebGpuBackend implements Backend {
     this.renderer.setSegmentRun(field, values);
   }
 
+  setBands(instances: Uint32Array<ArrayBuffer>): void {
+    this.renderer.setBands(instances);
+  }
+
   setVisibility(hidden: Hidden): void {
     this.renderer.setVisibility(hidden);
     this.picker.invalidate();

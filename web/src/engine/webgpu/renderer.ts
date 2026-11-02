@@ -1,6 +1,7 @@
 import type { Geometry } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
 import type { Hidden } from '../core/Visibility';
+import { BAND_WORDS } from '../core/Bands';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { MAX_RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import { type DrawnView, FIELDS, packView, type SegmentField, type StyledGraph, VIEW_BYTES } from '../style/uniforms';
@@ -42,11 +43,13 @@ interface Graph extends Drawn {
   styled: StyledGraph;
   /** One per strand. */
   groups: Record<Pass, GPUBindGroup[]>;
+  /** A bind group over search hit instances, for a pass and strand. */
+  group: (pass: Pass, view: GPUBuffer, instances: GPUBuffer) => GPUBindGroup;
 }
 
 /** Each pass and strand draws with its own view uniform. */
-type Pass = 'graph' | 'ids' | 'outline' | 'fill';
-const PASSES: Pass[] = ['graph', 'ids', 'outline', 'fill'];
+type Pass = 'graph' | 'ids' | 'outline' | 'fill' | 'bands';
+const PASSES: Pass[] = ['graph', 'ids', 'outline', 'fill', 'bands'];
 
 /** `strand` in graph.wgsl's view: 0 draws single mode, 1 and -1 the two strands of double mode. */
 const SINGLE = [0];
@@ -64,11 +67,14 @@ export class Renderer {
   private readonly link: GPURenderPipeline;
   private readonly outline: GPURenderPipeline;
   private readonly ribbonIds: GPURenderPipeline;
+  private readonly band: GPURenderPipeline;
   private readonly layout: GPUBindGroupLayout;
   private readonly views: Record<Pass, GPUBuffer[]>;
   private readonly viewData = new ArrayBuffer(VIEW_BYTES);
   private graph: Graph | undefined;
   private selectedCount = 0;
+  /** Search hit instances, replaced whole; their own buffer outlives a layout, not a graph. */
+  private bands: { buffer: GPUBuffer; groups: GPUBindGroup[]; count: number } | undefined;
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
 
   constructor(
@@ -104,6 +110,7 @@ export class Renderer {
     this.ribbon = pipeline('ribbon', 'ribbon_vertex', 'ribbon_fragment', { format, blend });
     this.link = pipeline('link', 'link_vertex', 'link_fragment', { format, blend });
     this.outline = pipeline('outline', 'ribbon_vertex', 'ribbon_outline_fragment', { format, blend });
+    this.band = pipeline('band', 'band_vertex', 'band_fragment', { format, blend });
     this.ribbonIds = pipeline('ribbon ids', 'ribbon_vertex', 'ribbon_id_fragment', { format: ID_FORMAT });
     const uniforms = (pass: Pass) =>
       DOUBLE.map((strand) =>
@@ -118,11 +125,13 @@ export class Renderer {
       ids: uniforms('ids'),
       outline: uniforms('outline'),
       fill: uniforms('fill'),
+      bands: uniforms('bands'),
     };
   }
 
   setGeometry(geometry: Geometry, data: SegmentData, seed: number): void {
     this.graph?.buffers.destroy();
+    this.dropBands();
     const b = new Buffers(this.device);
     const table = uploadSegments(b, geometry, data);
     const styleUniform = new StyleUniform(b);
@@ -185,6 +194,7 @@ export class Renderer {
       pieceCull,
       links: linkCull,
       highlight,
+      group,
       style: styleUniform,
       styled: { segments: geometry.segments, seed, meanDepth: data.meanDepth },
       groups: Object.fromEntries(
@@ -250,6 +260,28 @@ export class Renderer {
     if (linkWords > 0) queue.writeBuffer(graph.selected, 2 * words * 4, hidden.links, 0, linkWords);
   }
 
+  setBands(instances: Uint32Array<ArrayBuffer>): void {
+    this.dropBands();
+    const graph = this.graph;
+    if (!graph || instances.length === 0) return;
+    const buffer = this.device.createBuffer({
+      label: 'search hit bands',
+      size: instances.byteLength,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    this.device.queue.writeBuffer(buffer, 0, instances);
+    this.bands = {
+      buffer,
+      groups: this.views.bands.map((view) => graph.group('bands', view, buffer)),
+      count: instances.length / BAND_WORDS,
+    };
+  }
+
+  private dropBands(): void {
+    this.bands?.buffer.destroy();
+    this.bands = undefined;
+  }
+
   /** Finds what is in view; runs before the render pass that draws it. */
   cull(encoder: GPUCommandEncoder, view: View): void {
     const graph = this.graph;
@@ -284,9 +316,25 @@ export class Renderer {
     }
     if (!graph.pieceCull) return;
     this.eachStrand(pass, 'graph', view, 0, this.ribbon, PIECES_INDIRECT);
-    if (!this.highlighting(view)) return;
-    this.eachStrand(pass, 'outline', view, view.outlineWidth / 2, this.outline, HIGHLIGHT_INDIRECT);
-    this.eachStrand(pass, 'fill', view, -view.outlineWidth / 2, this.ribbon, HIGHLIGHT_INDIRECT);
+    if (this.highlighting(view)) {
+      this.eachStrand(pass, 'outline', view, view.outlineWidth / 2, this.outline, HIGHLIGHT_INDIRECT);
+      this.eachStrand(pass, 'fill', view, -view.outlineWidth / 2, this.ribbon, HIGHLIGHT_INDIRECT);
+    }
+    this.drawBands(pass, view);
+  }
+
+  /** Over everything else, so a selected segment still shows its hits. */
+  private drawBands(pass: GPURenderPassEncoder, view: View): void {
+    const bands = this.bands;
+    if (!bands) return;
+    pass.setPipeline(this.band);
+    (this.style.display.double ? DOUBLE : SINGLE).forEach((strand, k) => {
+      this.writeView('bands', k, view, 0, strand);
+      const group = bands.groups[k];
+      if (!group) return;
+      pass.setBindGroup(0, group);
+      pass.draw(6, bands.count);
+    });
   }
 
   /** Segment ids of the ribbons in view, into an `ID_FORMAT` target; reuses the last cull. */
@@ -328,6 +376,7 @@ export class Renderer {
 
   destroy(): void {
     this.graph?.buffers.destroy();
+    this.dropBands();
     this.graph = undefined;
     for (const view of Object.values(this.views).flat()) view.destroy();
   }

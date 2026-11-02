@@ -55,7 +55,7 @@ struct Style {
 // End and inner point of each side of each link.
 @group(0) @binding(4) var<storage, read> links: array<vec4u>;
 // The links and pieces that touch the view, from cull.wgsl; draws are
-// instanced over these.
+// instanced over these. The band pass binds its instances to visible_pieces.
 @group(0) @binding(5) var<storage, read> visible_links: array<u32>;
 @group(0) @binding(6) var<storage, read> visible_pieces: array<u32>;
 // One bit per selected segment.
@@ -78,6 +78,12 @@ fn field(f: u32, segment: u32) -> u32 {
 
 fn is_selected(segment: u32) -> bool {
   return ((selected[segment >> 5u] >> (segment & 31u)) & 1u) == 1u;
+}
+
+// One bit per hidden segment follows the selection's words.
+fn is_hidden(segment: u32) -> bool {
+  let word = (style.segments + 31u) / 32u + (segment >> 5u);
+  return ((selected[word] >> (segment & 31u)) & 1u) == 1u;
 }
 
 // Mirrors engine/style/colors.ts, the reference the tests check against.
@@ -226,7 +232,10 @@ struct Ribbon {
 // round joins and caps.
 @vertex
 fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Ribbon {
-  let piece = pieces[visible_pieces[i]];
+  return ribbon_piece(v, pieces[visible_pieces[i]]);
+}
+
+fn ribbon_piece(v: u32, piece: vec2u) -> Ribbon {
   var a = positions[piece.x];
   var b = positions[piece.x + 1u];
   let sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);
@@ -271,13 +280,17 @@ fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32)
 // double mode with Bandage's 45 degree arrowhead in place of the cap at the
 // end its strand points to.
 fn inside(in: Ribbon) -> f32 {
-  let nearest = vec2f(clamp(in.local.x, 0.0, in.size.x), 0.0);
-  let capsule = in.size.y - length(in.local - nearest);
-  if in.arrow == 0.0 {
+  return inside_piece(in.local, in.size, in.arrow);
+}
+
+fn inside_piece(local: vec2f, size: vec2f, arrow: f32) -> f32 {
+  let nearest = vec2f(clamp(local.x, 0.0, size.x), 0.0);
+  let capsule = size.y - length(local - nearest);
+  if arrow == 0.0 {
     return capsule;
   }
-  let to_tip = select(in.local.x, in.size.x - in.local.x, in.arrow > 0.0);
-  return min(capsule, (to_tip - abs(in.local.y)) * 0.70710678);
+  let to_tip = select(local.x, size.x - local.x, arrow > 0.0);
+  return min(capsule, (to_tip - abs(local.y)) * 0.70710678);
 }
 
 @fragment
@@ -307,6 +320,68 @@ fn ribbon_id_fragment(in: Ribbon) -> @location(0) u32 {
     discard;
   }
   return in.segment + 1u;
+}
+
+struct Band {
+  @builtin(position) clip: vec4f,
+  @location(0) local: vec2f,
+  @location(1) @interpolate(flat) size: vec2f,
+  @location(2) @interpolate(flat) color: vec4f,
+  @location(3) @interpolate(flat) arrow: f32,
+  // Where along the piece the band starts and ends.
+  @location(4) @interpolate(flat) cut: vec2f,
+}
+
+// A search hit on one ribbon piece: the piece as drawn, cut flat where the hit
+// starts or ends inside it, as Bandage draws its hits with Qt::FlatCap at the
+// node's width (graph/graphicsitemnode.cpp). Double mode shows a hit on its
+// own strand alone, single mode on the one ribbon, as Bandage does. Instances
+// are `BAND_WORDS` words in engine/core/Bands.ts.
+@vertex
+fn band_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Band {
+  let at = i * 8u;
+  let point = visible_pieces[at];
+  let segment = visible_pieces[at + 1u];
+  let from_t = bitcast<f32>(visible_pieces[at + 2u]);
+  let to_t = bitcast<f32>(visible_pieces[at + 3u]);
+  let reverse = visible_pieces[at + 5u] == 1u;
+  var out: Band;
+  let sprite = sprite_center(segment, style.sprite_px * view.world_per_pixel);
+  let other_strand = (view.strand > 0.0 && reverse) || (view.strand < 0.0 && !reverse);
+  // A segment drawn as a dot draws it once, from its first piece.
+  let repeat_dot = sprite.z > 0.0 && point != field(START, segment);
+  if is_hidden(segment) || other_strand || repeat_dot {
+    out.clip = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+  let piece = ribbon_piece(v, vec2u(point, segment));
+  out.clip = piece.clip;
+  out.local = piece.local;
+  out.size = piece.size;
+  out.color = unpack4x8unorm(visible_pieces[at + 4u]);
+  out.arrow = piece.arrow;
+  let open = 1e9;
+  var from_x = select(from_t * piece.size.x, -open, from_t <= 0.0);
+  var to_x = select(to_t * piece.size.x, open, to_t >= 1.0);
+  // However far out the view, a hit stays at least this many pixels long.
+  let shortest = view.world_per_pixel * 1.5;
+  if to_x - from_x < shortest {
+    let middle = 0.5 * (from_x + to_x);
+    from_x = middle - shortest * 0.5;
+    to_x = middle + shortest * 0.5;
+  }
+  out.cut = select(vec2f(from_x, to_x), vec2f(-open, open), piece.size.x <= 1e-6);
+  return out;
+}
+
+@fragment
+fn band_fragment(in: Band) -> @location(0) vec4f {
+  let along = min(in.local.x - in.cut.x, in.cut.y - in.local.x);
+  let alpha = coverage(min(inside_piece(in.local, in.size, in.arrow), along)) * in.color.a;
+  if alpha <= 0.0 {
+    discard;
+  }
+  return vec4f(in.color.rgb * alpha, alpha);
 }
 
 const LINK_STEPS = 16u;

@@ -126,6 +126,10 @@ export class WebGl2Backend implements Backend {
     this.renderer.setSegmentRun(field, values);
   }
 
+  setBands(): void {
+    // Bands arrive on this backend with the next commit.
+  }
+
   setVisibility(hidden: Hidden): void {
     this.renderer.setVisibility(hidden);
     this.picker.invalidate();

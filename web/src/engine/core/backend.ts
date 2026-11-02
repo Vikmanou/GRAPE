@@ -148,6 +148,8 @@ export interface Backend {
    * segment for the path colour mode (0 off every highlighted path), or `gc`.
    */
   setSegmentRun(field: 'path' | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void;
+  /** `BAND_WORDS` per ribbon piece a search hit crosses (core/Bands.ts). */
+  setBands(instances: Uint32Array<ArrayBuffer>): void;
   draw(view: View): void;
   /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
   pick(x: number, y: number): Promise<number | undefined>;

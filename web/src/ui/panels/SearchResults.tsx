@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { cssColor, pathColor } from '../../engine/style/colors';
-import { listedHits, readHit, type SearchHit, type SearchPart } from '../../state/search';
+import { listedHits, MAX_BANDS, readHit, type SearchHit, type SearchPart } from '../../state/search';
 import { useApp } from '../../state/store';
-import { HIT_WORDS } from '../../workers/protocol/sequence';
+import { HIT_WORDS, PART_WORDS } from '../../workers/protocol/sequence';
 import { formatCount, formatPercent } from '../format';
 
 function strand(part: SearchPart): string {
@@ -17,9 +17,9 @@ function Row({ hit, query, names }: { hit: SearchHit; query: string; names: Map<
   const label = (part: SearchPart) => `${names.get(part.segment) ?? part.segment}${strand(part)}`;
   const all = hit.parts.map((p) => `${label(p)} ${formatCount(p.start + 1)}–${formatCount(p.end)}`).join('\n');
   return (
-    <tr data-testid={`search-hit-${hit.index}`}>
+    <tr data-testid={`search-hit-${hit.index}`} title={`Score ${formatCount(hit.score)}`}>
       <td>
-        <span className="swatch" style={{ background: cssColor(pathColor(hit.query)) }} title={query} />
+        <span className="swatch hit-query" style={{ background: cssColor(pathColor(hit.query)) }} title={query} />
       </td>
       <td>
         <button
@@ -40,7 +40,6 @@ function Row({ hit, query, names }: { hit: SearchHit; query: string; names: Map<
       </td>
       <td>{formatPercent(hit.identity)}</td>
       <td>{formatPercent(hit.coverage)}</td>
-      <td>{formatCount(hit.score)}</td>
     </tr>
   );
 }
@@ -50,6 +49,8 @@ export function SearchResults() {
   const results = useApp((s) => s.searchResults);
   const starts = useApp((s) => s.searchPartStarts);
   const names = useApp((s) => s.searchNames);
+  const show = useApp((s) => s.showSearchHits);
+  const setShow = useApp((s) => s.setShowSearchHits);
   const [picked, setPicked] = useState<number | undefined>();
   const query = results && picked !== undefined && picked < results.names.length ? picked : undefined;
   const rows = useMemo(() => (results ? listedHits(results, query) : []), [results, query]);
@@ -82,6 +83,19 @@ export function SearchResults() {
           </select>
         </label>
       )}
+      {found > 0 && (
+        <label className="row">
+          <input
+            type="checkbox"
+            data-testid="search-show"
+            checked={show}
+            onChange={(event) => {
+              setShow(event.target.checked);
+            }}
+          />{' '}
+          Show hits on the ribbons
+        </label>
+      )}
       {rows.length > 0 && (
         <table className="components path-table" data-testid="search-hits">
           <thead>
@@ -93,7 +107,6 @@ export function SearchResults() {
               <th scope="col">Position</th>
               <th scope="col">Identity</th>
               <th scope="col">Coverage</th>
-              <th scope="col">Score</th>
             </tr>
           </thead>
           <tbody>
@@ -119,6 +132,9 @@ export function SearchResults() {
         <p className="muted small" data-testid="search-repeats">
           {formatCount(results.repeats)} query k-mers are too common in the graph to seed a hit.
         </p>
+      )}
+      {results.parts.length / PART_WORDS > MAX_BANDS && (
+        <p className="muted small">The first {formatCount(MAX_BANDS)} segments of hits are drawn.</p>
       )}
       {results.seedsCut && (
         <p className="notice">A query had more seeds than a search follows, so hits may be missing.</p>

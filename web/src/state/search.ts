@@ -1,5 +1,8 @@
+import type { HitBands } from '../engine/core/Bands';
+import { pathColor } from '../engine/style/colors';
 import { HIT_WORDS, type IndexInfo, PART_WORDS, type SearchResults } from '../workers/protocol/sequence';
 import { SearchCancelledError } from '../workers/rpc';
+import { shownGraph } from './load';
 import type { Context } from './store';
 
 export const DEFAULT_SEED = 15;
@@ -7,6 +10,8 @@ export const MIN_SEED = 8;
 export const MAX_SEED = 16;
 /** Hits listed per query; the rest are drawn and counted. */
 export const SHOWN_HITS = 200;
+/** Parts of hits drawn, best first within each query. */
+export const MAX_BANDS = 200_000;
 
 export type SearchRun =
   | { state: 'idle' }
@@ -44,6 +49,9 @@ export interface SearchSlice {
   /** Names of the segments in the hits listed. */
   searchNames: Map<number, string>;
   searchSeed: number;
+  /** Hits show as bands on the ribbons. */
+  showSearchHits: boolean;
+  setShowSearchHits: (show: boolean) => void;
   /** Seed length; a new one indexes again at the next search. */
   setSearchSeed: (k: number) => void;
   /** Indexes the shown graph if it has no index yet, then searches for pasted text or a FASTA file. */
@@ -101,9 +109,39 @@ export function listedHits(results: SearchResults, query: number | undefined): n
   return out;
 }
 
+/** Every part of every hit, as bands in its query's colour. */
+export function hitBands(results: SearchResults, lengths: Uint32Array): HitBands {
+  const parts = Math.min(results.parts.length / PART_WORDS, MAX_BANDS);
+  const bands: HitBands = {
+    segments: new Uint32Array(parts),
+    reverse: new Uint8Array(parts),
+    starts: new Float32Array(parts),
+    ends: new Float32Array(parts),
+    colors: new Uint32Array(parts),
+  };
+  let part = 0;
+  const count = results.hits.length / HIT_WORDS;
+  for (let h = 0; h < count && part < parts; h++) {
+    const color = pathColor(results.hits[h * HIT_WORDS] ?? 0);
+    const end = part + (results.hits[h * HIT_WORDS + 6] ?? 0);
+    for (; part < end && part < parts; part++) {
+      const word = (k: number) => results.parts[part * PART_WORDS + k] ?? 0;
+      const segment = word(0);
+      const length = Math.max(1, lengths[segment] ?? 1);
+      bands.segments[part] = segment;
+      bands.reverse[part] = word(1);
+      bands.starts[part] = word(4) / length;
+      bands.ends[part] = word(5) / length;
+      bands.colors[part] = color;
+    }
+  }
+  return bands;
+}
+
 export function createSearchSlice(ctx: Context): SearchSlice {
   const { set, get, services } = ctx;
   let request = 0;
+  let drawn = false;
 
   async function run(ticket: number, queries: string | Blob): Promise<void> {
     const { searchIndex, searchSeed } = get();
@@ -137,6 +175,17 @@ export function createSearchSlice(ctx: Context): SearchSlice {
       searchPartStarts: starts,
       searchNames: new Map(Array.from(segments, (segment, i) => [segment, names[i] ?? ''])),
     });
+    drawHits();
+  }
+
+  /** What the store holds now, on the ribbons. */
+  function drawHits(): void {
+    const { searchResults, showSearchHits } = get();
+    const lengths = shownGraph(get())?.topology.lengths;
+    const bands = searchResults && showSearchHits && lengths ? hitBands(searchResults, lengths) : undefined;
+    if (!bands && !drawn) return;
+    drawn = bands !== undefined;
+    ctx.bridge.send({ type: 'set-bands', bands });
   }
 
   const forget = () => ({
@@ -150,6 +199,12 @@ export function createSearchSlice(ctx: Context): SearchSlice {
     ...forget(),
     searchIndex: undefined,
     searchSeed: DEFAULT_SEED,
+    showSearchHits: true,
+
+    setShowSearchHits(showSearchHits) {
+      set({ showSearchHits });
+      drawHits();
+    },
 
     setSearchSeed(k) {
       set({ searchSeed: Math.max(MIN_SEED, Math.min(MAX_SEED, Math.round(k))) });
@@ -161,6 +216,7 @@ export function createSearchSlice(ctx: Context): SearchSlice {
       if (state === 'indexing' || state === 'searching') void services.sequence.cancelSearch();
       const ticket = ++request;
       set(forget());
+      drawHits();
       run(ticket, queries).catch((error: unknown) => {
         if (ticket !== request || error instanceof SearchCancelledError) return;
         set({ searchRun: { state: 'failed', message: message(error) } });
@@ -178,6 +234,7 @@ export function createSearchSlice(ctx: Context): SearchSlice {
     clearSearch() {
       request++;
       set({ ...forget(), searchIndex: undefined });
+      drawHits();
     },
 
     zoomToHit(hit) {

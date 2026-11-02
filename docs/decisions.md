@@ -938,3 +938,24 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   short segments, so it proves joining too.
 - **Alternatives**: 16S rRNA (multi-copy); a gene in the small SPAdes sample
   (none identified).
+
+## 2026-11-02: Hits draw as bands placed along a ribbon by piece
+
+- **Decision**: a hit's part is one instance per ribbon piece it crosses,
+  drawn over everything else on both backends: the piece as drawn, cut flat
+  where the hit starts or ends inside it and at the segment's own width, as
+  Bandage draws hits (`Qt::FlatCap`, `m_width`, graph/graphicsitemnode.cpp).
+  In double mode a hit shows on its own strand only; in single mode on the one
+  ribbon, as Bandage does. A base's place goes by piece: `f × pieces` gives the
+  piece and the fraction along it. A band stays at least 1.5 pixels long
+  however far out the view is.
+- **Where GRAPE differs**: Bandage measures a hit's fraction by arc length
+  along the node (`findLocationOnPath`). Pieces share a rest length, so the two
+  agree once a layout settles, and piece positions need no work as points move
+  during a layout or a drag.
+- **Reason**: bands read live positions in the shader, so a running layout
+  keeps them in place. On WebGPU the instances bind to `visible_pieces`, which
+  keeps the vertex stage within the default of 8 storage buffers.
+- **Alternatives**: a per-segment attribute holding a fraction range (one
+  range per segment, and hits can overlap); per-piece colours rebuilt on each
+  search.

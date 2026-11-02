@@ -309,3 +309,10 @@
   margin: 0 0 8px;
   font-size: inherit;
 }
+
+.hit-query {
+  display: block;
+  width: 10px;
+  height: 10px;
+  flex: none;
+}

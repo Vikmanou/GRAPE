@@ -7,6 +7,7 @@ import type { Theme } from './style/palette';
 import type { LabelOptions } from './text/Labels';
 import type { Filter } from './core/Visibility';
 import type { LayoutProgress, LevelRecord, SegmentData } from './core/backend';
+import type { HitBands } from './core/Bands';
 
 export type EngineCommand =
   | { type: 'set-theme'; theme: Theme }
@@ -21,6 +22,8 @@ export type EngineCommand =
   | { type: 'set-filter'; filter: Filter }
   /** One RGBA8 colour per segment for the path colour mode, 0 off every highlighted path. */
   | { type: 'set-path-colors'; colors: Uint32Array<ArrayBuffer> }
+  /** Search hits to draw on the ribbons, kept through new layouts; undefined draws none. */
+  | { type: 'set-bands'; bands: HitBands | undefined }
   /** New GC fractions per segment, NaN without a sequence, after sequences were added. */
   | { type: 'set-gc'; gc: Float32Array<ArrayBuffer> }
   /** `x, y` per point, in layout units, from a layout run in the worker, with its grid and progress. */
