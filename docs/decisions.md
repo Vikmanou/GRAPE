@@ -869,3 +869,61 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: chosen by the owner for milestone 8's open question.
 - **Alternatives**: no separate FASTA in v1 (recommended, declined by the
   owner); asking for the FASTA while the GFA loads.
+
+## 2026-11-02: How sequence search finds and joins hits
+
+- **Decision**: gfa-core `search/` holds a hash-bucket index of canonical
+  15-mers over its own packed copy of the bases, seeds checked against those
+  bases. Seeds cluster per segment and strand by diagonal; each cluster gets a
+  Gotoh local alignment in a band reaching 64 bases past its seeds, with
+  blastn's `-task blastn` scores (+2, -3, gap 5 + 2 per base;
+  algo/blast/core/blast_options.h). A hit scores at least
+  `min(40, 2 × query length)`. Cells carry their alignment's start and counts,
+  so there is no traceback and memory stays one row wide. k-mers occurring
+  over 4,096 times seed nothing and the UI says how many; each query keeps
+  10,000 hits.
+- **Reason**: spec's Features 7. Bandage's own `blastn` call runs BLAST's
+  default task, megablast, which needs 28 exact bases; these scores suit a
+  15-base seed. "Matches brute force" means: every strand's best alignment
+  through an exact k-mer is reached, as seeding cannot promise alignments
+  holding no seed.
+- **Where hits can differ from a full alignment**: an indel longer than the
+  band splits a hit in two.
+- **Alternatives**: a traceback matrix (query × band bytes, 1 GB for a 10 Mb
+  query); a suffix array (more memory, and it needs the bases contiguous).
+
+## 2026-11-02: Past a 1 GB index, only minimizers are indexed
+
+- **Decision**: every k-mer is indexed while buckets and entries fit 1 GB.
+  Past that, robust winnowing (Schleimer et al. 2003) keeps a window's
+  smallest hash, the window sized to fit; queries still look up all their
+  k-mers. The panel states the exact match length that is always found,
+  k + w - 1.
+- **Reason**: chosen by the owner. WASM's 4 GB limit rules out a full index of
+  multi-gigabase graphs.
+- **Alternatives**: refusing such graphs; scanning all sequences per search.
+
+## 2026-11-02: Hits join along links and bridge segments too short to seed
+
+- **Decision**: two parts join when a link leads from one's strand to the
+  other's and the query's gap is within 16 bases of what the walk spells, less
+  the link's overlap. Otherwise a walk of up to 8 segments and 256 tries
+  through segments that fit the gap may connect them, the walk aligning best
+  to the query winning; so a gene reads as one hit through SNP bubbles.
+- **Parts sharing query bases at the facing ends of a link join whatever its
+  CIGAR says**: the Myxococcus sample writes `0M` on links whose segments share
+  40 bases (`ks:i:41`), so the CIGAR cannot be trusted as a limit. The link
+  must still exist.
+- **Reason**: the spec joins adjacent hits only; bridging was chosen by the
+  owner, as pangenome graphs have many segments under 15 bases
+  (human-mito-4-haplotypes has a median of 1).
+- **Alternatives**: joining direct links only; reading `ks` from the header,
+  which only some tools write.
+
+## 2026-11-02: Sequence search takes DNA only in v1
+
+- **Decision**: queries hold A, C, G, T, U and IUPAC codes; other letters get
+  a message. A U reads as T, and IUPAC codes count as mismatches.
+- **Reason**: chosen by the owner for the spec's open question.
+- **Alternatives**: protein queries through a six-frame translation and
+  BLOSUM62, roughly tblastn.

@@ -4,7 +4,9 @@
 mod common;
 
 use gfa_core::search::align::{GAP_EXTEND, GAP_OPEN, MATCH, MISMATCH};
+use gfa_core::search::join::LinkTable;
 use gfa_core::search::kmer::{DEFAULT_K, IndexBuilder, KmerIndex};
+use gfa_core::search::search;
 use gfa_core::search::seed::{Part, Skipped, min_score, segment_hits};
 use gfa_core::{Graph, bases_from_file, bases_from_packed, parse, reverse_complement};
 use proptest::prelude::*;
@@ -183,6 +185,191 @@ fn mutated(
         reverse_complement(&query)
     } else {
         query
+    }
+}
+
+struct Joined {
+    index: KmerIndex,
+    links: LinkTable,
+    sequences: Vec<Vec<u8>>,
+    graph: Graph,
+}
+
+fn joined() -> Joined {
+    let file = common::testdata("search.gfa");
+    let graph = parse(&file, Default::default()).unwrap();
+    let sequences = sequences_of(&graph, &file);
+    let index = indexed(&sequences, DEFAULT_K);
+    let links = LinkTable::from_links(sequences.len(), &graph.links);
+    Joined {
+        index,
+        links,
+        sequences,
+        graph,
+    }
+}
+
+impl Joined {
+    fn bases(&self, name: &str) -> &[u8] {
+        &self.sequences[self.graph.names.find(name.as_bytes()).unwrap() as usize]
+    }
+
+    /// The name, strand and range of each part of each hit.
+    fn hits(&self, query: &[u8]) -> Vec<Vec<(String, bool, u32, u32)>> {
+        search(&self.index, &self.links, query)
+            .hits
+            .iter()
+            .map(|hit| {
+                hit.parts
+                    .iter()
+                    .map(|p| {
+                        let name = self.graph.names.get(p.segment);
+                        (
+                            String::from_utf8_lossy(name).into_owned(),
+                            p.reverse,
+                            p.t_start,
+                            p.t_end,
+                        )
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+}
+
+fn part(name: &str, reverse: bool, from: u32, to: u32) -> (String, bool, u32, u32) {
+    (name.to_owned(), reverse, from, to)
+}
+
+#[test]
+fn an_overlapping_link_joins_and_counts_the_overlap_once() {
+    let g = joined();
+    let query = [g.bases("a"), &g.bases("b")[25..]].concat();
+    assert_eq!(
+        g.hits(&query),
+        [[part("a", false, 0, 120), part("b", false, 0, 125)]]
+    );
+    let hit = &search(&g.index, &g.links, &query).hits[0];
+    assert_eq!((hit.q_start, hit.q_end), (0, query.len() as u32));
+    assert_eq!(
+        (hit.matches, hit.columns),
+        (query.len() as u32, query.len() as u32)
+    );
+}
+
+#[test]
+fn a_link_joins_on_the_strand_it_names_and_read_from_either_end() {
+    let g = joined();
+    let c = reverse_complement(g.bases("c"));
+    let query = [g.bases("a"), &c].concat();
+    let forward = vec![vec![part("a", false, 0, 120), part("c", true, 0, 90)]];
+    assert_eq!(g.hits(&query)[..1], forward);
+    let mirrored = vec![vec![part("c", false, 0, 90), part("a", true, 0, 120)]];
+    assert_eq!(g.hits(&reverse_complement(&query))[..1], mirrored);
+}
+
+#[test]
+fn parts_without_a_link_stay_apart() {
+    let g = joined();
+    // The last 25 bases of a are also the start of b, a hit of its own.
+    let apart = vec![
+        vec![part("a", false, 0, 120)],
+        vec![part("d", false, 0, 80)],
+        vec![part("b", false, 0, 25)],
+    ];
+    let query = [g.bases("a"), g.bases("d")].concat();
+    assert_eq!(g.hits(&query), apart);
+    let wrong_strand = [g.bases("a"), g.bases("c")].concat();
+    assert_eq!(
+        g.hits(&wrong_strand)[..2],
+        [
+            vec![part("a", false, 0, 120)],
+            vec![part("c", false, 0, 90)]
+        ]
+    );
+}
+
+#[test]
+fn a_walk_bridges_a_segment_too_short_to_seed_and_takes_the_base_that_matches() {
+    let g = joined();
+    for (name, base) in [("snpG", b"G"), ("snpA", b"A")] {
+        let query = [g.bases("e"), base, g.bases("f")].concat();
+        let hits = g.hits(&query);
+        assert_eq!(
+            hits,
+            [[
+                part("e", false, 0, 100),
+                part(name, false, 0, 1),
+                part("f", false, 0, 100)
+            ]]
+        );
+        let hit = &search(&g.index, &g.links, &query).hits[0];
+        assert_eq!(hit.matches, query.len() as u32);
+        assert_eq!(hit.columns, query.len() as u32);
+    }
+}
+
+#[test]
+fn a_link_of_unknown_overlap_joins_whatever_the_query_shares() {
+    let g = joined();
+    let query = [g.bases("h"), g.bases("i")].concat();
+    assert_eq!(
+        g.hits(&query),
+        [[part("h", false, 0, 90), part("i", false, 0, 70)]]
+    );
+}
+
+/// As the Myxococcus sample writes them: `0M` over 40 bases the segments share.
+#[test]
+fn a_link_that_understates_its_overlap_still_joins() {
+    let g = joined();
+    let query = [g.bases("k1"), &g.bases("k2")[40..]].concat();
+    assert_eq!(
+        g.hits(&query),
+        [[part("k1", false, 0, 90), part("k2", false, 0, 100)]]
+    );
+    let hit = &search(&g.index, &g.links, &query).hits[0];
+    assert_eq!(hit.columns, query.len() as u32);
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(200))]
+
+    /// A walk through a graph of random segments reads as one whole hit.
+    #[test]
+    fn a_walk_through_the_graph_reads_as_one_hit(
+        sequences in prop::collection::vec(dna(25..120), 2..10),
+        steps in prop::collection::vec((0usize..10, any::<bool>()), 2..6),
+    ) {
+        let walk: Vec<(usize, bool)> = {
+            let mut used = vec![false; sequences.len()];
+            steps.iter().filter_map(|&(s, r)| {
+                let s = s % sequences.len();
+                (!std::mem::replace(&mut used[s], true)).then_some((s, r))
+            }).collect()
+        };
+        prop_assume!(walk.len() >= 2);
+        let mut text = String::new();
+        for (i, s) in sequences.iter().enumerate() {
+            text += &format!("S\ts{i}\t{}\n", String::from_utf8_lossy(s));
+        }
+        let sign = |r: bool| if r { '-' } else { '+' };
+        let mut query = Vec::new();
+        for (k, &(s, r)) in walk.iter().enumerate() {
+            let bases = &sequences[s];
+            query.extend(if r { reverse_complement(bases) } else { bases.clone() });
+            if let Some(&(t, tr)) = walk.get(k + 1) {
+                text += &format!("L\ts{s}\t{}\ts{t}\t{}\t0M\n", sign(r), sign(tr));
+            }
+        }
+        let graph = parse(text.as_bytes(), Default::default()).unwrap();
+        let index = indexed(&sequences_of(&graph, text.as_bytes()), DEFAULT_K);
+        let links = LinkTable::from_links(sequences.len(), &graph.links);
+        let found = search(&index, &links, &query);
+        let top = &found.hits[0];
+        prop_assert_eq!((top.q_start, top.q_end), (0, query.len() as u32));
+        prop_assert_eq!(top.matches, query.len() as u32);
+        prop_assert_eq!(top.parts.len(), walk.len());
     }
 }
 
