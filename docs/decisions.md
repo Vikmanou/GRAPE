@@ -425,17 +425,6 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: separate strand chains held side by side by springs (the
   old spec text; twice the points, about 7M for a 1M graph).
 
-## 2026-10-26: The WebGL2 fallback comes right after Display
-
-- **Decision**: milestone 4 introduces the `Backend` and `LayoutDriver`
-  interfaces; the WebGL2 backend is milestone 7, before graph features,
-  search and export, which are then built and tested on both backends.
-- **Reason**: Chrome on Linux enables WebGPU by default only on Intel Gen12+
-  GPUs and Firefox only on Windows and Apple-silicon macOS (MDN
-  browser-compat-data), so many users get WebGL2; with WebGL2 in CI from
-  milestone 7, headless CI covers real rendering.
-- **Alternatives**: the WebGL2 backend last, as the old spec had it.
-
 ## 2026-10-26: A sequence worker owns sequences
 
 - **Decision**: after parsing, the parse worker (renamed the graph worker in
@@ -464,13 +453,6 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: positions live on the GPU while the layout runs; reading back a
   1M graph's points (about 28 MB) to build a grid would take a worker round
   trip. The spec's CPU grid remains the WebGL2 path.
-
-## 2026-10-26: Sequences, raw lines and FASTA move into milestone 4
-
-- **Decision**: the info panel ships with the sequence preview, copy, FASTA
-  and the raw GFA line (plain files only; gzipped files cannot be read at an
-  offset). The parser stores each `S` line's offset for plain files.
-- **Reason**: owner's choice; the info panel is incomplete without them.
 
 ## 2026-10-26: Bundled examples are real graphs under permissive licences
 
