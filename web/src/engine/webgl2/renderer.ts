@@ -1,5 +1,6 @@
 import type { Geometry, PositionGrid } from '../../workers/protocol/layout';
 import type { SegmentData, Style } from '../core/backend';
+import { BAND_WORDS } from '../core/Bands';
 import type { Hidden } from '../core/Visibility';
 import { DEFAULT_DISPLAY } from '../style/display';
 import {
@@ -14,16 +15,21 @@ import {
   VIEW_BYTES,
 } from '../style/uniforms';
 import { createProgram, type Program, Resources, STYLE_BLOCK, VIEW_BLOCK } from './context';
+import bandFragment from './shaders/band.frag?raw';
+import bandVertex from './shaders/band.vert?raw';
 import common from './shaders/common.glsl?raw';
 import inside from './shaders/inside.glsl?raw';
 import linkFragment from './shaders/link.frag?raw';
 import linkVertex from './shaders/link.vert?raw';
+import pieceVertex from './shaders/piece.glsl?raw';
 import ribbonFragment from './shaders/ribbon.frag?raw';
 import ribbonIdFragment from './shaders/ribbonId.frag?raw';
 import ribbonVertex from './shaders/ribbon.vert?raw';
 import { firstPieces, type ItemList, Visible } from './visible';
 
-const SAMPLERS = ['positions', 'pieces', 'segment_table', 'links', 'selected'];
+const SAMPLERS = ['positions', 'pieces', 'segment_table', 'links', 'selected', 'bands'];
+const BANDS_UNIT = SAMPLERS.indexOf('bands');
+const BAND_TEXELS = BAND_WORDS / 4;
 const LINK_STEPS = 16;
 /** `strand` in the view block: 0 draws single mode, 1 and -1 the two strands of double mode. */
 const SINGLE = [0];
@@ -63,6 +69,9 @@ export class Renderer {
   private readonly ribbon: Program;
   private readonly ribbonIds: Program;
   private readonly link: Program;
+  private readonly band: Program;
+  /** Search hit instances; replaced whole, gone with their graph. */
+  private bands: { texture: WebGLTexture; count: number } | undefined;
   private readonly vao: WebGLVertexArrayObject;
   private readonly items: WebGLBuffer;
   private itemCapacity = 0;
@@ -77,8 +86,9 @@ export class Renderer {
   constructor(private readonly res: Resources) {
     const gl = res.gl;
     const program = (vertex: string, fragment: string) => createProgram(gl, common, vertex, fragment, SAMPLERS);
-    this.ribbon = program(ribbonVertex, inside + ribbonFragment);
-    this.ribbonIds = program(ribbonVertex, inside + ribbonIdFragment);
+    this.ribbon = program(pieceVertex + ribbonVertex, inside + ribbonFragment);
+    this.ribbonIds = program(pieceVertex + ribbonVertex, inside + ribbonIdFragment);
+    this.band = program(pieceVertex + bandVertex, inside + bandFragment);
     this.link = program(linkVertex, linkFragment);
     this.vao = gl.createVertexArray();
     this.items = gl.createBuffer();
@@ -180,6 +190,20 @@ export class Renderer {
     this.res.writeItems(texture, 'r32ui', graph.table, start, start + n);
   }
 
+  setBands(instances: Uint32Array<ArrayBuffer>): void {
+    this.dropBands();
+    if (!this.graph || instances.length === 0) return;
+    const texels = instances.length / 4;
+    const texture = this.res.dataTexture('rgba32ui', texels);
+    this.res.writeData(texture, 'rgba32ui', instances);
+    this.bands = { texture, count: texels / BAND_TEXELS };
+  }
+
+  private dropBands(): void {
+    this.res.release(this.bands?.texture);
+    this.bands = undefined;
+  }
+
   draw(view: DrawnView): void {
     const graph = this.graph;
     if (!graph) return;
@@ -195,7 +219,33 @@ export class Renderer {
       this.eachStrand(this.ribbon, view, view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, true);
       this.eachStrand(this.ribbon, view, -view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, false);
     }
+    this.drawBands(view);
     gl.disable(gl.BLEND);
+  }
+
+  /** Over everything else, so a selected segment still shows its hits. */
+  private drawBands(view: DrawnView): void {
+    const { bands, graph } = this;
+    if (!bands || !graph) return;
+    const gl = this.res.gl;
+    gl.useProgram(this.band.program);
+    graph.textures.forEach((texture, unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+    });
+    gl.activeTexture(gl.TEXTURE0 + BANDS_UNIT);
+    gl.bindTexture(gl.TEXTURE_2D, bands.texture);
+    gl.bindVertexArray(this.vao);
+    gl.disableVertexAttribArray(0);
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, STYLE_BLOCK, this.styleBlock);
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, VIEW_BLOCK, this.viewBlock);
+    for (const strand of this.style.display.double ? DOUBLE : SINGLE) {
+      packView(this.viewData, view, 0, strand);
+      gl.bindBuffer(gl.UNIFORM_BUFFER, this.viewBlock);
+      gl.bufferSubData(gl.UNIFORM_BUFFER, 0, this.viewData);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, bands.count);
+    }
+    gl.bindVertexArray(null);
   }
 
   /** Segment ids of the ribbons in view, into the bound integer target. */
@@ -281,6 +331,7 @@ export class Renderer {
 
   private releaseGraph(): void {
     for (const texture of this.graph?.textures ?? []) this.res.release(texture);
+    this.dropBands();
     this.graph = undefined;
   }
 
@@ -288,6 +339,6 @@ export class Renderer {
     this.releaseGraph();
     const gl = this.res.gl;
     gl.deleteVertexArray(this.vao);
-    for (const p of [this.ribbon, this.ribbonIds, this.link]) gl.deleteProgram(p.program);
+    for (const p of [this.ribbon, this.ribbonIds, this.link, this.band]) gl.deleteProgram(p.program);
   }
 }

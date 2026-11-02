@@ -126,8 +126,8 @@ export class WebGl2Backend implements Backend {
     this.renderer.setSegmentRun(field, values);
   }
 
-  setBands(): void {
-    // Bands arrive on this backend with the next commit.
+  setBands(instances: Uint32Array<ArrayBuffer>): void {
+    this.renderer.setBands(instances);
   }
 
   setVisibility(hidden: Hidden): void {
