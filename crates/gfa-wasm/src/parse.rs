@@ -215,6 +215,16 @@ impl Loaded {
         self.graph.links.to.clone()
     }
 
+    #[wasm_bindgen(js_name = linkOverlapFrom)]
+    pub fn link_overlap_from(&self) -> Vec<u32> {
+        self.graph.links.overlap_from.clone()
+    }
+
+    #[wasm_bindgen(js_name = linkOverlapTo)]
+    pub fn link_overlap_to(&self) -> Vec<u32> {
+        self.graph.links.overlap_to.clone()
+    }
+
     #[wasm_bindgen(js_name = linkBits)]
     pub fn link_bits(&self) -> Vec<u8> {
         self.graph.links.bits.clone()

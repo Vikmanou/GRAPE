@@ -68,6 +68,51 @@ export interface GfaRecords {
   links: Uint8Array<ArrayBuffer>;
 }
 
+/** The shown graph's links, as gfa-core `Links` holds them, for joining hits. */
+export interface SearchLinks {
+  from: Uint32Array<ArrayBuffer>;
+  to: Uint32Array<ArrayBuffer>;
+  bits: Uint8Array<ArrayBuffer>;
+  overlapFrom: Uint32Array<ArrayBuffer>;
+  overlapTo: Uint32Array<ArrayBuffer>;
+}
+
+export function linkTransfers(links: SearchLinks): ArrayBuffer[] {
+  return [links.from, links.to, links.bits, links.overlapFrom, links.overlapTo].map((a) => a.buffer);
+}
+
+export interface IndexInfo {
+  k: number;
+  /** Exact matches this long are always seeded; more than `k` past the index budget. */
+  guaranteedMatch: number;
+  segments: number;
+  bases: number;
+  bytes: number;
+}
+
+/** `query, score, q_start, q_end, matches, columns, parts` per hit; score is signed. */
+export const HIT_WORDS = 7;
+/** `segment, reverse, q_start, q_end, start, end` per part, the range on the forward strand. */
+export const PART_WORDS = 6;
+
+/** Every query's hits, best first within each query, each hit's parts in query order. */
+export interface SearchResults {
+  names: string[];
+  lengths: Uint32Array<ArrayBuffer>;
+  /** Hits found per query, which may be more than were kept. */
+  totals: Uint32Array<ArrayBuffer>;
+  hits: Uint32Array<ArrayBuffer>;
+  parts: Uint32Array<ArrayBuffer>;
+  tooShort: string[];
+  /** Query k-mers too common to seed. */
+  repeats: number;
+  seedsCut: boolean;
+}
+
+export function resultTransfers(r: SearchResults): ArrayBuffer[] {
+  return [r.lengths, r.totals, r.hits, r.parts].map((a) => a.buffer);
+}
+
 export type SequenceRequest =
   | { type: 'load'; id: number; source: SequenceSource }
   | { type: 'memory'; id: number }
@@ -79,7 +124,13 @@ export type SequenceRequest =
   | { type: 'fasta'; id: number; records: FastaRecords }
   /** Serves a merged graph's segments from the original sequences; undefined goes back to the original graph. */
   | { type: 'chains'; id: number; map: ChainMap | undefined }
-  | { type: 'gfa'; id: number; records: GfaRecords };
+  | { type: 'gfa'; id: number; records: GfaRecords }
+  /** Indexes the shown graph's sequences, replacing any index. */
+  | { type: 'build-index'; id: number; k: number; links: SearchLinks }
+  /** Pasted text or a FASTA file, plain or gzipped. */
+  | { type: 'search'; id: number; queries: string | Blob }
+  /** Stops any indexing or search, which answers `cancelled`. */
+  | { type: 'cancel-search'; id: number };
 
 export type SequenceResponse =
   | { type: 'loaded'; id: number }
@@ -91,4 +142,9 @@ export type SequenceResponse =
   | { type: 'raw-line'; id: number; line: { text: string; elided: number } | undefined }
   | { type: 'fasta'; id: number; blob: Blob }
   | { type: 'gfa'; id: number; blob: Blob }
+  | { type: 'index-progress'; id: number; fraction: number }
+  | { type: 'index-built'; id: number; info: IndexInfo }
+  | { type: 'search-progress'; id: number; done: number; total: number }
+  | { type: 'searched'; id: number; results: SearchResults }
+  | { type: 'cancelled'; id: number }
   | ErrorResponse;

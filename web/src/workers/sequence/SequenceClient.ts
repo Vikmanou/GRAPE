@@ -3,6 +3,10 @@ import {
   chainTransfers,
   type FastaRecords,
   type GfaRecords,
+  type IndexInfo,
+  linkTransfers,
+  type SearchLinks,
+  type SearchResults,
   type SequenceRequest,
   type SequenceResponse,
   type SequenceSource,
@@ -17,11 +21,19 @@ export interface Preview {
   missing: boolean;
 }
 
+/** Rejection for an indexing or search stopped by `cancelSearch` or by new sequences. */
+export class SearchCancelledError extends Error {
+  constructor() {
+    super('search cancelled');
+    this.name = 'SearchCancelledError';
+  }
+}
+
 export class SequenceClient {
   private readonly rpc = new RpcClient<SequenceRequest, SequenceResponse>({
     name: 'sequence',
     spawn: () => new Worker(new URL('./sequence.worker.ts', import.meta.url), { type: 'module', name: 'sequence' }),
-    isUpdate: () => false,
+    isUpdate: (response) => response.type === 'index-progress' || response.type === 'search-progress',
   });
 
   async load(source: SequenceSource): Promise<void> {
@@ -59,5 +71,36 @@ export class SequenceClient {
 
   async gfa(records: GfaRecords): Promise<Blob> {
     return expect(await this.rpc.request({ type: 'gfa', records }, { transfer: [records.links.buffer] }), 'gfa').blob;
+  }
+
+  async buildIndex(k: number, links: SearchLinks, onProgress?: (fraction: number) => void): Promise<IndexInfo> {
+    const response = await this.rpc.request(
+      { type: 'build-index', k, links },
+      {
+        transfer: linkTransfers(links),
+        onUpdate: (update) => {
+          if (update.type === 'index-progress') onProgress?.(update.fraction);
+        },
+      },
+    );
+    if (response.type === 'cancelled') throw new SearchCancelledError();
+    return expect(response, 'index-built').info;
+  }
+
+  async search(queries: string | Blob, onProgress?: (done: number, total: number) => void): Promise<SearchResults> {
+    const response = await this.rpc.request(
+      { type: 'search', queries },
+      {
+        onUpdate: (update) => {
+          if (update.type === 'search-progress') onProgress?.(update.done, update.total);
+        },
+      },
+    );
+    if (response.type === 'cancelled') throw new SearchCancelledError();
+    return expect(response, 'searched').results;
+  }
+
+  async cancelSearch(): Promise<void> {
+    expect(await this.rpc.request({ type: 'cancel-search' }), 'cancelled');
   }
 }

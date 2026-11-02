@@ -41,6 +41,17 @@ describe('Sequences', () => {
     expect(await s.rawLine(2, 100)).toEqual({ text: 'S\tc\t*\tLN:i:9', elided: 0 });
   });
 
+  it('goes through every sequence, in file order, skipping those without one', async () => {
+    const seen: [number, string][] = [];
+    for await (const [segment, bases] of plainFile().allBases()) {
+      seen.push([segment, new TextDecoder().decode(bases)]);
+    }
+    expect(seen).toEqual([
+      [0, long],
+      [1, 'GGCC'],
+    ]);
+  });
+
   it('has nothing to read once sequences were dropped', async () => {
     const s = new Sequences({ kind: 'dropped' }, core);
     expect(s.available).toBe(false);

@@ -43,6 +43,17 @@ pub struct Part {
     pub columns: u32,
 }
 
+impl Part {
+    /// The range on the segment's forward strand, given the segment's length.
+    pub fn forward(&self, length: u32) -> (u32, u32) {
+        if self.reverse {
+            (length - self.t_end, length - self.t_start)
+        } else {
+            (self.t_start, self.t_end)
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct Seed {
     segment: u32,

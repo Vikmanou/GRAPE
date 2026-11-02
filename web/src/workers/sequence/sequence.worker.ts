@@ -1,4 +1,4 @@
-// Owns the sequences, so reading them and (from milestone 9) searching them
+// Owns the sequences, so reading them and searching them
 // never holds up the graph worker's queries.
 
 import init, {
@@ -19,6 +19,7 @@ import type {
 } from '../protocol/sequence';
 import { Chained } from './Chained';
 import { type HeldSource, Sequences } from './Sequences';
+import { Searching } from './searching';
 
 const ready = init({ module_or_path: wasmUrl });
 const encoder = new TextEncoder();
@@ -26,12 +27,14 @@ let sequences: Sequences | undefined;
 /** A merged graph's sequences, spelled from `sequences`. */
 let chained: Chained | undefined;
 let packed: PackedSequences | undefined;
+const searching = new Searching(post);
 
-function post(message: SequenceResponse): void {
-  self.postMessage(message);
+function post(message: SequenceResponse, transfer: Transferable[] = []): void {
+  self.postMessage(message, { transfer });
 }
 
 function load(source: SequenceSource): void {
+  searching.drop();
   chained = undefined;
   packed?.free();
   packed = undefined;
@@ -50,6 +53,7 @@ function load(source: SequenceSource): void {
 
 function setChains(map: ChainMap | undefined): void {
   if (!sequences) throw new Error('no sequences are loaded');
+  searching.drop();
   chained = map && new Chained(sequences, map, reverseComplement);
 }
 
@@ -144,6 +148,16 @@ async function handle(request: SequenceRequest): Promise<void> {
       return;
     case 'fasta':
       post({ type: 'fasta', id: request.id, blob: await fasta(request.records) });
+      return;
+    case 'build-index':
+      await searching.build(request.id, loaded(), request.k, request.links);
+      return;
+    case 'search':
+      await searching.search(request.id, request.queries);
+      return;
+    case 'cancel-search':
+      searching.cancel();
+      post({ type: 'cancelled', id: request.id });
       return;
   }
 }

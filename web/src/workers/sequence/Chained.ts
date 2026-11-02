@@ -22,6 +22,10 @@ export class Chained {
     return this.original.available;
   }
 
+  get count(): number {
+    return this.map.stepEnds.length;
+  }
+
   get heldBytes(): number {
     const m = this.map;
     return this.original.heldBytes + m.stepEnds.byteLength + m.steps.byteLength + m.trims.byteLength;
@@ -57,6 +61,13 @@ export class Chained {
       at += part.length;
     }
     return out;
+  }
+
+  async *allBases(): AsyncGenerator<[number, Uint8Array]> {
+    for (let segment = 0; segment < this.count; segment++) {
+      const bases = await this.bases(segment);
+      if (bases) yield [segment, bases];
+    }
   }
 
   async preview(segment: number, n: number): Promise<{ head: string; tail: string } | undefined> {

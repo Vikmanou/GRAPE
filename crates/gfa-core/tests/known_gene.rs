@@ -1,6 +1,8 @@
 //! The csgA gene of Myxococcus xanthus DK1622 (NCBI NC_008095.1:1520199-1520888)
 //! in a graph of ten M. xanthus assemblies. The graph is a large sample, not
-//! committed: `npm run samples -- --large`, then run this in release mode.
+//! committed, and the run takes a minute unoptimised, so this is opt in:
+//! `npm run samples -- --large`, then
+//! `cargo test --release -p gfa-core --test known_gene -- --ignored --nocapture`.
 
 mod common;
 
@@ -22,15 +24,12 @@ fn gunzip(path: &str) -> Vec<u8> {
 }
 
 #[test]
+#[ignore = "needs the --large Myxococcus sample"]
 fn finds_csg_a_in_the_myxococcus_graph() {
     let path = format!(
         "{}/../../samples/myxococcus-10-assemblies.gfa.gz",
         env!("CARGO_MANIFEST_DIR")
     );
-    if !std::path::Path::new(&path).exists() {
-        println!("skipped: {path} is not downloaded");
-        return;
-    }
     let file = gunzip(&path);
     let options = ParseOptions {
         seq_mode: SeqMode::Packed {

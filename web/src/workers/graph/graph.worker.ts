@@ -4,7 +4,7 @@ import init, { coreVersion, FastaReader, type Loaded, Parser } from '../../wasm/
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { plain } from '../plain';
 import type { GraphRequest, GraphResponse } from '../protocol/graph';
-import { type ChainMap, chainTransfers, sourceTransfers } from '../protocol/sequence';
+import { type ChainMap, chainTransfers, linkTransfers, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
 import { describe, gfaRecords, resultTransfers, sequenceSource } from './results';
 import { type Compression, detectCompression, readFile } from './readFile';
@@ -215,6 +215,21 @@ async function handle(request: GraphRequest): Promise<void> {
         ]);
         return;
       }
+      case 'search-links': {
+        const g = loaded();
+        const links = {
+          from: plain(g.linkFrom()),
+          to: plain(g.linkTo()),
+          bits: plain(g.linkBits()),
+          overlapFrom: plain(g.linkOverlapFrom()),
+          overlapTo: plain(g.linkOverlapTo()),
+        };
+        post({ type: 'search-links', id, links }, linkTransfers(links));
+        return;
+      }
+      case 'names':
+        post({ type: 'names', id, names: loaded().names(request.segments) });
+        return;
       case 'export': {
         const records = exportRecords(loaded(), request.segments);
         post({ type: 'export', id, records }, [records.segments.buffer, records.depths.buffer]);

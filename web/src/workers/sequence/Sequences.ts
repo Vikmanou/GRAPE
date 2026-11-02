@@ -5,6 +5,8 @@ const SEQ_WRAPPED = 4;
 const SEQ_REVERSED = 8;
 /** Tags after a sequence, or a FASTG header, are read up to this far. */
 const LINE_TAIL_BYTES = 64 * 1024;
+/** Bytes read at a time when going through every sequence. */
+const WINDOW_BYTES = 16 * 1024 * 1024;
 
 /** The WASM calls this reader needs, passed in so tests can fake them. */
 export interface Core {
@@ -29,6 +31,10 @@ export class Sequences {
 
   length(segment: number): number {
     return this.source.kind === 'dropped' ? 0 : (this.source.lengths[segment] ?? 0);
+  }
+
+  get count(): number {
+    return this.source.kind === 'dropped' ? 0 : this.source.lengths.length;
   }
 
   get heldBytes(): number {
@@ -58,6 +64,44 @@ export class Sequences {
       const bases = this.core.basesFromFile(bytes, length, flags);
       if (bases || offset + span >= s.file.size) return bases;
       span *= 2;
+    }
+  }
+
+  /**
+   * Every segment with a sequence and its forward bases, in the order of the
+   * file for plain input, which reads each window once. The bases are only
+   * good until the next one is asked for.
+   */
+  async *allBases(): AsyncGenerator<[number, Uint8Array]> {
+    const s = this.source;
+    if (s.kind === 'dropped') return;
+    const ids = Array.from(s.lengths.keys()).filter((id) => (s.offsets[id] ?? -1) >= 0);
+    if (s.kind === 'packed') {
+      for (const id of ids) {
+        const bases = await this.bases(id);
+        if (bases) yield [id, bases];
+      }
+      return;
+    }
+    ids.sort((a, b) => (s.offsets[a] ?? 0) - (s.offsets[b] ?? 0));
+    let window: Uint8Array = new Uint8Array(0);
+    let windowStart = 0;
+    for (const id of ids) {
+      const offset = s.offsets[id] ?? 0;
+      const length = s.lengths[id] ?? 0;
+      const flags = s.flags[id] ?? 0;
+      if (flags & SEQ_WRAPPED) {
+        const bases = await this.bases(id);
+        if (bases) yield [id, bases];
+        continue;
+      }
+      if (offset < windowStart || offset + length > windowStart + window.length) {
+        window = await read(s.file, offset, offset + Math.max(length, WINDOW_BYTES));
+        windowStart = offset;
+      }
+      const bytes = window.subarray(offset - windowStart, offset - windowStart + length);
+      const bases = flags & SEQ_REVERSED ? this.core.basesFromFile(bytes, length, flags) : bytes;
+      if (bases) yield [id, bases];
     }
   }
 

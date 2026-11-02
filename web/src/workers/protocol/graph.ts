@@ -1,7 +1,7 @@
 import type { ErrorResponse, WorkerMemory } from '../rpc';
 import type { FindQuery } from '../graph/findQuery';
 import type { Compression } from '../graph/readFile';
-import type { ChainMap, FastaRecords, GfaRecords, SequenceSource } from './sequence';
+import type { ChainMap, FastaRecords, GfaRecords, SearchLinks, SequenceSource } from './sequence';
 
 export type GraphRequest =
   | { type: 'ping'; id: number }
@@ -24,7 +24,10 @@ export type GraphRequest =
   /** What a GFA save of the shown graph needs, but for the sequences. */
   | { type: 'gfa'; id: number }
   /** Sequences for the graph as loaded, from a FASTA file whose records name its segments. */
-  | { type: 'add-fasta'; id: number; file: File };
+  | { type: 'add-fasta'; id: number; file: File }
+  /** The shown graph's links, for the sequence worker to join hits along. */
+  | { type: 'search-links'; id: number }
+  | { type: 'names'; id: number; segments: Uint32Array<ArrayBuffer> };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -35,6 +38,8 @@ export type GraphResponse =
   | { type: 'summary'; id: number; summary: SelectionSummary }
   | { type: 'found'; id: number; segments: Uint32Array<ArrayBuffer>; missing: string[] }
   | { type: 'export'; id: number; records: FastaRecords }
+  | { type: 'search-links'; id: number; links: SearchLinks }
+  | { type: 'names'; id: number; names: string[] }
   /** Per segment its placing rank, then its label's box, as labels.wgsl reads them. */
   | { type: 'label-sizes'; id: number; sizes: Uint32Array<ArrayBuffer> }
   /** Each segment's label, lines joined by newlines. */

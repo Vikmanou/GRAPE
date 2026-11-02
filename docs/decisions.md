@@ -932,8 +932,8 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 
 - **Decision**: `testdata/csgA.fasta` (NCBI NC_008095.1:1520199-1520888, 690
   bases, public domain) must come back from the Myxococcus sample as one hit
-  covering at least 99% at 100% identity. `tests/known_gene.rs` runs it and
-  skips when the `--large` sample is not downloaded.
+  covering at least 99% at 100% identity. `tests/known_gene.rs` runs it on
+  request (`--ignored`), as it needs the `--large` sample.
 - **Reason**: chosen by the owner; a well studied gene whose hit crosses many
   short segments, so it proves joining too.
 - **Alternatives**: 16S rRNA (multi-copy); a gene in the small SPAdes sample

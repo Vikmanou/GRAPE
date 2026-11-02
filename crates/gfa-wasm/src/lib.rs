@@ -6,6 +6,7 @@ mod merge;
 mod parse;
 mod paths;
 mod query;
+mod search;
 mod sequence;
 
 pub use fasta::FastaReader;
@@ -13,6 +14,7 @@ pub use layout::{Hierarchy, Layout, pack};
 pub use merge::MergeResult;
 pub use parse::{Loaded, Parser, Summary};
 pub use query::{Found, Info};
+pub use search::{SearchHits, SearchIndex, SearchIndexBuilder};
 pub use sequence::{
     PackedParts, PackedSequences, bases_from_file_bytes, fasta_record, gfa_segment_line,
     reverse_complement,
