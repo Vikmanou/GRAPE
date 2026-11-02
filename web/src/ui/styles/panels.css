@@ -298,3 +298,14 @@
   justify-content: space-between;
   margin: 4px 0;
 }
+
+.sequence-search {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sequence-search h3 {
+  margin: 0 0 8px;
+  font-size: inherit;
+}

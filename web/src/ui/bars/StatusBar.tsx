@@ -59,6 +59,8 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const visible = useApp((s) => s.visibleSegments);
   const segments = useApp((s) => shownGraph(s)?.stats.segments ?? 0);
   const onCancel = useApp((s) => s.cancelLoad);
+  const search = useApp((s) => s.searchRun);
+  const cancelSearch = useApp((s) => s.cancelSearch);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
   return (
@@ -88,6 +90,14 @@ export function StatusBar({ onToggleWarnings }: Props) {
           }
         >
           {layoutText}
+        </span>
+      )}
+      {search.state === 'indexing' && (
+        <span data-testid="status-indexing">
+          Indexing {formatPercent(search.fraction)}{' '}
+          <button type="button" className="link" onClick={cancelSearch}>
+            Cancel
+          </button>
         </span>
       )}
       {refining && <span data-testid="status-refining">Refining layout…</span>}

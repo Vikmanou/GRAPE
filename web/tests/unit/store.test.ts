@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { EngineCommand, EngineEvent } from '../../src/engine/commands';
 import type { EngineLike } from '../../src/state/bridge';
+import { DEFAULT_SEED, listedHits, readHit } from '../../src/state/search';
 import { createAppStore, type LayoutService, type Services } from '../../src/state/store';
 import type { ParseResult } from '../../src/workers/protocol/graph';
 import type { LayoutResponse } from '../../src/workers/protocol/layout';
-import { WorkerTerminatedError } from '../../src/workers/rpc';
+import type { SearchResults } from '../../src/workers/protocol/sequence';
+import { SearchCancelledError, WorkerTerminatedError } from '../../src/workers/rpc';
 
 class FakeEngine implements EngineLike {
   readonly sent: EngineCommand[] = [];
@@ -92,6 +94,8 @@ function setup() {
   const engines: FakeEngine[] = [];
   let cancels = 0;
   const loadedSources: unknown[] = [];
+  const builds: number[] = [];
+  let searching = deferred<SearchResults>();
   const services: Services = {
     sequence: {
       load: (source) => {
@@ -105,6 +109,18 @@ function setup() {
       setChains: () => Promise.reject(new Error('unused')),
       gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
+      buildIndex: (k) => {
+        builds.push(k);
+        return Promise.resolve({ k, guaranteedMatch: k, segments: 1, bases: 100, bytes: 1000 });
+      },
+      search: () => {
+        searching = deferred<SearchResults>();
+        return searching.promise;
+      },
+      cancelSearch: () => {
+        searching.reject(new SearchCancelledError());
+        return Promise.resolve();
+      },
     },
     graph: {
       ping: () => Promise.resolve({ coreVersion: 'test', roundTripMs: 1 }),
@@ -122,6 +138,15 @@ function setup() {
       distances: () => Promise.reject(new Error('unused')),
       paths: () => Promise.reject(new Error('unused')),
       pathSteps: () => Promise.reject(new Error('unused')),
+      searchLinks: () =>
+        Promise.resolve({
+          from: new Uint32Array(0),
+          to: new Uint32Array(0),
+          bits: new Uint8Array(0),
+          overlapFrom: new Uint32Array(0),
+          overlapTo: new Uint32Array(0),
+        }),
+      names: (segments) => Promise.resolve(Array.from(segments, (s) => `s${s}`)),
       merge: () => Promise.reject(new Error('unused')),
       addFasta: () => Promise.reject(new Error('unused')),
       gfa: () => Promise.reject(new Error('unused')),
@@ -145,7 +170,18 @@ function setup() {
     search: '',
   };
   const store = createAppStore(services);
-  return { store, parses, layouts, engines, loadedSources, cancels: () => cancels };
+  return {
+    store,
+    parses,
+    layouts,
+    engines,
+    loadedSources,
+    builds,
+    cancels: () => cancels,
+    finishSearch: (r: SearchResults) => {
+      searching.resolve(r);
+    },
+  };
 }
 
 async function loadedWithEngine() {
@@ -253,5 +289,79 @@ describe('store', () => {
     store.getState().detachEngine();
     await attaching;
     expect(engines[0]?.destroyed).toBe(true);
+  });
+
+  describe('sequence search', () => {
+    const results: SearchResults = {
+      names: ['gene'],
+      lengths: Uint32Array.of(100),
+      totals: Uint32Array.of(2),
+      // query, score, q_start, q_end, matches, columns, parts
+      hits: Uint32Array.of(0, 180, 0, 100, 95, 100, 2, 0, 60, 10, 40, 30, 30, 1),
+      // segment, reverse, q_start, q_end, start, end
+      parts: Uint32Array.of(3, 0, 0, 60, 5, 65, 4, 1, 60, 100, 0, 40, 7, 0, 10, 40, 0, 30),
+      tooShort: [],
+      repeats: 0,
+      seedsCut: false,
+    };
+
+    it('indexes on first use, reads hits back, and keeps the index for the next search', async () => {
+      const { store, builds, finishSearch } = await loadedWithEngine();
+      store.getState().runSearch('ACGT');
+      expect(store.getState().searchRun.state).toBe('indexing');
+      await flush();
+      finishSearch(results);
+      await flush();
+      const app = store.getState();
+      expect(app.searchRun.state).toBe('done');
+      expect(builds).toEqual([DEFAULT_SEED]);
+      expect(listedHits(results, undefined)).toEqual([0, 1]);
+      const starts = app.searchPartStarts ?? new Uint32Array();
+      expect(readHit(results, starts, 0)).toEqual({
+        index: 0,
+        query: 0,
+        score: 180,
+        coverage: 1,
+        identity: 0.95,
+        parts: [
+          { segment: 3, reverse: false, start: 5, end: 65 },
+          { segment: 4, reverse: true, start: 0, end: 40 },
+        ],
+      });
+      expect(readHit(results, starts, 1).parts).toEqual([{ segment: 7, reverse: false, start: 0, end: 30 }]);
+      expect(app.searchNames.get(4)).toBe('s4');
+      store.getState().runSearch('ACGT');
+      await flush();
+      expect(builds).toEqual([DEFAULT_SEED]);
+      expect(store.getState().searchRun.state).toBe('searching');
+    });
+
+    it('indexes again for a new seed length or a new graph', async () => {
+      const { store, builds, parses, finishSearch } = await loadedWithEngine();
+      store.getState().setSearchSeed(11);
+      store.getState().runSearch('ACGT');
+      await flush();
+      finishSearch(results);
+      await flush();
+      expect(builds).toEqual([11]);
+      store.getState().open(new File(['S\tb\t*'], 'b.gfa'));
+      expect(store.getState().searchResults).toBeUndefined();
+      expect(store.getState().searchIndex).toBeUndefined();
+      parses[1]?.resolve(parsed);
+      await flush();
+      store.getState().runSearch('ACGT');
+      await flush();
+      expect(builds).toEqual([11, 11]);
+    });
+
+    it('goes back to idle on cancel and keeps the index', async () => {
+      const { store } = await loadedWithEngine();
+      store.getState().runSearch('ACGT');
+      await flush();
+      store.getState().cancelSearch();
+      await flush();
+      expect(store.getState().searchRun.state).toBe('idle');
+      expect(store.getState().searchIndex?.k).toBe(DEFAULT_SEED);
+    });
   });
 });

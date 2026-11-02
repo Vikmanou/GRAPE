@@ -29,6 +29,14 @@ export class WorkerTerminatedError extends Error {
   }
 }
 
+/** Rejection for an indexing or search stopped by a cancel or by new sequences. */
+export class SearchCancelledError extends Error {
+  constructor() {
+    super('search cancelled');
+    this.name = 'SearchCancelledError';
+  }
+}
+
 export type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
 
 export interface RequestOptions<Res> {

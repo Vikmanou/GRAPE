@@ -28,6 +28,7 @@ export function createMergeSlice(ctx: Context): MergeSlice {
     setMerged(on) {
       if (get().load.state !== 'loaded') return;
       const ticket = ++request;
+      get().clearSearch();
       set({ merging: true, mergeOn: on });
       services.graph
         .merge(on)

@@ -12,21 +12,13 @@ import {
   type SequenceSource,
   sourceTransfers,
 } from '../protocol/sequence';
-import { expect, RpcClient, type WorkerMemory } from '../rpc';
+import { expect, RpcClient, SearchCancelledError, type WorkerMemory } from '../rpc';
 
 export interface Preview {
   length: number;
   head: string;
   tail: string;
   missing: boolean;
-}
-
-/** Rejection for an indexing or search stopped by `cancelSearch` or by new sequences. */
-export class SearchCancelledError extends Error {
-  constructor() {
-    super('search cancelled');
-    this.name = 'SearchCancelledError';
-  }
 }
 
 export class SequenceClient {

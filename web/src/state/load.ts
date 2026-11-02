@@ -91,6 +91,7 @@ export function createFileSlice(ctx: Context): FileSlice {
       if (parsing) graph.cancel();
       parsing = file;
       get().stopLayout();
+      get().clearSearch();
       const info = { name: file.name, size: file.size };
       set({
         load: { state: 'parsing', file: info, fraction: 0 },
@@ -150,6 +151,7 @@ export function createFileSlice(ctx: Context): FileSlice {
             mergeOn: false,
             sequenceFile: { state: 'added', name, attached },
           });
+          get().clearSearch();
           await services.sequence.load(sequences);
           get().resetColorRange();
           // New lengths change the layout; new GC only colours.

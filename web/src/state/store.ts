@@ -17,6 +17,7 @@ import { createFindSlice, type FindSlice } from './find';
 import { createFileSlice, type FileSlice } from './load';
 import { createMergeSlice, type MergeSlice } from './merge';
 import { createPathsSlice, type PathsSlice } from './paths';
+import { createSearchSlice, type SearchSlice } from './search';
 import { createSelectionSlice, type SelectionSlice } from './selection';
 import { exposeForTests } from './testHooks';
 import { createToastSlice, type ToastSlice } from './toasts';
@@ -35,6 +36,8 @@ export type GraphService = Pick<
   | 'distances'
   | 'paths'
   | 'pathSteps'
+  | 'searchLinks'
+  | 'names'
   | 'merge'
   | 'gfa'
   | 'addFasta'
@@ -43,7 +46,17 @@ export type GraphService = Pick<
 
 export type SequenceService = Pick<
   SequenceClient,
-  'load' | 'preview' | 'sequence' | 'rawLine' | 'fasta' | 'setChains' | 'gfa' | 'memory'
+  | 'load'
+  | 'preview'
+  | 'sequence'
+  | 'rawLine'
+  | 'fasta'
+  | 'setChains'
+  | 'gfa'
+  | 'memory'
+  | 'buildIndex'
+  | 'search'
+  | 'cancelSearch'
 >;
 
 export interface LayoutService {
@@ -82,7 +95,8 @@ export type AppState = FileSlice &
   LabelSlice &
   PathsSlice &
   FilterSlice &
-  MergeSlice;
+  MergeSlice &
+  SearchSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -113,6 +127,7 @@ export function createAppStore(services: Services): AppStore {
       ...createPathsSlice(ctx),
       ...createFilterSlice(ctx),
       ...createMergeSlice(ctx),
+      ...createSearchSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => {
