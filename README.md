@@ -39,6 +39,8 @@ highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
 - Merge simple chains as Bandage's "Merge all possible nodes" does, and save
   the merged graph as GFA in Bandage's format.
 - Graphs saved without sequences (ABySS style) take them from a FASTA file.
+- Find DNA in the graph: paste bases or give a FASTA file, and hits show as
+  bands on the ribbons and in a table, joined across linked segments.
 - Drag to pan, scroll or pinch to zoom, arrow keys and +/-, F to fit.
 - Click a segment to see its length, depth, GC, component, neighbours, its
   line in the file and the ends of its sequence; shift-click to add or

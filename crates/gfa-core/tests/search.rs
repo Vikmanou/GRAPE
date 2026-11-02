@@ -4,8 +4,8 @@
 mod common;
 
 use gfa_core::search::align::{GAP_EXTEND, GAP_OPEN, MATCH, MISMATCH};
-use gfa_core::search::join::LinkTable;
 use gfa_core::search::kmer::{DEFAULT_K, IndexBuilder, KmerIndex};
+use gfa_core::search::links::LinkTable;
 use gfa_core::search::search;
 use gfa_core::search::seed::{Part, Skipped, min_score, segment_hits};
 use gfa_core::{Graph, bases_from_file, bases_from_packed, parse, reverse_complement};
@@ -389,6 +389,42 @@ proptest! {
         let query = mutated(&sequences[pick % sequences.len()], from, length, &edits, reverse);
         if query.len() >= DEFAULT_K {
             check_against_brute_force(&index, &sequences, &query);
+        }
+    }
+
+    /// Whatever the bytes, links and overlaps, a search ends without a panic.
+    #[test]
+    fn any_input_is_searched_without_a_panic(
+        sequences in prop::collection::vec(prop::collection::vec(any::<u8>(), 0..80), 1..6),
+        repeat in prop::collection::vec(prop::sample::select(b"ACGTNacgt".to_vec()), 0..200),
+        query in prop::collection::vec(prop::sample::select(b"ACGTNRx-acgt".to_vec()), 0..200),
+        links in prop::collection::vec((0u32..8, 0u32..8, 0u8..64, 0u32..300, 0u32..300), 0..12),
+        k in 0usize..24,
+    ) {
+        let mut sequences = sequences;
+        sequences.push(repeat.clone());
+        let mut b = IndexBuilder::new(sequences.len(), k);
+        for (i, s) in sequences.iter().enumerate() {
+            b.add(i as u32, s).unwrap();
+        }
+        b.plan().unwrap();
+        while !b.step(64).unwrap() {}
+        let index = b.finish();
+        let table = LinkTable::new(
+            sequences.len(),
+            &links.iter().map(|l| l.0).collect::<Vec<_>>(),
+            &links.iter().map(|l| l.1).collect::<Vec<_>>(),
+            &links.iter().map(|l| l.2).collect::<Vec<_>>(),
+            &links.iter().map(|l| l.3).collect::<Vec<_>>(),
+            &links.iter().map(|l| l.4).collect::<Vec<_>>(),
+        );
+        let found = search(&index, &table, &[&repeat[..], &query[..], &repeat[..]].concat());
+        for hit in found.hits {
+            prop_assert!(hit.q_start <= hit.q_end);
+            for part in hit.parts {
+                let (start, end) = part.forward(index.length(part.segment));
+                prop_assert!(start <= end && end <= index.length(part.segment));
+            }
         }
     }
 

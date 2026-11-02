@@ -9,6 +9,7 @@ import { Cull, type CullView } from './cull';
 import { Buffers } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
 import { StyleUniform, uploadSegments } from './segments';
+import bandShader from './shaders/band.wgsl?raw';
 import shader from './shaders/graph.wgsl?raw';
 
 const LINK_STEPS = 16;
@@ -82,7 +83,7 @@ export class Renderer {
     format: GPUTextureFormat,
     private readonly kernels: Kernels,
   ) {
-    const module = device.createShaderModule({ label: 'graph', code: shader });
+    const module = device.createShaderModule({ label: 'graph', code: shader + bandShader });
     const visibility = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT;
     const storage = { type: 'read-only-storage' } as const;
     this.layout = device.createBindGroupLayout({

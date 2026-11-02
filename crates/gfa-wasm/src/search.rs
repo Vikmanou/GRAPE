@@ -1,5 +1,5 @@
-use gfa_core::search::join::LinkTable;
 use gfa_core::search::kmer::{IndexBuilder, KmerIndex};
+use gfa_core::search::links::LinkTable;
 use gfa_core::search::search;
 use wasm_bindgen::prelude::*;
 

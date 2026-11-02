@@ -6,8 +6,8 @@
 
 mod common;
 
-use gfa_core::search::join::LinkTable;
 use gfa_core::search::kmer::{DEFAULT_K, IndexBuilder};
+use gfa_core::search::links::LinkTable;
 use gfa_core::search::search;
 use gfa_core::{DEFAULT_BUDGET, ParseOptions, SeqMode, bases_from_packed, parse};
 use std::process::{Command, Stdio};

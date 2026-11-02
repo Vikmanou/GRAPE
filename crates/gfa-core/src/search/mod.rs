@@ -2,12 +2,15 @@
 //! then hits joined along the graph's links.
 
 pub mod align;
+mod build;
 pub mod join;
 pub mod kmer;
+pub mod links;
 pub mod seed;
 
-use join::{Hit, LinkTable, join};
+use join::{Hit, join};
 use kmer::KmerIndex;
+use links::LinkTable;
 use seed::{Skipped, segment_hits};
 
 /// Hits kept per query, best first.
