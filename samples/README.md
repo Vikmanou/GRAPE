@@ -57,3 +57,5 @@ Real files bend the format, and GRAPE reports these as warnings:
   odd-numbered segments such as `Utg295`, the reverse strand of `Utg294`, which
   it never defines.
 - The Acacia **SPAdes** files carry a stray `i` line.
+- The **Myxococcus** graph says `ks:i:41` and its linked segments share 40 bases,
+  but every link is written `0M`.

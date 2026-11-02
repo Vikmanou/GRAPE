@@ -927,3 +927,14 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Reason**: chosen by the owner for the spec's open question.
 - **Alternatives**: protein queries through a six-frame translation and
   BLOSUM62, roughly tblastn.
+
+## 2026-11-02: The known gene for sequence search is csgA in M. xanthus
+
+- **Decision**: `testdata/csgA.fasta` (NCBI NC_008095.1:1520199-1520888, 690
+  bases, public domain) must come back from the Myxococcus sample as one hit
+  covering at least 99% at 100% identity. `tests/known_gene.rs` runs it and
+  skips when the `--large` sample is not downloaded.
+- **Reason**: chosen by the owner; a well studied gene whose hit crosses many
+  short segments, so it proves joining too.
+- **Alternatives**: 16S rRNA (multi-copy); a gene in the small SPAdes sample
+  (none identified).
