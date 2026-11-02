@@ -3,3 +3,4 @@
 
 pub mod align;
 pub mod kmer;
+pub mod seed;
