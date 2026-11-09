@@ -1,5 +1,5 @@
 use gfa_core::layout::Grid as CoreGrid;
-use gfa_core::layout::{LayoutOptions, Topology, link_geometry};
+use gfa_core::layout::{Fixed, LayoutOptions, Topology, link_geometry};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -146,6 +146,71 @@ impl Layout {
     #[wasm_bindgen(js_name = intoHierarchy)]
     pub fn into_hierarchy(self) -> Hierarchy {
         Hierarchy(self.inner.into_hierarchy())
+    }
+}
+
+/// The geometry around positions saved earlier, with no layout run.
+#[wasm_bindgen]
+pub struct FixedLayout {
+    fixed: Fixed,
+    positions: Vec<f32>,
+}
+
+#[wasm_bindgen]
+impl FixedLayout {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        lengths: &[u32],
+        components: &[u32],
+        link_from: &[u32],
+        link_to: &[u32],
+        link_bits: &[u8],
+        positions: Vec<f32>,
+    ) -> Result<FixedLayout, JsError> {
+        if !positions.len().is_multiple_of(2) || positions.iter().any(|v| !v.is_finite()) {
+            return Err(JsError::new("the saved positions are damaged"));
+        }
+        let topology = Topology {
+            lengths,
+            components,
+            link_from,
+            link_to,
+            link_bits,
+        };
+        let fixed =
+            Fixed::new(&topology, positions.len() / 2).map_err(|e| JsError::new(&e.to_string()))?;
+        Ok(FixedLayout { fixed, positions })
+    }
+
+    pub fn points(&self) -> usize {
+        self.positions.len() / 2
+    }
+
+    pub fn pieces(&self) -> Vec<u32> {
+        self.fixed.pieces.clone()
+    }
+
+    pub fn links(&self) -> Vec<u32> {
+        self.fixed.links.clone()
+    }
+
+    #[wasm_bindgen(js_name = segmentStarts)]
+    pub fn segment_starts(&self) -> Vec<u32> {
+        self.fixed.chains.start.clone()
+    }
+
+    #[wasm_bindgen(js_name = segmentPieces)]
+    pub fn segment_pieces(&self) -> Vec<u8> {
+        self.fixed.chains.pieces.clone()
+    }
+
+    pub fn grid(&self, ribbon_half: f32) -> Grid {
+        Grid(CoreGrid::build(
+            &self.positions,
+            &self.fixed.pieces,
+            &self.fixed.links,
+            ribbon_half,
+        ))
     }
 }
 

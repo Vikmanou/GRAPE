@@ -44,6 +44,13 @@ class FakeLayout implements LayoutService {
     this.listener = listener;
   }
 
+  restored: Float32Array | undefined;
+
+  restore(_t: unknown, positions: Float32Array, listener: (response: LayoutResponse) => void): void {
+    this.restored = positions;
+    this.listener = listener;
+  }
+
   pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array> {
     this.packs.push(boxes);
     return Promise.resolve(new Float32Array(boxes.length / 2));
@@ -197,6 +204,20 @@ async function loadedWithEngine() {
 }
 
 describe('store', () => {
+  it('draws saved positions without a layout run', async () => {
+    const { store, layouts } = await loadedWithEngine();
+    const saved = new Float32Array([1, 2, 3, 4]);
+    store.getState().restartLayout(saved);
+    const layout = layouts.at(-1);
+    if (!layout) throw new Error('no layout');
+    expect(layout.restored).toBe(saved);
+    layout.listener?.({ type: 'geometry', id: 1, geometry, totalIterations: 0 });
+    const progress = { iteration: 0, level: 0, levels: 1, pinned: 0, refining: false, done: true };
+    const grid = undefined as unknown as Extract<LayoutResponse, { type: 'positions' }>['grid'];
+    layout.listener?.({ type: 'positions', id: 1, positions: saved, grid, progress });
+    expect(store.getState().layoutStatus.state).toBe('done');
+  });
+
   it('saves the GFA of what the filters show, asking the engine which segments those are', async () => {
     const s = await loadedWithEngine();
     const kept: (Uint32Array | undefined)[] = [];

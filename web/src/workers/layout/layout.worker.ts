@@ -1,9 +1,10 @@
-import init, { Layout, pack, type Hierarchy as WasmHierarchy } from '../../wasm/pkg/gfa_wasm';
+import init, { FixedLayout, Layout, pack, type Hierarchy as WasmHierarchy } from '../../wasm/pkg/gfa_wasm';
+import { RIBBON_WIDTH } from '../../engine/style/widths';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { Topology } from '../protocol/graph';
 import type { Hierarchy, LayoutControl, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
 import { plain } from '../plain';
-import { CpuRun } from './cpuRun';
+import { CpuRun, gridBuffers, takeGrid } from './cpuRun';
 import { iterationsFor } from './quality';
 
 const ready = init({ module_or_path: wasmUrl });
@@ -17,13 +18,15 @@ function create(t: Topology, { seed, quality }: LayoutOptions): Layout {
   return new Layout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, seed, coarsest, refine);
 }
 
-function postGeometry(id: number, layout: Layout, segments: number): void {
+type Drawn = Pick<Layout, 'pieces' | 'links' | 'segmentStarts' | 'segmentPieces' | 'points'>;
+
+function postGeometry(id: number, layout: Drawn, segments: number, totalIterations: number): void {
   const pieces = plain(layout.pieces());
   const links = plain(layout.links());
   const segmentStarts = plain(layout.segmentStarts());
   const segmentPieces = plain(layout.segmentPieces());
   const geometry = { segments, points: layout.points(), pieces, links, segmentStarts, segmentPieces };
-  post({ type: 'geometry', id, geometry, totalIterations: layout.totalIterations() }, [
+  post({ type: 'geometry', id, geometry, totalIterations }, [
     pieces.buffer,
     links.buffer,
     segmentStarts.buffer,
@@ -72,6 +75,19 @@ function control(request: LayoutControl): void {
   post({ type: 'ok', id: request.id });
 }
 
+function fixed(id: number, t: Topology, positions: Float32Array<ArrayBuffer>): void {
+  const layout = new FixedLayout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, positions);
+  try {
+    postGeometry(id, layout, t.lengths.length, 0);
+    const grid = takeGrid(layout.grid(RIBBON_WIDTH / 2));
+    const progress = { iteration: 0, level: 0, levels: 1, pinned: 0, refining: false, done: true };
+    post({ type: 'positions', id, positions, grid, progress }, [positions.buffer, ...gridBuffers(grid)]);
+    post({ type: 'ok', id });
+  } finally {
+    layout.free();
+  }
+}
+
 async function handle(request: LayoutRequest): Promise<void> {
   await ready;
   if (request.type === 'pause' || request.type === 'drag' || request.type === 'unpin' || request.type === 'refine') {
@@ -87,10 +103,14 @@ async function handle(request: LayoutRequest): Promise<void> {
     post({ type: 'packed', id: request.id, offsets }, [offsets.buffer]);
     return;
   }
+  if (request.type === 'fixed') {
+    fixed(request.id, request.topology, request.positions);
+    return;
+  }
   const layout = create(request.topology, request.options);
   if (request.type === 'layout') {
     try {
-      postGeometry(request.id, layout, request.topology.lengths.length);
+      postGeometry(request.id, layout, request.topology.lengths.length, layout.totalIterations());
       cpu = new CpuRun(request.id, layout, post);
       await cpu.run();
     } finally {
@@ -99,7 +119,7 @@ async function handle(request: LayoutRequest): Promise<void> {
     }
   }
   try {
-    postGeometry(request.id, layout, request.topology.lengths.length);
+    postGeometry(request.id, layout, request.topology.lengths.length, layout.totalIterations());
   } catch (error) {
     layout.free();
     throw error;

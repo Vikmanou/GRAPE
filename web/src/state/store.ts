@@ -68,6 +68,7 @@ export interface LayoutService {
     options: LayoutOptions,
     listener: (response: LayoutResponse) => void,
   ): void;
+  restore(topology: Topology, positions: Float32Array<ArrayBuffer>, listener: (response: LayoutResponse) => void): void;
   pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array>;
   /** Steers a running CPU layout. */
   send(request: WithoutId<LayoutControl>): void;

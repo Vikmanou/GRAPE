@@ -43,6 +43,19 @@ export class LayoutClient {
     );
   }
 
+  /** Geometry and a grid around saved positions, with no layout run; they arrive as a settled CPU layout's do. */
+  restore(topology: Topology, positions: Float32Array<ArrayBuffer>, listener: LayoutListener): void {
+    this.cancel();
+    const rpc = spawn();
+    this.rpc = rpc;
+    rpc
+      .request({ type: 'fixed', topology, positions }, { onUpdate: listener, transfer: [positions.buffer] })
+      .catch((error: unknown) => {
+        if (this.rpc === rpc)
+          listener({ type: 'error', id: 0, message: String(error instanceof Error ? error.message : error) });
+      });
+  }
+
   /** Packs components by the hierarchy's components: `dx, dy` per component. */
   async pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array> {
     const rpc = this.rpc;

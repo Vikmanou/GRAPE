@@ -15,7 +15,7 @@ function cells(starts: Uint32Array, items: Uint32Array, wide: Uint32Array): Cell
   return { starts: plain(starts), items: plain(items), wide: plain(wide) };
 }
 
-function takeGrid(g: Grid): PositionGrid {
+export function takeGrid(g: Grid): PositionGrid {
   try {
     const [minX = 0, minY = 0, cell = 1, columns = 1, rows = 1] = g.frame();
     return {
@@ -32,7 +32,7 @@ function takeGrid(g: Grid): PositionGrid {
   }
 }
 
-function gridBuffers(grid: PositionGrid): ArrayBuffer[] {
+export function gridBuffers(grid: PositionGrid): ArrayBuffer[] {
   return [grid.pieces, grid.links].flatMap((l) => [l.starts.buffer, l.items.buffer, l.wide.buffer]);
 }
 

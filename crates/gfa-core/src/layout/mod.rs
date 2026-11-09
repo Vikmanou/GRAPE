@@ -1,6 +1,7 @@
 //! CPU reference layout, multilevel as the spec describes. It is the
 //! correctness reference for the GPU layout and the WebGL2 fallback's layout.
 
+mod fixed;
 mod force;
 mod grid;
 mod hierarchy;
@@ -13,6 +14,7 @@ mod quality;
 pub mod rng;
 mod topology;
 
+pub use fixed::{Fixed, FixedError};
 pub use points::{Chains, link_geometry, link_points};
 pub use quality::{Quality, measure};
 pub use topology::{Topology, TopologyError};

@@ -21,6 +21,8 @@ export type LayoutRequest =
   | { type: 'unpin'; id: number }
   /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
   | { type: 'refine'; id: number; selected: Uint32Array<ArrayBuffer> | undefined }
+  /** Geometry and a grid around positions saved earlier, with no layout run; ends with `ok`. */
+  | { type: 'fixed'; id: number; topology: Topology; positions: Float32Array<ArrayBuffer> }
   /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
   | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
   /** `x0, y0, x1, y1` per component, and 1 per component laid out straight. */

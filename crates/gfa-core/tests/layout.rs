@@ -1,7 +1,10 @@
 mod common;
 
 use common::load;
-use gfa_core::layout::{Layout, LayoutOptions, Topology, TopologyError, link_points, measure};
+use gfa_core::layout::{
+    Fixed, FixedError, Layout, LayoutOptions, Topology, TopologyError, link_geometry, link_points,
+    measure,
+};
 
 const TESTDATA: [&str; 14] = [
     "linear.gfa",
@@ -363,4 +366,25 @@ fn dragging_never_repacks_components() {
     let ((bx, by), (ax, ay)) = (centre(&before), centre(&after));
     // A repack would move the other component by hundreds of units.
     assert!((ax - bx).hypot(ay - by) < 20.0, "{bx},{by} -> {ax},{ay}");
+}
+
+#[test]
+fn saved_positions_get_the_geometry_a_layout_draws() {
+    for name in TESTDATA {
+        let graph = load(name);
+        let t = graph.topology();
+        let layout = Layout::new(t, LayoutOptions::default()).unwrap();
+        let fixed = Fixed::new(&t, layout.points()).unwrap();
+        assert_eq!(fixed.chains, layout.chains, "{name}");
+        assert_eq!(fixed.pieces, layout.chains.pieces(), "{name}");
+        assert_eq!(fixed.links, link_geometry(&t, &layout.chains), "{name}");
+        assert_eq!(
+            Fixed::new(&t, layout.points() + 1).err(),
+            Some(FixedError::Points {
+                expected: layout.points(),
+                found: layout.points() + 1
+            }),
+            "{name}"
+        );
+    }
 }

@@ -1,5 +1,5 @@
 import { USABLE_LEVEL } from '../engine/core/backend';
-import type { LayoutOptions } from '../workers/protocol/layout';
+import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
 import { shownGraph } from './load';
 import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
@@ -34,8 +34,12 @@ export interface LayoutSlice {
   setLayoutOptions: (options: LayoutOptions) => void;
   /** Pauses or resumes the layout. */
   setLayoutPaused: (paused: boolean) => void;
-  /** Lays out the loaded graph from the start, when it and its renderer are ready. */
-  restartLayout: () => void;
+  /**
+   * Lays out the loaded graph from the start, when it and its renderer are
+   * ready; with `positions`, `x, y` per point saved earlier, draws them as
+   * they are instead.
+   */
+  restartLayout: (positions?: Float32Array<ArrayBuffer>) => void;
   stopLayout: () => void;
 }
 
@@ -50,7 +54,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
   const { set, get, services } = ctx;
   let stopRun: (() => void) | undefined;
 
-  function run(): () => void {
+  function run(saved: Float32Array<ArrayBuffer> | undefined): () => void {
     const { gpuLayout: gpu, layoutOptions: options } = get();
     const graph = shownGraph(get());
     if (!graph) return ignore;
@@ -88,7 +92,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       }
     });
 
-    client.start(gpu ? 'gpu' : 'cpu', graph.topology, options, (response) => {
+    const listen = (response: LayoutResponse) => {
       if (!live) return;
       switch (response.type) {
         case 'geometry':
@@ -133,7 +137,9 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
         default:
           break;
       }
-    });
+    };
+    if (saved) client.restore(graph.topology, saved, listen);
+    else client.start(gpu ? 'gpu' : 'cpu', graph.topology, options, listen);
 
     return () => {
       live = false;
@@ -169,10 +175,10 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       set({ layoutPaused: paused });
     },
 
-    restartLayout() {
+    restartLayout(positions) {
       get().stopLayout();
       if (get().renderer !== 'none' && !ctx.bridge.attached) return;
-      stopRun = run();
+      stopRun = run(positions);
     },
 
     stopLayout() {
