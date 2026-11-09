@@ -35,10 +35,12 @@ Write the plan in the reply (not a file), in this order:
 - **Dependencies**: anything new, with why and the exact version.
 - **Commit sequence**: the planned commits in order, each one sentence with
   no punctuation.
-- **Open decisions**: things the spec leaves open or ambiguous. Questions that
-  touch file formats, the share-link format or the public API go to the owner
-  with AskUserQuestion, with a recommended option first.
-- **Risks**: what could miss a target, and how it will be measured early.
+- **Open decisions**: things the spec leaves open or ambiguous. Every question
+  goes to the owner with AskUserQuestion, never as text in the reply, with a
+  recommended option first. Anything that touches file formats, the share-link
+  format or the public API is always asked, never guessed.
+- **Risks**: what could miss a target, and which single measurement would show
+  it.
 
 Then stop and wait for approval. Do not write code in this phase.
 
@@ -61,8 +63,11 @@ Then stop and wait for approval. Do not write code in this phase.
 2. For anything rendered: run `npm run check:headed`, and take a
    headed screenshot with a throwaway Playwright spec in the scratchpad
    (copied into `web/tests/e2e/` only while it runs, then deleted). Look at it.
-3. For every performance target the milestone touches: measure it on this
-   machine and record the number. A missed target is reported, never hidden.
+3. Measure only the numbers this milestone's acceptance criteria name, once,
+   on an idle machine, and record them. Anything that takes minutes (`bench:*`,
+   the 200k or 1M graphs) is announced to the owner first with the number of
+   runs and the time. A number not measured is reported as "not measured"; a
+   missed target is reported, never hidden.
 4. Check each acceptance criterion one by one.
 
 ## Phase 5: Demo note, then stop
@@ -71,7 +76,8 @@ End with:
 
 - **Acceptance**: a table of each criterion and its status, with evidence.
 - **What works** and **how to try it** (exact commands).
-- **Measured numbers** against the spec's targets.
+- **Measured numbers** against the spec's targets, and which were not
+  measured.
 - **Known gaps** and anything deferred, with the reason.
 - **Decisions made** (also in `docs/decisions.md`).
 - **Commits**: `git log --oneline` for the milestone.

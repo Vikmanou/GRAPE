@@ -22,8 +22,9 @@ Run it with `/milestone <n>`, or follow it by hand:
    touches. Read the current code and `docs/decisions.md`.
 2. **Plan**, then stop: files to create or change, approach, key data
    structures, tests to add, new dependencies and why, risks, and decisions
-   the spec leaves open. Ask the questions that affect file formats, the
-   share-link format or the public API. Wait for approval before code.
+   the spec leaves open. Ask every question through AskUserQuestion, never as
+   text in the reply; anything that affects file formats, the share-link
+   format or the public API is always asked. Wait for approval before code.
 3. **Build** in small commits in a logical order. Each commit builds and
    passes `npm run check:quick`.
 4. **Verify**: `npm run check` green; anything GPU-related checked with
@@ -32,6 +33,11 @@ Run it with `/milestone <n>`, or follow it by hand:
 5. **Stop** with a demo note: what works, how to try it, measured numbers
    against the spec's targets, known gaps, and anything decided along the way.
    Don't start the next milestone until the owner accepts this one.
+
+Milestone 11 runs as the four stages in the spec's "Release stages" table, with
+the whole loop and a stop for each. Work on the shell or on how the graph
+looks starts with `/ux-review`, and the owner approves its ranked list before
+code.
 
 **Stop and replan** the moment something goes wrong: a test fails for a
 non-obvious reason, a target is missed, a browser API behaves differently than

@@ -941,3 +941,23 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a per-segment attribute holding a fraction range (one
   range per segment, and hits can overlap); per-piece colours rebuilt on each
   search.
+
+## 2026-11-09: Release runs in four stages and three unmeasured criteria are dropped
+
+- **Decision**: milestone 11 (Release) carries the refinements the owner asked
+  for, in four stages with a plan, a demo and an acceptance each: 11.1 graph
+  look (labels, ribbons, links), 11.2 shell redesign (the panels are crowded
+  and hard to read), 11.3 memory (profile first, then the owner sets the
+  target), 11.4 ship (offline, the 1M and Bandage benchmarks, accessibility,
+  deploy). Stages 11.1 and 11.2 start with the `ux-review` skill, whose ranked
+  list the owner approves before code. Milestone 10 keeps its scope and comes
+  first.
+- **Dropped**: the frame rates with labels on (milestone 6), the 200k graph on
+  WebGL2 (milestone 7) and the filter frame time on the 200k graph (milestone 8) were never measured and are no longer criteria; the WebGL2 path has no
+  targets of its own in v1. The 1M targets and the Bandage comparison stay and
+  are measured once, in stages 11.3 and 11.4.
+- **Reason**: building comes before measuring, and the polish reads better
+  judged on the finished feature set than milestone by milestone.
+- **Alternatives**: a refinements milestone before Export and sharing, so
+  share links freeze a redesigned view state (the owner chose to keep the
+  order); one measuring pass now.
