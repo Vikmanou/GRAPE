@@ -22,6 +22,7 @@ export function ExportMenu() {
   const shownGfa = useApp((s) => s.shownGfa);
   const exportGfa = useApp((s) => s.exportGfa);
   const exportFasta = useApp((s) => s.exportFasta);
+  const exportPng = useApp((s) => s.exportPng);
   const toast = useApp((s) => s.toast);
   const [busy, setBusy] = useState(false);
   if (file === undefined) return null;
@@ -38,7 +39,15 @@ export function ExportMenu() {
     save: () => (kind === 'gfa' ? exportGfa(scope) : exportFasta(scope)),
     disabled: scope === 'selection' && selected === 0,
   });
+  const png = (scale: number): Item => ({
+    id: `export-png-${String(scale)}`,
+    label: scale === 1 ? 'PNG, screen size' : `PNG, ${String(scale)}× screen size`,
+    title: 'The current view as a picture, drawn larger for print when asked',
+    suffix: scale === 1 ? '.png' : `.${String(scale)}x.png`,
+    save: () => exportPng(scale),
+  });
   const groups: [string, Item[]][] = [
+    ['Image', [png(1), png(2), png(4)]],
     [
       'GFA',
       [

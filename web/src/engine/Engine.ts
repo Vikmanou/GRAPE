@@ -8,22 +8,19 @@ import { FrameCounter } from './core/frames';
 import { gestures } from './core/gestures';
 import { attachInput } from './core/input';
 import { Pointer } from './core/Pointer';
+import { Positions } from './core/Positions';
 import { RubberBand } from './core/RubberBand';
 import { throttle } from './core/throttle';
 import { DEFAULT_DISPLAY } from './style/display';
 import { RIBBON_WIDTH } from './style/widths';
 import { Atlas } from './text/Atlas';
 import { Labels } from './text/Labels';
-import type { PositionGrid } from '../workers/protocol/layout';
 import { openBackend } from './openBackend';
+import { Exporter } from './export/Exporter';
+import type { View } from './core/backend';
 
 type Listener = (event: EngineEvent) => void;
 
-/**
- * Positions are re-uploaded relative to the camera once it is this many
- * pixels from the upload origin, keeping shader maths within f32 precision.
- */
-const REBASE_PIXELS = 1e5;
 /**
  * While the layout runs, the graph is redrawn at most this often, and less
  * often when a draw is slow, so drawing takes at most a tenth of the GPU.
@@ -49,11 +46,7 @@ export class Engine {
   private readonly framing: Framing;
   private readonly pointer: Pointer;
   private readonly band: RubberBand;
-  private positions: Float32Array | undefined;
-  private grid: PositionGrid | undefined;
-  /** Positions from the worker settled once: like the GPU layout's packing, the bounds stay as they were. */
-  private positionsSettled = false;
-  private origin = { x: 0, y: 0 };
+  private readonly positions: Positions;
   private readonly frames = new FrameCounter();
   private lastDraw = -Infinity;
   private lastInteraction = -Infinity;
@@ -66,6 +59,7 @@ export class Engine {
   private readonly labels: Labels;
   private readonly filtering: Filtering;
   private readonly bands: Bands;
+  private readonly exporter: Exporter;
   private readonly cameraReport = throttle(() => {
     const camera = this.framing.camera;
     const last = this.reported;
@@ -81,6 +75,7 @@ export class Engine {
     atlas: Atlas | undefined,
   ) {
     this.framing = new Framing(canvas);
+    this.positions = new Positions(backend, this.framing);
     this.labels = new Labels(
       backend,
       atlas,
@@ -95,6 +90,16 @@ export class Engine {
       this.emit({ type: 'visibility', visible, total });
     });
     this.bands = new Bands(backend);
+    this.exporter = new Exporter(
+      backend,
+      () => this.view(),
+      (event) => {
+        if (!this.destroyed) this.emit(event);
+      },
+      () => {
+        this.requestFrame();
+      },
+    );
     this.band = new RubberBand(canvas);
     this.pointer = new Pointer(backend, canvas, {
       emit: (event) => {
@@ -179,9 +184,7 @@ export class Engine {
         this.labels.clear();
         this.filtering.setGraph(command.segments);
         this.bands.setGeometry(command.geometry);
-        this.positions = undefined;
-        this.grid = undefined;
-        this.positionsSettled = false;
+        this.positions.reset();
         framing.autoFit = true;
         framing.setBounds(undefined);
         break;
@@ -200,14 +203,10 @@ export class Engine {
       case 'set-positions':
         layout.stop();
         if (command.progress) layout.setProgress(command.progress);
-        this.positions = command.positions;
-        this.grid = command.grid;
-        if (!this.positionsSettled) framing.setBounds(boundsOf(command.positions));
-        this.positionsSettled ||= command.progress?.done ?? false;
-        this.upload();
+        this.positions.set(command.positions, command.grid, command.progress?.done ?? false);
         break;
       case 'start-layout':
-        this.positions = undefined;
+        this.positions.dropCpu();
         framing.autoFit = true;
         // Components overlap until the first pack; their start still frames the view.
         framing.setBounds(boundsOf(command.hierarchy.start));
@@ -226,6 +225,9 @@ export class Engine {
       case 'read-positions':
         void this.readPositions();
         return;
+      case 'export-png':
+        this.exporter.handle(command);
+        return;
       case 'read-visible':
         this.emit({ type: 'visible', bits: this.filtering.visibleBits() });
         return;
@@ -233,7 +235,7 @@ export class Engine {
         this.emit({ type: 'layout-profile', levels: layout.levels });
         return;
       case 'report-memory':
-        this.emit({ type: 'memory', gpu: this.backend.gpuBytes, cpu: this.positions?.byteLength ?? 0 });
+        this.emit({ type: 'memory', gpu: this.backend.gpuBytes, cpu: this.positions.cpuBytes });
         return;
       case 'fit':
         if (this.filtering.active) {
@@ -305,7 +307,7 @@ export class Engine {
 
   /** Frames the drawn extent of the segments whose bit is set, or only centres it when `follow`. */
   private async zoomTo(bits: Uint32Array<ArrayBuffer>, follow = false): Promise<void> {
-    const origin = this.origin;
+    const origin = this.positions.origin;
     const box = await this.backend.bounds(bits);
     if (!box || this.destroyed) return;
     const pad = RIBBON_WIDTH;
@@ -321,7 +323,7 @@ export class Engine {
   }
 
   private async readPositions(): Promise<void> {
-    const positions = (await this.backend.layout.readPositions()) ?? this.positions?.slice();
+    const positions = await this.positions.read();
     if (positions && !this.destroyed) this.emit({ type: 'positions', positions });
   }
 
@@ -333,28 +335,6 @@ export class Engine {
     this.lastInteraction = performance.now();
     this.pointer.viewMoved();
     this.requestFrame();
-  }
-
-  private upload(): void {
-    const { camera } = this.framing;
-    this.origin = { x: Math.round(camera.x), y: Math.round(camera.y) };
-    const layout = this.backend.layout;
-    if (layout.active) {
-      layout.present(this.origin);
-      return;
-    }
-    const positions = this.positions;
-    if (!positions) return;
-    const relative = new Float32Array(positions.length);
-    for (let i = 0; i < positions.length; i += 2) {
-      relative[i] = (positions[i] ?? 0) - this.origin.x;
-      relative[i + 1] = (positions[i + 1] ?? 0) - this.origin.y;
-    }
-    const grid = this.grid;
-    this.backend.setPositions(
-      relative,
-      grid && { ...grid, minX: grid.minX - this.origin.x, minY: grid.minY - this.origin.y },
-    );
   }
 
   private resize(entry: ResizeObserverEntry): void {
@@ -401,23 +381,29 @@ export class Engine {
     if (busy) this.scheduleFrame();
   }
 
+  /** The camera as the backend draws it, relative to the positions' origin. */
+  private view(): View {
+    const c = this.framing.camera;
+    return {
+      centerX: c.x - this.positions.origin.x,
+      centerY: c.y - this.positions.origin.y,
+      zoom: c.zoom,
+      width: this.canvas.width,
+      height: this.canvas.height,
+    };
+  }
+
   private draw(now: number): void {
     const started = performance.now();
     this.dirty = false;
     this.lastDraw = now;
     const c = this.framing.camera;
     const moved = this.stale;
-    if (this.stale || Math.hypot(c.x - this.origin.x, c.y - this.origin.y) * c.zoom > REBASE_PIXELS) {
+    if (this.stale || this.positions.farFrom(c)) {
       this.stale = false;
-      this.upload();
+      this.positions.upload();
     }
-    const view = {
-      centerX: c.x - this.origin.x,
-      centerY: c.y - this.origin.y,
-      zoom: c.zoom,
-      width: this.canvas.width,
-      height: this.canvas.height,
-    };
+    const view = this.view();
     this.backend.draw(view);
     this.labels.drawn(view, moved, now);
     const stats = this.frames.record(now, performance.now() - started, this.backend.drawMs);
