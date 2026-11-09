@@ -47,6 +47,14 @@ highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
   remove, shift-drag to select by box, select whole components, invert and
   zoom to the selection.
 - Copy sequences or save them as FASTA exactly as Bandage writes them.
+- Export the view as a PNG up to 4× the screen (tiled past the GPU's
+  texture limit) or as SVG; save GFA or FASTA of the whole graph, the
+  selection or what the filters show.
+- Share the view as a link: layout seed, settings, camera, selection and
+  highlighted paths, never sequences. Whoever opens it opens the same file,
+  which the link checks. A session file also keeps every position, so the
+  view comes back exactly in any browser, on either renderer.
+- Open a graph from a URL; your browser downloads it directly.
 - Find segments by a list of names or a regular expression.
 - Drag a segment to pin it while the rest of the graph follows; unpin, or lay
   out just the selection again.

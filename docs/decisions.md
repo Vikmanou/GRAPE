@@ -961,3 +961,99 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a refinements milestone before Export and sharing, so
   share links freeze a redesigned view state (the owner chose to keep the
   order); one measuring pass now.
+
+## 2026-11-09: Share links: format 1 and what it carries
+
+- **Decision**: a share link is the page's address with the fragment
+  `#v=1.<payload>`, the payload JSON compressed with `deflate-raw` and
+  written in base64url (spec, Features 12). The `1` is the format version;
+  a link of another version is refused with a message. It carries the file's
+  fingerprint (size, segment count, SHA-256 of the first MiB), the layout's
+  seed and quality and which layout made it (`gpu` on WebGPU, `cpu` for the
+  layout worker's), chain merging on or off, the camera (centre in layout
+  units, CSS pixels per unit), the display options with the colour range,
+  the label settings, the size and depth filters, the selected segments'
+  names and the highlighted paths' names. Owner's choices: search queries are
+  never in it, as a query is a sequence and links carry none (the spec's
+  Features text listed them; the privacy rule wins); the neighbourhood and
+  component filters stay out; the address of a file opened from a URL goes in
+  only when the sharer ticks a box, off by default, because addresses can
+  hold access keys, and the recipient downloads it only by clicking. A link
+  past 8,000 characters drops the selection and says so. Query parameters
+  such as `?renderer=webgl2` are not part of the link (decision of
+  2026-10-27).
+- **Restoring**: the link waits until a file is opened, checks the
+  fingerprint, and on a match lays the graph out from the link's seed, then
+  merges, filters, highlights and colours as the link says, and sets the
+  camera and the selection once the layout settles. A different file opens as
+  it is with a message. Opened on the other kind of layout (WebGPU against
+  WebGL2), the same seed gives other positions, so the camera starts fitted
+  and a message points to session files. The fragment is cleared once used,
+  and read again on `hashchange`, since a link pasted into a tab already on
+  GRAPE does not reload the page.
+- **Reason**: the owner's answers to the plan's questions; the fragment never
+  reaches a server.
+- **Alternatives**: queries in the link, opt-in or always; every filter as
+  seed names and step counts; the spec's field list only.
+
+## 2026-11-09: Session files keep float32 positions and are read in the graph worker
+
+- **Decision**: a session file (`.grape.json.gz`) is gzipped JSON:
+  `{"grape":"session","version":1,"view":<a share link's state>,"positions":{"encoding":"float32le-base64","points":n,"data":"..."}}`.
+  Positions are float32, not the spec's float16 (owner's choice): float16
+  steps by a whole unit past 2,048 and by 32 past 32,768, against ribbons 5
+  units wide. The graph worker writes and reads it, as a large graph's
+  positions make a JSON string too long for the main thread. Opening one
+  waits for its graph like a link; the layout worker then builds the geometry
+  and a grid around the saved positions (gfa-core `layout::Fixed`) and no
+  layout runs. A session never holds the file's address. Pins are not
+  saved; dragging and re-layout of the selection need a restarted layout.
+- **Reason**: positions identical bit for bit reproduce the view exactly on
+  either backend, which a seed cannot across GPUs.
+- **Alternatives**: float16 as the spec said; float32 anchors with float16
+  steps along each chain; a binary container.
+
+## 2026-11-09: PNG and SVG show the canvas as drawn
+
+- **Decision**: a PNG is the whole canvas, panels' area included, drawn
+  offscreen `scale` times larger (1, 2 or 4, less if the image would pass
+  16,384 pixels a side or 2^26 pixels) in tiles of at most 2,048 pixels,
+  each read back and composed on an `OffscreenCanvas`. A view field,
+  `pixelScale`, scales everything set in pixels (minimum widths, outlines,
+  link fade, dots, label size and halo) so the image is the screen's picture
+  at higher resolution. Tiles sit at whole pixels of the image, so labels
+  round alike in every tile. An SVG is built on the main thread in slices of
+  2,000 segments between yields, from the same shapes the shaders draw
+  (`export/shapes.ts` mirrors `graph.wgsl`): links under ribbons, the
+  selection outlined on top, dimming, dots, bands and labels. Past 50,000
+  segments in view it refuses with a message rather than writing part of the
+  view. Double mode's arrowheads are not drawn in SVG.
+- **Reason**: small tiles keep each readback and `putImageData` within a
+  frame; Bandage's image export renders its scene through Qt and cannot be
+  matched byte for byte, so the picture follows the screen instead.
+- **Alternatives**: tiles at the GPU's texture limit; a worker for the SVG;
+  writing the first 50,000 segments.
+
+## 2026-11-09: GFA of a selection or of what is shown is Bandage's visible-graph save
+
+- **Decision**: the GFA writer takes an optional bitset of segments to keep
+  and then writes what Bandage's `saveVisibleGraphToGfa`
+  (graph/assemblygraph.cpp) writes: the kept segments in node-map order and
+  the links whose two ends are both kept, sorted by `compareEdgePointers`.
+  "What is shown" is the filters' visible set, read from the engine. FASTA
+  of what is shown uses the selected-sequences writer on that set.
+- **Reason**: exports match Bandage (decision of 2026-10-26).
+- **Alternatives**: links with only one kept end.
+
+## 2026-11-09: Open from URL fetches without credentials
+
+- **Decision**: the browser fetches the address the user types with
+  `credentials: 'omit'` and `referrerPolicy: 'no-referrer'`, reports progress
+  when the server gives a length, and can be cancelled from the status bar.
+  A fetch that never starts says the server may be unreachable or refuse
+  other sites (CORS), as the browser does not say which. The download is
+  held as a `File` on the main thread before parsing, as a dropped file is.
+- **Reason**: the only request involving user data stays user-initiated and
+  sends nothing but the address.
+- **Alternatives**: fetching in the graph worker; streaming straight into
+  the parser.
