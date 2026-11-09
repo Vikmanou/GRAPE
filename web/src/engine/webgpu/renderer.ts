@@ -287,7 +287,7 @@ export class Renderer {
   cull(encoder: GPUCommandEncoder, view: View): void {
     const graph = this.graph;
     if (!graph || (!graph.pieceCull && !graph.links)) return;
-    const worldPerPixel = 1 / view.zoom;
+    const worldPerPixel = (view.pixelScale ?? 1) / view.zoom;
     const { widthByDepth, double } = this.style.display;
     const widest = (widthByDepth ? MAX_RIBBON_WIDTH / 2 : view.ribbonHalf) + (double ? STRAND_SHIFT : 0);
     const ribbonHalf = Math.max(widest, worldPerPixel / 2);

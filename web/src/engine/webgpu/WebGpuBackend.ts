@@ -6,6 +6,7 @@ import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
 import { RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import { drawnView } from '../style/uniforms';
+import { captureTarget, readTexture } from './capture';
 import { createGpuContext } from './device';
 import type { Atlas } from '../text/Atlas';
 import { GlyphRenderer } from './glyphs';
@@ -39,7 +40,7 @@ export class WebGpuBackend implements Backend {
   private constructor(
     private readonly device: GPUDevice,
     private readonly context: GPUCanvasContext,
-    format: GPUTextureFormat,
+    private readonly format: GPUTextureFormat,
     kernels: Kernels,
     events: BackendEvents,
   ) {
@@ -133,8 +134,6 @@ export class WebGpuBackend implements Backend {
   }
 
   draw(view: View): void {
-    const palette = palettes[this.style.theme];
-    const [r, g, b, a] = palette.background;
     const encoder = this.device.createCommandEncoder({ label: 'frame' });
     // Every draw is timed while the layout runs, for its redraw budget, and
     // one in eight otherwise, for the frame rate.
@@ -142,29 +141,44 @@ export class WebGpuBackend implements Backend {
     this.draws++;
     const timing = timed ? new PassTiming(this.device) : undefined;
     this.lastView = view;
-    const drawn = this.drawn(view);
+    this.encodeFrame(encoder, this.context.getCurrentTexture(), view, this.hover, timing?.writes);
+    timing?.resolve(encoder);
+    this.device.queue.submit([encoder.finish()]);
+    void timing?.ms().then((ms) => {
+      this.gpuDrawMs = this.gpuDrawMs * 0.7 + ms * 0.3;
+    });
+  }
+
+  /** Draws `view` offscreen, without the hover outline, as RGBA8 rows from the top. */
+  async capture(view: View): Promise<Uint8Array<ArrayBuffer>> {
+    const encoder = this.device.createCommandEncoder({ label: 'capture' });
+    const target = captureTarget(this.device, this.format, view.width, view.height);
+    this.encodeFrame(encoder, target, view, undefined, undefined);
+    // The cull above was for this view; the next pick culls its own.
+    this.picker.invalidate();
+    return readTexture(this.device, encoder, target);
+  }
+
+  private encodeFrame(
+    encoder: GPUCommandEncoder,
+    target: GPUTexture,
+    view: View,
+    hover: number | undefined,
+    timestampWrites: GPURenderPassTimestampWrites | undefined,
+  ): void {
+    const palette = palettes[this.style.theme];
+    const [r, g, b, a] = palette.background;
+    const drawn = drawnView(view, this.style, hover);
     if (this.positioned) this.renderer.cull(encoder, drawn);
     const pass = encoder.beginRenderPass({
-      ...(timing && { timestampWrites: timing.writes }),
-      colorAttachments: [
-        {
-          view: this.context.getCurrentTexture().createView(),
-          clearValue: { r, g, b, a },
-          loadOp: 'clear',
-          storeOp: 'store',
-        },
-      ],
+      ...(timestampWrites && { timestampWrites }),
+      colorAttachments: [{ view: target.createView(), clearValue: { r, g, b, a }, loadOp: 'clear', storeOp: 'store' }],
     });
     if (this.positioned) {
       this.renderer.draw(pass, drawn);
       this.glyphs.draw(pass, view, { color: palette.label, halo: palette.background }, this.fontPx);
     }
     pass.end();
-    timing?.resolve(encoder);
-    this.device.queue.submit([encoder.finish()]);
-    void timing?.ms().then((ms) => {
-      this.gpuDrawMs = this.gpuDrawMs * 0.7 + ms * 0.3;
-    });
   }
 
   async pick(x: number, y: number): Promise<number | undefined> {

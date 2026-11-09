@@ -8,12 +8,14 @@ struct Text {
   px_range: f32,
   canvas: vec2f,
   segments: u32,
+  // Canvas pixels per screen pixel, above 1 for an export.
+  pixel_scale: f32,
   color: vec4f,
   halo: vec4f,
 }
 
 struct Glyph {
-  // From the anchor to the quad's top left, and its size, in pixels.
+  // From the anchor to the quad's top left, and its size, in screen pixels.
   offset: vec2f,
   size: vec2f,
   uv: vec4f,
@@ -57,7 +59,7 @@ fn glyph_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) 
   let corner = QUAD[v];
   // Rounded to whole pixels so text stays sharp.
   let at = round((anchor(g.segment) - text.center) * text.zoom + text.canvas * 0.5);
-  let pixel = at + g.offset + corner * g.size;
+  let pixel = at + (g.offset + corner * g.size) * text.pixel_scale;
   var out: Out;
   out.clip = vec4f(pixel.x / text.canvas.x * 2.0 - 1.0, 1.0 - pixel.y / text.canvas.y * 2.0, 0.0, 1.0);
   out.uv = mix(g.uv.xy, g.uv.zw, corner);
@@ -72,7 +74,7 @@ fn median(c: vec3f) -> f32 {
 fn glyph_fragment(in: Out) -> @location(0) vec4f {
   let distance = (median(textureSample(atlas, atlas_sampler, in.uv).rgb) - 0.5) * text.px_range;
   let ink = clamp(distance + 0.5, 0.0, 1.0);
-  let halo = clamp(distance + HALO_PX + 0.5, 0.0, 1.0);
+  let halo = clamp(distance + HALO_PX * text.pixel_scale + 0.5, 0.0, 1.0);
   let color = mix(text.halo.rgb, text.color.rgb, ink);
   let alpha = halo * mix(text.halo.a, text.color.a, ink);
   return vec4f(color * alpha, alpha);

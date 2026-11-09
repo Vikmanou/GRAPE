@@ -81,9 +81,11 @@ export class GlyphRenderer {
     const { atlas, texture, glyphs, source } = this;
     if (!atlas || !texture || !glyphs || !source || this.count === 0) return;
     const f = new Float32Array(this.data);
-    f.set([view.centerX, view.centerY, view.zoom, (atlas.metrics.distanceRange * fontPx) / atlas.metrics.size]);
+    const scale = view.pixelScale ?? 1;
+    f.set([view.centerX, view.centerY, view.zoom, (atlas.metrics.distanceRange * fontPx * scale) / atlas.metrics.size]);
     f.set([view.width, view.height], 4);
     new Uint32Array(this.data)[6] = source.segments;
+    f[7] = scale;
     f.set([...style.color, ...style.halo], 8);
     this.device.queue.writeBuffer(this.uniform, 0, this.data);
     this.group ??= this.device.createBindGroup({

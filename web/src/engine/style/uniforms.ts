@@ -24,15 +24,16 @@ export interface DrawnView extends View {
 
 export function drawnView(view: View, style: Style, hover: number | undefined): DrawnView {
   const palette = palettes[style.theme];
+  const screenZoom = view.zoom / (view.pixelScale ?? 1);
   return {
     ...view,
     ribbonHalf: RIBBON_WIDTH / 2,
     linkHalf: LINK_WIDTH / 2,
-    linkAlpha: linkFade(view.zoom, style.display.linkFullPx),
+    linkAlpha: linkFade(screenZoom, style.display.linkFullPx),
     linkColor: palette.link,
     outline: palette.selection,
     hoverOutline: palette.hover,
-    outlineWidth: outlineWidth(view.zoom),
+    outlineWidth: outlineWidth(screenZoom),
     hover,
   };
 }
@@ -49,7 +50,8 @@ export function packView(out: ArrayBuffer, view: DrawnView, grow: number, strand
     view.centerY,
     (view.zoom * 2) / view.width,
     (-view.zoom * 2) / view.height,
-    1 / view.zoom,
+    // A screen pixel, which an export drawn at `pixelScale` spreads over several.
+    (view.pixelScale ?? 1) / view.zoom,
     view.ribbonHalf,
     view.linkHalf,
     view.linkAlpha,

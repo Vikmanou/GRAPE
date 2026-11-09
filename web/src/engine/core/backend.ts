@@ -15,6 +15,11 @@ export interface View {
   zoom: number;
   width: number;
   height: number;
+  /**
+   * Canvas pixels per screen pixel: above 1 for an export drawn larger than
+   * the screen, so widths, fades, dots and text set in pixels keep their look.
+   */
+  pixelScale?: number;
 }
 
 /** Per segment, what segments are coloured and sized by. */
