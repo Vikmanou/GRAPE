@@ -73,10 +73,10 @@ impl Loaded {
         })
     }
 
-    /// Segments in the order Bandage saves them to GFA.
+    /// Segments in the order Bandage saves them to GFA; `keep` has one bit per segment to write.
     #[wasm_bindgen(js_name = gfaOrder)]
-    pub fn gfa_order(&self) -> Vec<u32> {
-        gfa::segment_order(self.graph())
+    pub fn gfa_order(&self, keep: Option<Vec<u32>>) -> Vec<u32> {
+        gfa::segment_order(self.graph(), keep.as_deref())
     }
 
     /// The LB, L2, CL and C2 fields of each segment's line.
@@ -94,11 +94,11 @@ impl Loaded {
         depth_tag_code(self.graph().depth_tag)
     }
 
-    /// Every L line, as Bandage saves them.
+    /// The L lines among the kept segments, as Bandage saves them.
     #[wasm_bindgen(js_name = gfaLinks)]
-    pub fn gfa_links(&self) -> Vec<u8> {
+    pub fn gfa_links(&self, keep: Option<Vec<u32>>) -> Vec<u8> {
         let mut out = Vec::new();
-        gfa::write_links(&mut out, self.graph());
+        gfa::write_links(&mut out, self.graph(), keep.as_deref());
         out
     }
 }

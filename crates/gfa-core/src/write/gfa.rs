@@ -5,6 +5,8 @@
 //! <https://github.com/rrwick/Bandage>). Segments come in the order of
 //! Bandage's node map; each link is written once, as its positive edge.
 //! Unlike Bandage, a segment without a sequence keeps its real `LN`.
+//! With a `keep` set it is `saveVisibleGraphToGfa`: the kept segments and
+//! the links whose two segments are both kept.
 
 use crate::store::graph::{DepthTag, Graph};
 use crate::store::link_bits;
@@ -12,10 +14,20 @@ use crate::write::colour_names::BANDAGE_COLOUR_NAMES;
 use crate::write::fasta::{DEFAULT_DEPTH, format_g};
 use std::cmp::Ordering;
 
+/// One bit per segment; `None` keeps every segment.
+pub type Keep<'a> = Option<&'a [u32]>;
+
+fn kept(keep: Keep, segment: u32) -> bool {
+    keep.is_none_or(|bits| {
+        bits.get(segment as usize / 32)
+            .is_some_and(|word| word >> (segment % 32) & 1 == 1)
+    })
+}
+
 /// Segments in the order Bandage writes them.
-pub fn segment_order(g: &Graph) -> Vec<u32> {
+pub fn segment_order(g: &Graph, keep: Keep) -> Vec<u32> {
     let mut ids: Vec<u32> = (0..g.segments.len() as u32)
-        .filter(|&s| g.segments.is_defined(s))
+        .filter(|&s| g.segments.is_defined(s) && kept(keep, s))
         .collect();
     ids.sort_by(|&a, &b| signed(g.names.get(a), false).cmp(signed(g.names.get(b), false)));
     ids
@@ -189,9 +201,10 @@ fn edge_order(g: &Graph, a: &Edge, b: &Edge) -> Ordering {
 }
 
 /// Every `L` line, in Bandage's order.
-pub fn write_links(out: &mut Vec<u8>, g: &Graph) {
+pub fn write_links(out: &mut Vec<u8>, g: &Graph, keep: Keep) {
+    let shown = |s: u32| g.segments.is_defined(s) && kept(keep, s);
     let mut edges: Vec<Edge> = (0..g.links.len())
-        .filter(|&l| g.segments.is_defined(g.links.from[l]) && g.segments.is_defined(g.links.to[l]))
+        .filter(|&l| shown(g.links.from[l]) && shown(g.links.to[l]))
         .map(|l| positive_edge(g, l))
         .collect();
     edges.sort_by(|a, b| edge_order(g, a, b));
@@ -206,10 +219,10 @@ pub fn write_links(out: &mut Vec<u8>, g: &Graph) {
     }
 }
 
-/// The whole file, with each segment's forward bases from `bases`.
-pub fn write_gfa(g: &Graph, bases: impl Fn(u32) -> Option<Vec<u8>>) -> Vec<u8> {
+/// The file, with each segment's forward bases from `bases`.
+pub fn write_gfa(g: &Graph, keep: Keep, bases: impl Fn(u32) -> Option<Vec<u8>>) -> Vec<u8> {
     let mut out = Vec::new();
-    for s in segment_order(g) {
+    for s in segment_order(g, keep) {
         let i = s as usize;
         let sequence = bases(s);
         let custom = custom_fields(g, s);
@@ -224,7 +237,7 @@ pub fn write_gfa(g: &Graph, bases: impl Fn(u32) -> Option<Vec<u8>>) -> Vec<u8> {
             &custom,
         );
     }
-    write_links(&mut out, g);
+    write_links(&mut out, g, keep);
     out
 }
 
@@ -234,8 +247,12 @@ mod tests {
     use crate::{ParseOptions, parse};
 
     fn written(gfa: &str, sequences: &[(&str, &str)]) -> String {
+        written_keeping(gfa, None, sequences)
+    }
+
+    fn written_keeping(gfa: &str, keep: Keep, sequences: &[(&str, &str)]) -> String {
         let g = parse(gfa.as_bytes(), ParseOptions::default()).unwrap();
-        let out = write_gfa(&g, |s| {
+        let out = write_gfa(&g, keep, |s| {
             let name = std::str::from_utf8(g.names.get(s)).unwrap();
             sequences
                 .iter()
@@ -260,6 +277,26 @@ mod tests {
                         L\t2\t+\t3\t+\t0M\n\
                         L\t2\t+\t10\t-\t1M\n";
         assert_eq!(written(gfa, &[("2", "ACG"), ("10", "TT")]), expected);
+    }
+
+    #[test]
+    fn a_kept_set_writes_its_segments_and_the_links_among_them() {
+        let gfa = "S\t2\tACG\tDP:f:3.5\n\
+                   S\t10\tTT\tDP:f:2\n\
+                   S\t3\t*\tLN:i:5\n\
+                   L\t10\t+\t2\t-\t1M\n\
+                   L\t3\t-\t2\t-\t0M\n\
+                   L\t2\t+\t2\t+\t0M\n";
+        // Segments 2 and 3 are ids 0 and 2; the link to 10 goes with it.
+        let expected = "S\t2\tACG\tLN:i:3\tDP:f:3.5\n\
+                        S\t3\t*\tLN:i:5\tDP:f:1\n\
+                        L\t2\t+\t2\t+\t0M\n\
+                        L\t2\t+\t3\t+\t0M\n";
+        assert_eq!(
+            written_keeping(gfa, Some(&[0b101]), &[("2", "ACG")]),
+            expected
+        );
+        assert_eq!(written_keeping(gfa, Some(&[]), &[]), "");
     }
 
     #[test]
