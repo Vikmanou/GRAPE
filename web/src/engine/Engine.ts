@@ -226,6 +226,9 @@ export class Engine {
       case 'read-positions':
         void this.readPositions();
         return;
+      case 'read-visible':
+        this.emit({ type: 'visible', bits: this.filtering.visibleBits() });
+        return;
       case 'report-layout-profile':
         this.emit({ type: 'layout-profile', levels: layout.levels });
         return;

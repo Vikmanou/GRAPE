@@ -206,7 +206,7 @@ async function handle(request: GraphRequest): Promise<void> {
         await addFasta(id, request.file);
         return;
       case 'gfa': {
-        const records = gfaRecords(loaded());
+        const records = gfaRecords(loaded(), request.keep);
         post({ type: 'gfa', id, records }, [
           records.segments.buffer,
           records.lengths.buffer,

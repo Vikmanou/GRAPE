@@ -1,5 +1,6 @@
 import type { SegmentInfo, SelectionSummary } from '../workers/protocol/graph';
 import type { Preview } from '../workers/sequence/SequenceClient';
+import { setBits } from './bits';
 import type { Context } from './store';
 
 /** Bases shown at each end of a sequence and of a raw line. */
@@ -32,15 +33,6 @@ export interface DetailsSlice {
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-/** Ids of the set bits, ascending. */
-function setBits(bits: Uint32Array): Uint32Array<ArrayBuffer> {
-  const ids: number[] = [];
-  for (const [w, word] of bits.entries()) {
-    for (let b = 0, rest = word; rest !== 0; b++, rest >>>= 1) if (rest & 1) ids.push(w * 32 + b);
-  }
-  return Uint32Array.from(ids);
 }
 
 export function createDetailsSlice(ctx: Context): DetailsSlice {

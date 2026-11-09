@@ -21,8 +21,8 @@ export type GraphRequest =
   | { type: 'path-steps'; id: number; path: number }
   /** Shows the graph with its simple chains merged, or the graph as loaded. */
   | { type: 'merge'; id: number; on: boolean }
-  /** What a GFA save of the shown graph needs, but for the sequences. */
-  | { type: 'gfa'; id: number }
+  /** What a GFA save of the shown graph needs, but for the sequences; `keep` has one bit per segment to save. */
+  | { type: 'gfa'; id: number; keep?: Uint32Array<ArrayBuffer> | undefined }
   /** Sequences for the graph as loaded, from a FASTA file whose records name its segments. */
   | { type: 'add-fasta'; id: number; file: File }
   /** The shown graph's links, for the sequence worker to join hits along. */

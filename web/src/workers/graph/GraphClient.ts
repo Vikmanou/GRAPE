@@ -98,8 +98,9 @@ export class GraphClient {
     return { result, map, chains };
   }
 
-  async gfa(): Promise<GfaRecords> {
-    return expect(await this.rpc.request({ type: 'gfa' }), 'gfa').records;
+  /** Every segment, or those whose bit is set in `keep`, and the links among them. */
+  async gfa(keep?: Uint32Array<ArrayBuffer>): Promise<GfaRecords> {
+    return expect(await this.rpc.request({ type: 'gfa', keep }), 'gfa').records;
   }
 
   async searchLinks(): Promise<SearchLinks> {

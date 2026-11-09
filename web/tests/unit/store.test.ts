@@ -172,6 +172,7 @@ function setup() {
   const store = createAppStore(services);
   return {
     store,
+    services,
     parses,
     layouts,
     engines,
@@ -196,6 +197,31 @@ async function loadedWithEngine() {
 }
 
 describe('store', () => {
+  it('saves the GFA of what the filters show, asking the engine which segments those are', async () => {
+    const s = await loadedWithEngine();
+    const kept: (Uint32Array | undefined)[] = [];
+    const records = { links: new Uint8Array(0) } as Awaited<ReturnType<Services['graph']['gfa']>>;
+    s.services.graph.gfa = (keep) => {
+      kept.push(keep);
+      return Promise.resolve(records);
+    };
+    s.services.sequence.gfa = () => Promise.resolve(new Blob(['S']));
+    const saved = s.store.getState().exportGfa('visible');
+    const engine = s.engines[0];
+    if (!engine) throw new Error('no engine');
+    expect(engine.types()).toContain('read-visible');
+    engine.emit({ type: 'visible', bits: new Uint32Array([0b101]) });
+    expect(await (await saved).text()).toBe('S');
+    expect(kept).toEqual([new Uint32Array([0b101])]);
+  });
+
+  it('fails an export waiting on the engine when the engine goes away', async () => {
+    const s = await loadedWithEngine();
+    const saved = s.store.getState().exportFasta('visible');
+    s.store.getState().detachEngine();
+    await expect(saved).rejects.toThrow('the renderer closed');
+  });
+
   it('starts a GPU layout once the file is loaded and the engine attached', async () => {
     const { store, layouts, engines, loadedSources } = await loadedWithEngine();
     expect(store.getState().load.state).toBe('loaded');

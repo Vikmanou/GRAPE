@@ -18,6 +18,8 @@ export class Bridge {
   /** Bumped on every attach and detach, so a late engine from an old attach is dropped. */
   private generation = 0;
   private readonly listeners = new Set<Listener>();
+  /** Rejects the questions still waiting on an engine that goes away. */
+  private readonly waiting = new Set<(error: Error) => void>();
 
   constructor(
     private readonly ctx: Context,
@@ -49,6 +51,8 @@ export class Bridge {
   }
 
   detach(): void {
+    for (const reject of this.waiting) reject(new Error('the renderer closed'));
+    this.waiting.clear();
     this.generation++;
     this.engine?.destroy();
     this.engine = undefined;
@@ -56,6 +60,29 @@ export class Bridge {
 
   send(command: EngineCommand): void {
     this.engine?.send(command);
+  }
+
+  /** Sends a command and waits for the first event of type `answer`. */
+  ask<T extends EngineEvent['type']>(command: EngineCommand, answer: T): Promise<Extract<EngineEvent, { type: T }>> {
+    const engine = this.engine;
+    if (!engine) return Promise.reject(new Error('no graph is drawn'));
+    return new Promise((resolve, reject) => {
+      const stop = this.on((event) => {
+        if (event.type !== answer) return;
+        settle();
+        resolve(event as Extract<EngineEvent, { type: T }>);
+      });
+      const settle = () => {
+        stop();
+        this.waiting.delete(fail);
+      };
+      const fail = (error: Error) => {
+        settle();
+        reject(error);
+      };
+      this.waiting.add(fail);
+      engine.send(command);
+    });
   }
 
   /** Engine events for a store action that waits on them, such as a layout run. */

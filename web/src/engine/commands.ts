@@ -37,6 +37,8 @@ export type EngineCommand =
   | { type: 'read-positions' }
   /** Answered by a `memory` event. */
   | { type: 'report-memory' }
+  /** Answered by a `visible` event. */
+  | { type: 'read-visible' }
   /** Answered by a `layout-profile` event. */
   | { type: 'report-layout-profile' }
   | { type: 'fit' }
@@ -87,6 +89,8 @@ export type EngineEvent =
   | { type: 'hover'; segment: number | undefined }
   /** Placed labels lack their text. */
   | { type: 'labels-needed'; generation: number; segments: Uint32Array<ArrayBuffer> }
+  /** One bit per segment the filter shows, answering `read-visible`. */
+  | { type: 'visible'; bits: Uint32Array<ArrayBuffer> }
   /** How many segments the filter leaves shown, of all of them. */
   | { type: 'visibility'; visible: number; total: number }
   /** The segments whose labels show. */

@@ -128,8 +128,8 @@ export function describe(loaded: Loaded, compression: Compression, parseMs: numb
   return result;
 }
 
-export function gfaRecords(loaded: Loaded): GfaRecords {
-  const segments = plain(loaded.gfaOrder());
+export function gfaRecords(loaded: Loaded, keep: Uint32Array | undefined): GfaRecords {
+  const segments = plain(loaded.gfaOrder(keep));
   const lengths = loaded.segmentLengths();
   return {
     segments,
@@ -138,6 +138,6 @@ export function gfaRecords(loaded: Loaded): GfaRecords {
     depths: plain(loaded.depths(segments)),
     custom: loaded.gfaCustom(segments),
     depthTag: loaded.depthTag(),
-    links: plain(loaded.gfaLinks()),
+    links: plain(loaded.gfaLinks(keep)),
   };
 }
