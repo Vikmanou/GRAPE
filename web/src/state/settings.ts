@@ -1,6 +1,7 @@
 import { COLOR_MODES, DEFAULT_DISPLAY, type DisplayOptions } from '../engine/style/display';
 import type { SidebarTab } from './display';
 import { DEFAULT_LABELS, type LabelSettings } from './labels';
+import { sameShape } from './shape';
 import type { AppState, AppStore } from './store';
 import type { ThemeChoice } from './theme';
 
@@ -33,18 +34,6 @@ export function savedDisplay({
 export function settingsOf(s: AppState): Settings {
   const display = savedDisplay(s.displayOptions);
   return { theme: s.themeChoice, sidebar: s.sidebar, infoOpen: s.infoOpen, display, labels: s.labels };
-}
-
-/** Keeps only the fields of `fallback` whose stored value has the same type. */
-function sameShape<T extends object>(fallback: T, stored: unknown): T {
-  if (typeof stored !== 'object' || stored === null) return fallback;
-  const out: Record<string, unknown> = { ...(fallback as Record<string, unknown>) };
-  for (const [key, value] of Object.entries(fallback) as [string, unknown][]) {
-    const saved = (stored as Record<string, unknown>)[key];
-    if (typeof value === 'object' && value !== null) out[key] = sameShape(value, saved);
-    else if (typeof saved === typeof value) out[key] = saved;
-  }
-  return out as T;
 }
 
 /** Storage can be missing, full or blocked; the app runs the same without it. */

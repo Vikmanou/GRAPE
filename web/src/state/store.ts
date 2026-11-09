@@ -20,6 +20,7 @@ import { createPathsSlice, type PathsSlice } from './paths';
 import { createSearchSlice, type SearchSlice } from './search';
 import { createSelectionSlice, type SelectionSlice } from './selection';
 import { createExportSlice, type ExportSlice } from './export';
+import { createSharingSlice, type SharingSlice } from './sharing';
 import { exposeForTests } from './testHooks';
 import { createToastSlice, type ToastSlice } from './toasts';
 
@@ -98,7 +99,8 @@ export type AppState = FileSlice &
   FilterSlice &
   MergeSlice &
   SearchSlice &
-  ExportSlice;
+  ExportSlice &
+  SharingSlice;
 
 export type AppStore = StoreApi<AppState>;
 
@@ -131,6 +133,7 @@ export function createAppStore(services: Services): AppStore {
       ...createMergeSlice(ctx),
       ...createSearchSlice(ctx),
       ...createExportSlice(ctx),
+      ...createSharingSlice(ctx),
     };
   });
   ctx.bridge = new Bridge(ctx, (host) => {

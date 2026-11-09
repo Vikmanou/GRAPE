@@ -2,6 +2,7 @@ import type { FastaAttached, ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import { fetchFile, fileNameOf } from './fetchFile';
+import { type Fingerprint, headHash } from './share/fingerprint';
 import type { MergeSlice } from './merge';
 import type { Context } from './store';
 
@@ -46,6 +47,8 @@ export interface FileSlice {
   /** Downloads a graph the user named by URL, straight from the browser, and opens it. */
   openUrl: (url: string) => void;
   cancelLoad: () => void;
+  /** The loaded file's fingerprint for share links, once its start is hashed. */
+  fingerprint: Fingerprint | undefined;
   sequenceFile: SequenceFileState;
   /** Sequences for a graph whose file has none, from a FASTA file naming its segments. */
   addSequences: (file: File) => void;
@@ -69,6 +72,7 @@ export function createFileSlice(ctx: Context): FileSlice {
     core: { state: 'loading' },
     load: { state: 'idle' },
     sequenceFile: { state: 'none' },
+    fingerprint: undefined,
 
     startCore() {
       services.graph.ping().then(
@@ -138,7 +142,9 @@ export function createFileSlice(ctx: Context): FileSlice {
       get().stopLayout();
       get().clearSearch();
       const info = { name: file.name, size: file.size, url };
+      const hash = headHash(file);
       set({
+        fingerprint: undefined,
         load: { state: 'parsing', file: info, fraction: 0 },
         findResult: { state: 'idle' },
         merged: undefined,
@@ -155,6 +161,16 @@ export function createFileSlice(ctx: Context): FileSlice {
             if (parsing !== file) return;
             parsing = undefined;
             set({ load: { state: 'loaded', file: info, result } });
+            const loaded = get().load;
+            hash.then(
+              (sha256) => {
+                if (get().load === loaded)
+                  set({ fingerprint: { size: file.size, segments: result.stats.segments, sha256 } });
+              },
+              (error: unknown) => {
+                get().toast('This file cannot be shared by link', message(error));
+              },
+            );
             get().resetColorRange();
             get().loadPaths();
             get().clearFilters();
