@@ -7,7 +7,7 @@ import { ExportMenu } from '../controls/ExportMenu';
 import { OpenUrlMenu } from '../controls/OpenUrlMenu';
 import { formatBytes } from '../format';
 
-const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz';
+const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.json';
 
 interface Props {
   file: FileInfo | undefined;

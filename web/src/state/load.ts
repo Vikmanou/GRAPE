@@ -3,6 +3,7 @@ import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import { fetchFile, fileNameOf } from './fetchFile';
 import { type Fingerprint, headHash } from './share/fingerprint';
+import { isSessionFile } from './sharing';
 import type { MergeSlice } from './merge';
 import type { Context } from './store';
 
@@ -134,6 +135,10 @@ export function createFileSlice(ctx: Context): FileSlice {
     },
 
     open(file, url) {
+      if (isSessionFile(file.name)) {
+        get().openSession(file);
+        return;
+      }
       downloading?.abort();
       downloading = undefined;
       const graph = services.graph;

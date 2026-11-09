@@ -103,6 +103,19 @@ export class GraphClient {
     return expect(await this.rpc.request({ type: 'gfa', keep }), 'gfa').records;
   }
 
+  async writeSession(view: unknown, positions: Float32Array<ArrayBuffer>): Promise<Blob> {
+    const response = await this.rpc.request(
+      { type: 'write-session', view, positions },
+      { transfer: [positions.buffer] },
+    );
+    return expect(response, 'session-written').blob;
+  }
+
+  async readSession(file: Blob): Promise<{ view: unknown; positions: Float32Array<ArrayBuffer> }> {
+    const { view, positions } = expect(await this.rpc.request({ type: 'read-session', file }), 'session-read');
+    return { view, positions };
+  }
+
   async searchLinks(): Promise<SearchLinks> {
     return expect(await this.rpc.request({ type: 'search-links' }), 'search-links').links;
   }

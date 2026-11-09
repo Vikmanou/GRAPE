@@ -27,7 +27,10 @@ export type GraphRequest =
   | { type: 'add-fasta'; id: number; file: File }
   /** The shown graph's links, for the sequence worker to join hits along. */
   | { type: 'search-links'; id: number }
-  | { type: 'names'; id: number; segments: Uint32Array<ArrayBuffer> };
+  | { type: 'names'; id: number; segments: Uint32Array<ArrayBuffer> }
+  /** A session file of `view` and `x, y` per point (graph/session.ts). */
+  | { type: 'write-session'; id: number; view: unknown; positions: Float32Array<ArrayBuffer> }
+  | { type: 'read-session'; id: number; file: Blob };
 
 export type GraphResponse =
   | { type: 'pong'; id: number; coreVersion: string }
@@ -52,6 +55,8 @@ export type GraphResponse =
   /** The merged graph and how its segments are spelled; both undefined back on the graph as loaded. */
   | { type: 'merged'; id: number; result: ParseResult | undefined; map: ChainMap | undefined; chains: number }
   | { type: 'gfa'; id: number; records: GfaRecords }
+  | { type: 'session-written'; id: number; blob: Blob }
+  | { type: 'session-read'; id: number; view: unknown; positions: Float32Array<ArrayBuffer> }
   | { type: 'fasta-added'; id: number; result: ParseResult; sequences: SequenceSource; attached: FastaAttached }
   | ErrorResponse;
 

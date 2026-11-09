@@ -158,6 +158,8 @@ function setup() {
       addFasta: () => Promise.reject(new Error('unused')),
       gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
+      writeSession: () => Promise.reject(new Error('unused')),
+      readSession: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;
         for (const p of parses) p.reject(new WorkerTerminatedError('graph'));

@@ -40,6 +40,8 @@ export interface LayoutSlice {
    * they are instead.
    */
   restartLayout: (positions?: Float32Array<ArrayBuffer>) => void;
+  /** The next layout draws these positions, saved in a session, instead of running. */
+  queuePositions: (positions: Float32Array<ArrayBuffer>) => void;
   stopLayout: () => void;
 }
 
@@ -53,6 +55,7 @@ const ignore = () => undefined;
 export function createLayoutSlice(ctx: Context): LayoutSlice {
   const { set, get, services } = ctx;
   let stopRun: (() => void) | undefined;
+  let queued: Float32Array<ArrayBuffer> | undefined;
 
   function run(saved: Float32Array<ArrayBuffer> | undefined): () => void {
     const { gpuLayout: gpu, layoutOptions: options } = get();
@@ -175,10 +178,16 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       set({ layoutPaused: paused });
     },
 
+    queuePositions(positions) {
+      queued = positions;
+    },
+
     restartLayout(positions) {
       get().stopLayout();
       if (get().renderer !== 'none' && !ctx.bridge.attached) return;
-      stopRun = run(positions);
+      const saved = positions ?? queued;
+      queued = undefined;
+      stopRun = run(saved);
     },
 
     stopLayout() {

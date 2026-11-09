@@ -18,6 +18,15 @@ export interface SharingSlice {
   /** Restores the waiting view on a newly loaded file if it is the one the link was made from; otherwise lays it out as usual. */
   applyShare: (fingerprint: Fingerprint) => void;
   dismissShare: () => void;
+  /** The current view and every point's position, as a session file. */
+  saveSession: () => Promise<Blob>;
+  /** Restores a session on its graph now if it is open, or once it is. */
+  openSession: (file: File) => void;
+}
+
+/** Session files are told from graphs by name: `.grape.json`, gzipped or not. */
+export function isSessionFile(name: string): boolean {
+  return /\.grape\.json(\.gz)?$/i.test(name);
 }
 
 /** The fragment is applied once: reloading the page afterwards keeps the user's own view. */
@@ -27,6 +36,8 @@ function clearFragment(): void {
 
 export function createSharingSlice(ctx: Context): SharingSlice {
   const { get, set, services } = ctx;
+  /** A session's positions, waiting with `pendingShare` for its graph. */
+  let pendingPositions: Float32Array<ArrayBuffer> | undefined;
 
   async function capture(includeUrl: boolean): Promise<ShareState> {
     const s = get();
@@ -67,6 +78,8 @@ export function createSharingSlice(ctx: Context): SharingSlice {
         get().restartLayout();
         return;
       }
+      const positions = pendingPositions;
+      pendingPositions = undefined;
       set({ pendingShare: undefined });
       clearFragment();
       if (!sameFile(shared.file, fingerprint)) {
@@ -77,14 +90,39 @@ export function createSharingSlice(ctx: Context): SharingSlice {
         get().restartLayout();
         return;
       }
-      restoreShared(ctx, shared).catch((error: unknown) => {
+      restoreShared(ctx, shared, positions).catch((error: unknown) => {
         get().toast('The shared view could not be restored', error instanceof Error ? error.message : String(error));
       });
     },
 
     dismissShare() {
+      pendingPositions = undefined;
       set({ pendingShare: undefined });
       clearFragment();
+    },
+
+    async saveSession() {
+      const view = await capture(false);
+      const { positions } = await ctx.bridge.ask({ type: 'read-positions' }, 'positions');
+      return services.graph.writeSession(view, positions);
+    },
+
+    openSession(file) {
+      services.graph
+        .readSession(file)
+        .then(({ view, positions }) => {
+          const shared = parseShareState(view);
+          pendingPositions = positions;
+          set({ pendingShare: shared });
+          const { fingerprint } = get();
+          // The graph it was saved from may be open already.
+          if (get().load.state === 'loaded' && fingerprint && sameFile(shared.file, fingerprint)) {
+            get().applyShare(fingerprint);
+          }
+        })
+        .catch((error: unknown) => {
+          get().toast('This session cannot be opened', error instanceof Error ? error.message : String(error));
+        });
     },
 
     async shareLink(includeUrl) {

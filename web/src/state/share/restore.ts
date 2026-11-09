@@ -25,16 +25,22 @@ function until(ctx: Context, ready: (s: AppState) => boolean, stale: (s: AppStat
 
 /**
  * Brings back a shared view on the file it was made from: the layout's seed
- * and settings first, so the same layout grows, then merging, filters, paths
- * and colours, and the camera and selection once the layout settles.
+ * and settings first, so the same layout grows, or a session's positions,
+ * then merging, filters, paths and colours, and the camera and selection
+ * once the layout settles.
  */
-export async function restoreShared(ctx: Context, shared: ShareState): Promise<void> {
+export async function restoreShared(
+  ctx: Context,
+  shared: ShareState,
+  positions?: Float32Array<ArrayBuffer>,
+): Promise<void> {
   const { get, set, services } = ctx;
   const loaded = get().load;
   const stale = (s: AppState) => s.load !== loaded;
 
   set({ layoutOptions: { seed: shared.layout.seed, quality: shared.layout.quality } });
   get().setLabels(shared.labels);
+  if (positions) get().queuePositions(positions);
   if (shared.merged) get().setMerged(true);
   else get().restartLayout();
   if (!(await until(ctx, (s) => !s.merging && (!shared.merged || s.merged !== undefined), stale))) return;
@@ -51,7 +57,7 @@ export async function restoreShared(ctx: Context, shared: ShareState): Promise<v
   get().setDisplayOptions(shared.display);
 
   if (!(await until(ctx, (s) => s.layoutStatus.state === 'done' || s.layoutStatus.state === 'failed', stale))) return;
-  const sameLayout = (shared.layout.kind === 'gpu') === get().gpuLayout;
+  const sameLayout = positions !== undefined || (shared.layout.kind === 'gpu') === get().gpuLayout;
   if (shared.camera && sameLayout) {
     const { x, y, zoom } = shared.camera;
     ctx.bridge.send({ type: 'set-camera', x, y, zoom: zoom * devicePixelRatio });

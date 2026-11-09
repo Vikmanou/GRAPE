@@ -44,6 +44,8 @@ export type GraphService = Pick<
   | 'gfa'
   | 'addFasta'
   | 'memory'
+  | 'writeSession'
+  | 'readSession'
 >;
 
 export type SequenceService = Pick<

@@ -7,6 +7,7 @@ import type { GraphRequest, GraphResponse } from '../protocol/graph';
 import { type ChainMap, chainTransfers, linkTransfers, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
 import { describe, gfaRecords, resultTransfers, sequenceSource } from './results';
+import { readSession, writeSession } from './session';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -205,6 +206,14 @@ async function handle(request: GraphRequest): Promise<void> {
       case 'add-fasta':
         await addFasta(id, request.file);
         return;
+      case 'write-session':
+        post({ type: 'session-written', id, blob: await writeSession(request.view, request.positions) });
+        return;
+      case 'read-session': {
+        const { view, positions } = await readSession(request.file);
+        post({ type: 'session-read', id, view, positions }, [positions.buffer]);
+        return;
+      }
       case 'gfa': {
         const records = gfaRecords(loaded(), request.keep);
         post({ type: 'gfa', id, records }, [
