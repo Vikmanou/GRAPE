@@ -1,6 +1,7 @@
 // Exports from the export menu: the PNG matches the screen and its tiles join
 // without seams; GFA and FASTA cover the selection or what the filters show.
 
+import { readFileSync } from 'node:fs';
 import { expect, type Page, test } from '@playwright/test';
 import { failOnPageError, gotoApp, skipUnlessBackend } from './helpers';
 
@@ -131,4 +132,43 @@ test('an SVG of the view parses and holds one ribbon per segment in view', async
   expect(svg.width).toBe(String(VIEWPORT.width));
   // The chloroplast is fitted to the view: every segment is in it.
   expect(svg.ribbons).toBe(svg.segments);
+});
+
+test('GFA and FASTA cover what the filters show or what is selected', async ({ page }) => {
+  failOnPageError(page);
+  await gotoApp(page);
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await skipUnlessBackend(page);
+  await page.getByTestId('example-menu').locator('summary').click();
+  await page.getByTestId('example-mitochondrion').first().click();
+  await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
+  // The largest component holds 150 of the 161 segments; the rest are single segments under 1 kb.
+  await page.evaluate(() => {
+    type State = { setFilters(f: { minComponentLength: number }): void; select(s: Uint32Array, m: string): void };
+    const s = (window as unknown as { grapeTest: { store: { getState(): State } } }).grapeTest.store.getState();
+    s.setFilters({ minComponentLength: 1000 });
+    s.select(Uint32Array.of(0, 1, 2), 'replace');
+  });
+  await expect(page.getByTestId('status-segments')).toHaveAttribute('data-visible', /\d+/);
+  const visible = Number(await page.getByTestId('status-segments').getAttribute('data-visible'));
+
+  const saved = async (id: string): Promise<string> => {
+    await page.getByTestId('export-menu').locator('summary').click();
+    const download = page.waitForEvent('download');
+    await page.getByTestId(id).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(/^acacia-mitochondrion-spades\./);
+    const path = await file.path();
+    return readFileSync(path, 'utf8');
+  };
+  const lines = (text: string, start: string) => text.split('\n').filter((l) => l.startsWith(start)).length;
+
+  const shownGfa = await saved('export-gfa-visible');
+  expect(lines(shownGfa, 'S\t')).toBe(visible);
+  const wholeGfa = await saved('export-gfa-all');
+  expect(lines(wholeGfa, 'S\t')).toBe(161);
+  expect(lines(shownGfa, 'L\t')).toBeLessThanOrEqual(lines(wholeGfa, 'L\t'));
+  expect(lines(await saved('export-fasta-visible'), '>')).toBe(visible);
+  expect(lines(await saved('export-fasta-selection'), '>')).toBe(3);
+  expect(lines(await saved('export-gfa-selection'), 'S\t')).toBe(3);
 });
