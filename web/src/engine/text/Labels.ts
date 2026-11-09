@@ -37,6 +37,7 @@ export class Labels {
   private options = DEFAULT_LABEL_OPTIONS;
   private readonly texts = new Map<number, string>();
   private shown = new Uint32Array(0);
+  private showing: { segment: number; text: string }[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;
   private placing = false;
   private pending = false;
@@ -153,6 +154,12 @@ export class Labels {
     return this.options.fontPx * devicePixelRatio;
   }
 
+  /** The labels drawn now, their font size and line height in canvas pixels. */
+  current(): { labels: { segment: number; text: string }[]; fontPx: number; lineHeight: number } {
+    const lineHeight = this.atlas ? labelMetrics(this.atlas, this.fontPx).lineHeight : this.fontPx;
+    return { labels: this.showing, fontPx: this.fontPx, lineHeight };
+  }
+
   /** Draws the labels of `segments` that have their text. */
   private show(segments: Uint32Array<ArrayBuffer>): void {
     this.shown = segments;
@@ -160,6 +167,7 @@ export class Labels {
     const labels = Array.from(segments, (segment) => ({ segment, text: this.texts.get(segment) })).filter(
       (l): l is { segment: number; text: string } => l.text !== undefined && l.text !== '',
     );
+    this.showing = labels;
     this.backend.setLabels(atlas ? layoutLabels(labels, atlas, this.fontPx) : new Float32Array(0), this.fontPx);
     this.emit({ type: 'labels', segments: Uint32Array.from(labels, (l) => l.segment) });
     this.redraw();

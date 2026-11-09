@@ -92,7 +92,16 @@ export class Engine {
     this.bands = new Bands(backend);
     this.exporter = new Exporter(
       backend,
-      () => this.view(),
+      {
+        view: () => this.view(),
+        camera: () => this.framing.camera,
+        style: () => this.style,
+        selection: () => this.pointer.selection.snapshot(),
+        hidden: () => this.filtering.hidden,
+        labels: () => this.labels.current(),
+        bands: () => this.bands.hits,
+        positions: () => this.positions.read(),
+      },
       (event) => {
         if (!this.destroyed) this.emit(event);
       },
@@ -184,6 +193,7 @@ export class Engine {
         this.labels.clear();
         this.filtering.setGraph(command.segments);
         this.bands.setGeometry(command.geometry);
+        this.exporter.setGraph(command.geometry, command.segments, command.seed);
         this.positions.reset();
         framing.autoFit = true;
         framing.setBounds(undefined);
@@ -196,9 +206,11 @@ export class Engine {
         break;
       case 'set-path-colors':
         this.backend.setSegmentRun('path', command.colors);
+        this.exporter.setSegments({ pathColors: command.colors });
         break;
       case 'set-gc':
         this.backend.setSegmentRun('gc', command.gc);
+        this.exporter.setSegments({ gc: command.gc });
         break;
       case 'set-positions':
         layout.stop();
@@ -226,6 +238,7 @@ export class Engine {
         void this.readPositions();
         return;
       case 'export-png':
+      case 'export-svg':
         this.exporter.handle(command);
         return;
       case 'read-visible':

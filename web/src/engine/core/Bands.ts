@@ -60,7 +60,7 @@ export function bandInstances(
 
 /** Keeps the backend drawing the current hits, through new layouts of the same graph. */
 export class Bands {
-  private hits: HitBands | undefined;
+  hits: HitBands | undefined;
   private geometry: Pick<Geometry, 'segmentStarts' | 'segmentPieces' | 'segments'> | undefined;
 
   constructor(private readonly backend: Backend) {}

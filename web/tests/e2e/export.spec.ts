@@ -112,3 +112,23 @@ test('a PNG of the view matches the screen, and tiles join without seams', async
   expect(tiled.width).toBe(VIEWPORT.width * 2);
   expect(tiled.different).toBe(0);
 });
+
+test('an SVG of the view parses and holds one ribbon per segment in view', async ({ page }) => {
+  await openExample(page);
+  const svg = await page.evaluate(async () => {
+    type State = { exportSvg(): Promise<Blob>; load: { result?: { stats: { segments: number } } } };
+    const state = (window as unknown as { grapeTest: { store: { getState(): State } } }).grapeTest.store.getState();
+    const text = await (await state.exportSvg()).text();
+    const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    return {
+      error: doc.querySelector('parsererror')?.textContent ?? '',
+      width: doc.documentElement.getAttribute('width'),
+      ribbons: doc.querySelectorAll('g[stroke-linecap="round"] > path, g[stroke-linecap="round"] > circle').length,
+      segments: state.load.result?.stats.segments ?? 0,
+    };
+  });
+  expect(svg.error).toBe('');
+  expect(svg.width).toBe(String(VIEWPORT.width));
+  // The chloroplast is fitted to the view: every segment is in it.
+  expect(svg.ribbons).toBe(svg.segments);
+});

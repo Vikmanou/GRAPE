@@ -23,6 +23,7 @@ export function ExportMenu() {
   const exportGfa = useApp((s) => s.exportGfa);
   const exportFasta = useApp((s) => s.exportFasta);
   const exportPng = useApp((s) => s.exportPng);
+  const exportSvg = useApp((s) => s.exportSvg);
   const toast = useApp((s) => s.toast);
   const [busy, setBusy] = useState(false);
   if (file === undefined) return null;
@@ -47,7 +48,21 @@ export function ExportMenu() {
     save: () => exportPng(scale),
   });
   const groups: [string, Item[]][] = [
-    ['Image', [png(1), png(2), png(4)]],
+    [
+      'Image',
+      [
+        png(1),
+        png(2),
+        png(4),
+        {
+          id: 'export-svg',
+          label: 'SVG',
+          title: 'The current view as vector shapes, up to 50,000 segments in view',
+          suffix: '.svg',
+          save: exportSvg,
+        },
+      ],
+    ],
     [
       'GFA',
       [

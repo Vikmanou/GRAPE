@@ -6,7 +6,7 @@ import { type Filter, type FilterData, filtering, type Hidden, hiddenBy, NO_FILT
 export class Filtering {
   private filter: Filter = NO_FILTER;
   private data: FilterData | undefined;
-  private hidden: Hidden | undefined;
+  private hiddenNow: Hidden | undefined;
 
   constructor(
     private readonly backend: Backend,
@@ -28,9 +28,14 @@ export class Filtering {
     this.apply();
   }
 
+  /** What the filter hides, while one is on. */
+  get hidden(): Hidden | undefined {
+    return this.active ? this.hiddenNow : undefined;
+  }
+
   /** `bits` without what the filter hides. */
   shown(bits: Uint32Array<ArrayBuffer>): Uint32Array<ArrayBuffer> {
-    return this.hidden && this.active ? withoutHidden(bits, this.hidden.segments) : bits;
+    return this.hiddenNow && this.active ? withoutHidden(bits, this.hiddenNow.segments) : bits;
   }
 
   /** One bit per segment the filter shows. */
@@ -44,9 +49,10 @@ export class Filtering {
   private apply(): void {
     const data = this.data;
     if (!data) return;
-    this.hidden = hiddenBy(this.filter, data);
-    this.backend.setVisibility(this.hidden);
-    this.labels.setHidden(this.active ? this.hidden.segments : undefined);
-    this.report(this.hidden.visible, data.components.length);
+    const hidden = hiddenBy(this.filter, data);
+    this.hiddenNow = hidden;
+    this.backend.setVisibility(hidden);
+    this.labels.setHidden(this.active ? hidden.segments : undefined);
+    this.report(hidden.visible, data.components.length);
   }
 }
