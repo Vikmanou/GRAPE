@@ -46,6 +46,8 @@ export type EngineCommand =
   /** Answered by a `layout-profile` event. */
   | { type: 'report-layout-profile' }
   | { type: 'fit' }
+  /** Centre in layout units and canvas pixels per unit, as a shared view had them. */
+  | { type: 'set-camera'; x: number; y: number; zoom: number }
   /** Pans by fractions of the view's width and height. */
   | { type: 'pan-view'; fx: number; fy: number }
   /** Zooms about the view's centre. */

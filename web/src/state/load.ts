@@ -162,13 +162,17 @@ export function createFileSlice(ctx: Context): FileSlice {
             parsing = undefined;
             set({ load: { state: 'loaded', file: info, result } });
             const loaded = get().load;
+            const shared = get().pendingShare !== undefined;
             hash.then(
               (sha256) => {
-                if (get().load === loaded)
-                  set({ fingerprint: { size: file.size, segments: result.stats.segments, sha256 } });
+                if (get().load !== loaded) return;
+                const fingerprint = { size: file.size, segments: result.stats.segments, sha256 };
+                set({ fingerprint });
+                if (shared) get().applyShare(fingerprint);
               },
               (error: unknown) => {
                 get().toast('This file cannot be shared by link', message(error));
+                if (shared && get().load === loaded) get().restartLayout();
               },
             );
             get().resetColorRange();
@@ -184,7 +188,8 @@ export function createFileSlice(ctx: Context): FileSlice {
             services.sequence.load(sequences).catch((error: unknown) => {
               get().toast('Sequences could not be loaded', message(error));
             });
-            get().restartLayout();
+            // A shared view waits for the file's hash, to lay it out from the link's seed.
+            if (!shared) get().restartLayout();
           },
           (error: unknown) => {
             if (error instanceof WorkerTerminatedError || parsing !== file) return;

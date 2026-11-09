@@ -257,6 +257,10 @@ export class Engine {
         }
         framing.fitGraph();
         break;
+      case 'set-camera':
+        framing.place({ x: command.x, y: command.y, zoom: command.zoom });
+        this.viewMoved();
+        return;
       case 'pan-view':
         framing.pan(command.fx * this.canvas.width, command.fy * this.canvas.height);
         this.viewMoved();

@@ -29,5 +29,10 @@ export function startApp(): AppStore {
     if (handleKey(event, store.getState())) event.preventDefault();
   });
   void app.detectRenderer();
+  void app.readShareLink(location.hash);
+  // A link pasted into a tab already on GRAPE changes only the fragment, without a reload.
+  window.addEventListener('hashchange', () => {
+    void store.getState().readShareLink(location.hash);
+  });
   return store;
 }

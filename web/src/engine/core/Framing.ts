@@ -52,6 +52,11 @@ export class Framing {
     this.camera = this.fitted(bounds);
   }
 
+  /** Puts the camera where a shared view had it. */
+  place(camera: Camera): void {
+    this.take(camera);
+  }
+
   /** Centres a part of the graph, zooming out only if it does not fit. */
   follow(bounds: Bounds): void {
     this.take(this.fitted(bounds, true, this.camera.zoom));

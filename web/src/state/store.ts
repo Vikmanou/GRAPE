@@ -107,6 +107,7 @@ export type AppStore = StoreApi<AppState>;
 export interface Context {
   set: AppStore['setState'];
   get: AppStore['getState'];
+  subscribe: AppStore['subscribe'];
   services: Services;
   bridge: Bridge;
   /** The running layout's worker, if any. */
@@ -136,6 +137,7 @@ export function createAppStore(services: Services): AppStore {
       ...createSharingSlice(ctx),
     };
   });
+  ctx.subscribe = store.subscribe;
   ctx.bridge = new Bridge(ctx, (host) => {
     const { renderer } = ctx.get();
     return services.createEngine(host, renderer === 'webgpu' ? 'webgpu' : 'webgl2');
