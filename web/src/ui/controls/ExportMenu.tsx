@@ -99,7 +99,7 @@ export function ExportMenu() {
   return (
     <details className="menu" ref={menu} data-testid="export-menu">
       <summary aria-busy={busy}>{busy ? 'Exporting…' : 'Export'}</summary>
-      <div className="menu-popup">
+      <div className="menu-popup menu-popup-end">
         {groups.map(([heading, items]) => (
           <section key={heading} aria-label={heading}>
             <h3 className="menu-heading muted small">{heading}</h3>

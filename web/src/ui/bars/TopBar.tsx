@@ -5,6 +5,7 @@ import type { ThemeChoice } from '../../state/theme';
 import { ExampleMenu } from '../controls/ExampleMenu';
 import { ExportMenu } from '../controls/ExportMenu';
 import { OpenUrlMenu } from '../controls/OpenUrlMenu';
+import { ShareMenu } from '../controls/ShareMenu';
 import { formatBytes } from '../format';
 
 const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.json';
@@ -32,6 +33,7 @@ export function TopBar({ file, onOpen }: Props) {
       <OpenUrlMenu />
       <ExampleMenu />
       <ExportMenu />
+      <ShareMenu />
       <span className="spacer" />
       <ThemeButton />
       <button

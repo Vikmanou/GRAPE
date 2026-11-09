@@ -95,8 +95,10 @@ test('a share link brings back the view on the same file', async ({ page, contex
   await other.setViewportSize(VIEWPORT);
   await other.goto(backend() === 'webgl2' ? link.replace('#', '?renderer=webgl2#') : link);
   await expect(other.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await expect(other.getByTestId('shared-view')).toContainText('A shared view is waiting for its graph');
   await other.getByTestId('open-input').setInputFiles(FILE);
   await settled(other);
+  await expect(other.getByTestId('shared-view')).toBeHidden();
   await expect.poll(async () => (await snapshot(other)).selected).toBe(3);
   await other.mouse.move(0, VIEWPORT.height - 10);
   await other.waitForTimeout(800);
@@ -152,4 +154,22 @@ test('a share link refuses a different file and opens it as it is', async ({ pag
   await page.getByTestId('open-input').setInputFiles(repo('testdata/tangle.gfa'));
   await expect(page.getByText('This is not the file the link was made from')).toBeVisible();
   await settled(page);
+});
+
+test('the share menu copies a link and saves a session file', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  failOnPageError(page);
+  await gotoApp(page);
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await skipUnlessBackend(page);
+  await page.getByTestId('open-input').setInputFiles(FILE);
+  await settled(page);
+  await page.getByTestId('share-menu').locator('summary').click();
+  await page.getByTestId('share-copy-link').click();
+  await expect(page.getByTestId('share-copied')).toBeVisible();
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  expect(link).toMatch(/^http:\/\/localhost:\d+\/#v=1\.[A-Za-z0-9_-]+$/);
+  const download = page.waitForEvent('download');
+  await page.getByTestId('share-save-session').click();
+  expect((await download).suggestedFilename()).toBe('acacia-mitochondrion-spades.grape.json.gz');
 });

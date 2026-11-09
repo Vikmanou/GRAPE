@@ -103,3 +103,29 @@
 .open-url button {
   align-self: flex-start;
 }
+
+.share {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(24rem, calc(100vw - 32px));
+}
+
+.share p {
+  margin: 0;
+}
+
+.share button {
+  align-self: flex-start;
+}
+
+.share-link {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Menus near the right of the bar open leftwards, inside the window. */
+.menu-popup-end {
+  left: auto;
+  right: 0;
+}
