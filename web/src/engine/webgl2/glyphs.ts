@@ -87,7 +87,9 @@ export class GlyphRenderer {
     gl.uniform1f(p.uniform('zoom'), view.zoom);
     gl.uniform2f(p.uniform('canvas'), view.width, view.height);
     gl.uniform1ui(p.uniform('segments'), source.segments);
-    gl.uniform1f(p.uniform('px_range'), (atlas.metrics.distanceRange * fontPx) / atlas.metrics.size);
+    const scale = view.pixelScale ?? 1;
+    gl.uniform1f(p.uniform('pixel_scale'), scale);
+    gl.uniform1f(p.uniform('px_range'), (atlas.metrics.distanceRange * fontPx * scale) / atlas.metrics.size);
     gl.uniform4fv(p.uniform('color'), style.color);
     gl.uniform4fv(p.uniform('halo'), style.halo);
     [source.positions, source.table, atlasTexture].forEach((texture, unit) => {

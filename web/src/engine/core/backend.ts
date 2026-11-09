@@ -156,6 +156,8 @@ export interface Backend {
   /** `BAND_WORDS` per ribbon piece a search hit crosses (core/Bands.ts). */
   setBands(instances: Uint32Array<ArrayBuffer>): void;
   draw(view: View): void;
+  /** Draws `view` offscreen, as on screen but without the hover outline, and reads it back as RGBA8 rows from the top. */
+  capture(view: View): Promise<Uint8Array<ArrayBuffer>>;
   /** The segment drawn at canvas pixel `x, y` in the last drawn view. */
   pick(x: number, y: number): Promise<number | undefined>;
   /** One bit per segment whose ribbon touches a box of canvas pixels in the last drawn view. */

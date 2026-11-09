@@ -8,6 +8,7 @@ import { palettes } from '../style/palette';
 import { drawnView } from '../style/uniforms';
 import { RIBBON_WIDTH, STRAND_SHIFT } from '../style/widths';
 import type { Atlas } from '../text/Atlas';
+import { capture } from './capture';
 import { Resources } from './context';
 import { GlyphRenderer } from './glyphs';
 import { boundsOfSegments, collect, pieceTouches, selectBox } from './grid';
@@ -137,15 +138,27 @@ export class WebGl2Backend implements Backend {
 
   draw(view: View): void {
     const gl = this.gl;
-    const palette = palettes[this.style.theme];
-    const [r, g, b, a] = palette.background;
     this.lastView = view;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, view.width, view.height);
+    this.drawFrame(view, this.hover);
+  }
+
+  /** Draws `view` offscreen, without the hover outline, as RGBA8 rows from the top. */
+  capture(view: View): Promise<Uint8Array<ArrayBuffer>> {
+    return capture(this.gl, view.width, view.height, () => {
+      this.drawFrame(view, undefined);
+    });
+  }
+
+  private drawFrame(view: View, hover: number | undefined): void {
+    const gl = this.gl;
+    const palette = palettes[this.style.theme];
+    const [r, g, b, a] = palette.background;
     gl.clearColor(r, g, b, a);
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (!this.positioned) return;
-    this.renderer.draw(drawnView(view, this.style, this.hover));
+    this.renderer.draw(drawnView(view, this.style, hover));
     this.glyphs.draw(view, { color: palette.label, halo: palette.background }, this.fontPx);
   }
 

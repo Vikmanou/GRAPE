@@ -1,6 +1,7 @@
 uniform highp sampler2D atlas;
 // Screen pixels per unit of the atlas's distance.
 uniform float px_range;
+uniform float pixel_scale;
 uniform vec4 color;
 uniform vec4 halo;
 
@@ -17,7 +18,7 @@ float median(vec3 c) {
 void main() {
   float distance = (median(texture(atlas, uv).rgb) - 0.5) * px_range;
   float ink = clamp(distance + 0.5, 0.0, 1.0);
-  float edge = clamp(distance + HALO_PX + 0.5, 0.0, 1.0);
+  float edge = clamp(distance + HALO_PX * pixel_scale + 0.5, 0.0, 1.0);
   vec3 rgb = mix(halo.rgb, color.rgb, ink);
   float alpha = edge * mix(halo.a, color.a, ink);
   fragment = vec4(rgb * alpha, alpha);

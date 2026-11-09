@@ -38,7 +38,7 @@ export class Visible {
 
   /** The view in world units, padded as the WebGPU cull pads it. */
   static area(view: DrawnView, display: DisplayOptions): Bounds {
-    const worldPerPixel = 1 / view.zoom;
+    const worldPerPixel = (view.pixelScale ?? 1) / view.zoom;
     const widest =
       (display.widthByDepth ? MAX_RIBBON_WIDTH / 2 : view.ribbonHalf) + (display.double ? STRAND_SHIFT : 0);
     const pad = Math.max(widest, worldPerPixel / 2) + view.outlineWidth + 2 * worldPerPixel;

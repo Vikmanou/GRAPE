@@ -1,6 +1,7 @@
 import type { DrawnView } from '../style/uniforms';
 import { idTexel, idView } from '../core/idView';
 import type { Renderer } from './renderer';
+import { signalled } from './capture';
 
 function sameView(a: DrawnView | undefined, b: DrawnView): boolean {
   return (
@@ -93,10 +94,7 @@ export class Picker {
   ): Promise<void> {
     const gl = this.gl;
     try {
-      while (sync && gl.clientWaitSync(sync, 0, 0) === gl.TIMEOUT_EXPIRED) {
-        await new Promise((resolve) => setTimeout(resolve, 1));
-      }
-      if (gl.isContextLost()) throw new Error('context lost');
+      await signalled(gl, sync);
       const texels = new Uint32Array(rect.width * rect.height * 4);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, staging);
       gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, texels);

@@ -5,10 +5,12 @@ uniform vec2 center;
 uniform float zoom;
 uniform vec2 canvas;
 uniform uint segments;
+// Canvas pixels per screen pixel, above 1 for an export.
+uniform float pixel_scale;
 uniform highp sampler2D positions;
 uniform highp usampler2D segment_table;
 
-// From the anchor to the quad's top left, and its size, in pixels.
+// From the anchor to the quad's top left, and its size, in screen pixels.
 in vec2 offset;
 in vec2 size;
 in vec4 uv_box;
@@ -40,7 +42,7 @@ void main() {
   vec2 corner = vec2((k == 1 || k == 4 || k == 5) ? 1.0 : 0.0, (k == 2 || k == 3 || k == 5) ? 1.0 : 0.0);
   // Rounded to whole pixels so text stays sharp.
   vec2 at = floor((anchor(segment) - center) * zoom + canvas * 0.5 + 0.5);
-  vec2 pixel = at + offset + corner * size;
+  vec2 pixel = at + (offset + corner * size) * pixel_scale;
   gl_Position = vec4(pixel.x / canvas.x * 2.0 - 1.0, 1.0 - pixel.y / canvas.y * 2.0, 0.0, 1.0);
   uv = mix(uv_box.xy, uv_box.zw, corner);
 }
