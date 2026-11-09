@@ -1,3 +1,8 @@
+/** `assembly.gfa.gz` gives `assembly`, for naming what is saved from it. */
+export function fileStem(file: string): string {
+  return file.replace(/\.gz$/i, '').replace(/\.(gfa|fastg)$/i, '');
+}
+
 /** Saves a blob through the browser's download prompt; nothing leaves the machine. */
 export function download(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);

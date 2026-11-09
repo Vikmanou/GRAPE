@@ -44,11 +44,11 @@
   flex: 1;
 }
 
-.example-menu {
+.menu {
   position: relative;
 }
 
-.example-menu summary {
+.menu summary {
   cursor: pointer;
   list-style: none;
   padding: 2px 8px;
@@ -56,7 +56,7 @@
   border-radius: 6px;
 }
 
-.example-popup {
+.menu-popup {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
@@ -67,4 +67,22 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-items button {
+  width: 100%;
+  text-align: left;
+}
+
+.menu-heading {
+  margin: 6px 0 2px;
 }

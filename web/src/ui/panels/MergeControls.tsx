@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../state/store';
-import { download } from '../files';
+import { download, fileStem } from '../files';
 import { formatCount } from '../format';
-
-/** `assembly.gfa.gz` saves as `assembly.merged.gfa`. */
-function mergedName(file: string): string {
-  return `${file.replace(/\.gz$/i, '').replace(/\.(gfa|fastg)$/i, '')}.merged.gfa`;
-}
 
 export function MergeControls() {
   const merged = useApp((s) => s.merged);
@@ -21,7 +16,7 @@ export function MergeControls() {
     setSaving(true);
     shownGfa()
       .then((blob) => {
-        download(blob, mergedName(file));
+        download(blob, `${fileStem(file)}.merged.gfa`);
       })
       .catch((error: unknown) => {
         toast('The GFA could not be saved', error instanceof Error ? error.message : String(error));

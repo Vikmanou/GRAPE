@@ -36,9 +36,9 @@ export function ExampleList({ onPick }: { onPick?: () => void }) {
 export function ExampleMenu() {
   const menu = useRef<HTMLDetailsElement>(null);
   return (
-    <details className="example-menu" ref={menu} data-testid="example-menu">
+    <details className="menu" ref={menu} data-testid="example-menu">
       <summary>Load example</summary>
-      <div className="example-popup">
+      <div className="menu-popup">
         <ExampleList
           onPick={() => {
             if (menu.current) menu.current.open = false;
