@@ -65,6 +65,14 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const layoutText = layoutLabel(layout, paused);
   return (
     <footer className="status-bar" data-testid="status-bar" data-inset="bottom">
+      {load.state === 'fetching' && (
+        <span data-testid="status-task">
+          Downloading {load.fraction === undefined ? '…' : formatPercent(load.fraction)}{' '}
+          <button type="button" className="link" onClick={onCancel}>
+            Cancel
+          </button>
+        </span>
+      )}
       {load.state === 'parsing' && (
         <span data-testid="status-task">
           Parsing {formatPercent(load.fraction)}{' '}

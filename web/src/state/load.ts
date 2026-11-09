@@ -1,6 +1,7 @@
 import type { FastaAttached, ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
+import { fetchFile, fileNameOf } from './fetchFile';
 import type { MergeSlice } from './merge';
 import type { Context } from './store';
 
@@ -11,10 +12,14 @@ const MAX_LINKS = 1_500_000;
 export interface FileInfo {
   name: string;
   size: number;
+  /** Where the file was downloaded from, when it was opened from a URL. */
+  url?: string | undefined;
 }
 
 export type LoadState =
   | { state: 'idle' }
+  /** `fraction` is undefined when the server gives no length. */
+  | { state: 'fetching'; file: FileInfo; fraction: number | undefined }
   | { state: 'parsing'; file: FileInfo; fraction: number }
   | { state: 'loaded'; file: FileInfo; result: ParseResult }
   | { state: 'failed'; file: FileInfo; message: string };
@@ -34,10 +39,12 @@ export interface FileSlice {
   core: CoreStatus;
   load: LoadState;
   startCore: () => void;
-  /** A newer file replaces one still parsing. */
-  open: (file: File) => void;
+  /** A newer file replaces one still parsing; `url` is where it was downloaded from. */
+  open: (file: File, url?: string) => void;
   /** Opens one of the bundled examples, by id. */
   openExample: (id: string) => void;
+  /** Downloads a graph the user named by URL, straight from the browser, and opens it. */
+  openUrl: (url: string) => void;
   cancelLoad: () => void;
   sequenceFile: SequenceFileState;
   /** Sequences for a graph whose file has none, from a FASTA file naming its segments. */
@@ -56,6 +63,7 @@ function message(error: unknown): string {
 export function createFileSlice(ctx: Context): FileSlice {
   const { set, get, services } = ctx;
   let parsing: File | undefined;
+  let downloading: AbortController | undefined;
 
   return {
     core: { state: 'loading' },
@@ -86,13 +94,50 @@ export function createFileSlice(ctx: Context): FileSlice {
       );
     },
 
-    open(file) {
+    openUrl(text) {
+      let url: URL;
+      try {
+        url = new URL(text.trim());
+      } catch {
+        get().toast('That is not a URL', `"${text}" is not a full address such as https://example.org/graph.gfa.gz`);
+        return;
+      }
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+        get().toast('Only web addresses can be opened', `${url.protocol} URLs are not supported; use https:`);
+        return;
+      }
+      if (parsing) services.graph.cancel();
+      parsing = undefined;
+      downloading?.abort();
+      const controller = new AbortController();
+      downloading = controller;
+      const info = { name: fileNameOf(url), size: 0, url: url.href };
+      set({ load: { state: 'fetching', file: info, fraction: 0 } });
+      fetchFile(url, controller.signal, (fraction) => {
+        if (downloading === controller) set({ load: { state: 'fetching', file: info, fraction } });
+      }).then(
+        (file) => {
+          if (downloading !== controller) return;
+          downloading = undefined;
+          get().open(file, url.href);
+        },
+        (error: unknown) => {
+          if (downloading !== controller) return;
+          downloading = undefined;
+          set({ load: { state: 'failed', file: info, message: message(error) } });
+        },
+      );
+    },
+
+    open(file, url) {
+      downloading?.abort();
+      downloading = undefined;
       const graph = services.graph;
       if (parsing) graph.cancel();
       parsing = file;
       get().stopLayout();
       get().clearSearch();
-      const info = { name: file.name, size: file.size };
+      const info = { name: file.name, size: file.size, url };
       set({
         load: { state: 'parsing', file: info, fraction: 0 },
         findResult: { state: 'idle' },
@@ -165,6 +210,8 @@ export function createFileSlice(ctx: Context): FileSlice {
     },
 
     cancelLoad() {
+      downloading?.abort();
+      downloading = undefined;
       services.graph.cancel();
       parsing = undefined;
       set({ load: { state: 'idle' } });

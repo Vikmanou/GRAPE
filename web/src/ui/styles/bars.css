@@ -86,3 +86,20 @@
 .menu-heading {
   margin: 6px 0 2px;
 }
+
+.open-url {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(26rem, calc(100vw - 32px));
+}
+
+.open-url label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.open-url button {
+  align-self: flex-start;
+}
