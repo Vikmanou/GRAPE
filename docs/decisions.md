@@ -1081,3 +1081,31 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   of file a second each way.
 - **Alternatives**: deflate-raw through `CompressionStream`; a zstd or xz
   build in WASM; dropping tags and comments for a smaller lossy link.
+
+## 2026-11-10: A share link can carry the whole graph
+
+- **Decision**: besides the view-only link, the share menu makes a link with
+  the graph: `#g=1.` then base64url of parts in a row (kind, name, data;
+  web/src/workers/pack/payload.ts), the view's JSON and the graph file (and
+  any attached FASTA) each packed by `gfa_core::pack`. Gzip is undone first,
+  so the recipient gets the file as the parser saw it, named without `.gz`.
+  The link has no positions: the recipient lays it out from the seed. Its
+  fingerprint is not checked, since the CRC already proves the bytes. Packing
+  stops once the link would pass 2 MiB, Chrome's `kMaxURLChars`
+  (url/url_constants.h); the menu then says the graph is too large. Packing
+  and unpacking run in a worker started for the one request, so the graph
+  worker keeps answering and Cancel terminates it. Open URL accepts a pasted
+  link, found by text, since Firefox's URL parser and `type="url"` check
+  refuse links over 1 MiB.
+- **Reason**: the owner asked that a pasted link open the sharer's graph
+  with no upload and nothing else to open. Without a server, the graph can
+  only travel in the link. Measured URL limits: Chromium 156 opens 2,097,000
+  characters and refuses 2,200,000; Firefox 157 opens 1,048,570 and refuses
+  1,048,575. WebKit could not run on this machine (Playwright's build needs
+  Ubuntu libraries), so Safari's limit is not measured. Pack and unpack in
+  Chromium: 9.2 and 9.3 s for the MHC sample (1,495,569 characters), 1.4 and
+  1.6 s for the Acacia mitochondrion (269,933).
+- **Alternatives**: a server or peer-to-peer transfer (against the privacy
+  rules); a 1 MiB cap so every link opens from Firefox's address bar; base
+  32768 Unicode text, 2.5 times fewer characters but 3 times more bytes, and
+  mangled by some apps; positions in the link.

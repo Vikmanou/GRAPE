@@ -106,7 +106,9 @@ Benchmarks and long browser runs are reference points, not a habit.
 File contents and sequences never leave the browser: no uploads, telemetry,
 analytics or third-party scripts at runtime. The only network request
 involving user data is a user-initiated "Open from URL". Share links carry
-view state and a fingerprint, never sequences.
+view state and a fingerprint, never sequences, unless the user makes a link
+with the graph: then the link holds the whole file, packed in the browser,
+and the share menu says so. Search queries never go in a link.
 
 ## Environment notes
 
