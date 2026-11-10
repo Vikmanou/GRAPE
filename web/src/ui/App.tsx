@@ -9,7 +9,6 @@ import { Sidebar } from './panels/Sidebar';
 import { StatusBar } from './bars/StatusBar';
 import { TopBar } from './bars/TopBar';
 import { Unsupported } from './overlays/Unsupported';
-import { SharedView } from './overlays/SharedView';
 import { Shortcuts } from './overlays/Shortcuts';
 import { Toasts } from './overlays/Toasts';
 import { Warnings } from './overlays/Warnings';
@@ -69,7 +68,6 @@ export function App() {
           }}
         />
       )}
-      <SharedView />
       <Shortcuts />
       <Toasts />
       <StatusBar

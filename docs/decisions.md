@@ -1109,3 +1109,16 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   rules); a 1 MiB cap so every link opens from Firefox's address bar; base
   32768 Unicode text, 2.5 times fewer characters but 3 times more bytes, and
   mangled by some apps; positions in the link.
+
+## 2026-11-10: Share links always carry the graph; no view-only links
+
+- **Decision**: the view-only link (`#v=1`, a fingerprint and the view) is
+  removed, with its option to include the file's address and the notice
+  that waited for the file. The share menu makes only the link with the
+  graph (`#g=1`). An old `#v=` link says it holds no graph. Session files
+  stay, but open only onto the graph already loaded: with no graph or
+  another one, a notice says so instead of waiting.
+- **Reason**: the owner found a link that needs its file sent separately
+  useless, and the waiting notice confusing.
+- **Alternatives**: keeping view-only links for graphs too large to pack;
+  sessions that wait for their graph without a notice.

@@ -12,8 +12,6 @@ const MAX_NAMES = 100_000;
 /** The view a share link carries (spec, Features 12). Sequences never travel in it. */
 export interface ShareState {
   file: Fingerprint;
-  /** Where the file can be downloaded, when the sharer chose to include it. */
-  url?: string | undefined;
   /**
    * `gpu` positions come from the WebGPU layout, `cpu` from the layout
    * worker's; the same seed gives the same picture only on the same kind.
@@ -62,7 +60,6 @@ export function parseShareState(value: unknown): ShareState {
   const seed = finite(layout.seed) ? layout.seed >>> 0 : 1;
   return {
     file: { size: file.size, segments: file.segments, sha256: file.sha256 },
-    url: typeof value.url === 'string' && /^https?:\/\//.test(value.url) ? value.url : undefined,
     layout: {
       seed,
       quality: QUALITIES.find((q) => q === layout.quality) ?? 'balanced',

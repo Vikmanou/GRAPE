@@ -183,7 +183,7 @@ export function createFileSlice(ctx: Context): FileSlice {
                 if (get().load !== loaded) return;
                 const fingerprint = { size: file.size, segments: result.stats.segments, sha256 };
                 set({ fingerprint });
-                if (shared) get().applyShare(fingerprint);
+                if (shared) get().applyShare();
               },
               (error: unknown) => {
                 get().toast('This file cannot be shared by link', message(error));

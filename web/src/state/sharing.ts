@@ -1,21 +1,12 @@
 import { setBits } from './bits';
 import type { LinkFile } from '../workers/protocol/pack';
 import { WorkerTerminatedError } from '../workers/rpc';
-import {
-  decodeFragment,
-  encodeFragment,
-  isPackedFragment,
-  isShareFragment,
-  packedFragment,
-  packedPayload,
-} from './share/codec';
-import { type Fingerprint, sameFile } from './share/fingerprint';
+import { isPackedFragment, packedFragment, packedPayload } from './share/codec';
+import { sameFile } from './share/fingerprint';
 import { restoreShared, until } from './share/restore';
 import { parseShareState, type ShareState } from './share/state';
 import type { Context } from './store';
 
-/** Past this many characters a link may be cut off by chat apps and mail clients; the selection is dropped first. */
-export const MAX_LINK_CHARS = 8000;
 /** Chrome refuses URLs past 2 MiB (chromium/src/url/url_constants.h, kMaxURLChars). */
 export const MAX_PACKED_LINK_CHARS = 2 * 1024 * 1024;
 /** Firefox 157 refuses URLs past about 1 MiB, measured: 1,048,570 characters open, 1,048,575 do not. */
@@ -24,23 +15,18 @@ export const FIREFOX_LINK_CHARS = 1_048_570;
 export type PackedLink = { state: 'ready'; link: string } | { state: 'too-big' } | { state: 'cancelled' };
 
 export interface SharingSlice {
-  /** A link to the current view; `includeUrl` adds where the file was downloaded from. */
-  shareLink: (includeUrl: boolean) => Promise<{ link: string; selectionDropped: boolean }>;
   /** A link carrying the whole graph, unless that would pass `MAX_PACKED_LINK_CHARS`. */
   packLink: () => Promise<PackedLink>;
   cancelPack: () => void;
-  /** A view from a link, waiting for the user to open its file. */
+  /** The view a link carried, applied once its graph has loaded. */
   pendingShare: ShareState | undefined;
-  /** The waiting view came with its graph, which is being opened. */
-  pendingPacked: boolean;
-  /** Reads a share link from the page's fragment, at start. */
+  /** Reads a share link from the page's fragment. */
   readShareLink: (hash: string) => Promise<void>;
-  /** Restores the waiting view on a newly loaded file if it is the one the link was made from; otherwise lays it out as usual. */
-  applyShare: (fingerprint: Fingerprint) => void;
-  dismissShare: () => void;
+  /** Restores the waiting view on the graph that came with it; otherwise lays the graph out as usual. */
+  applyShare: () => void;
   /** The current view and every point's position, as a session file. */
   saveSession: () => Promise<Blob>;
-  /** Restores a session on its graph now if it is open, or once it is. */
+  /** Restores a session on the graph it was saved from, which must be open. */
   openSession: (file: File) => void;
 }
 
@@ -54,11 +40,13 @@ function clearFragment(): void {
   if (typeof history !== 'undefined') history.replaceState(null, '', `${location.pathname}${location.search}`);
 }
 
+function message(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function createSharingSlice(ctx: Context): SharingSlice {
   const { get, set, services } = ctx;
-  /** A session's positions, waiting with `pendingShare` for its graph. */
-  let pendingPositions: Float32Array<ArrayBuffer> | undefined;
-  /** The FASTA a packed link carried, attached before its view is restored. */
+  /** The FASTA a link carried, attached before its view is restored. */
   let pendingFasta: File | undefined;
 
   async function openPacked(hash: string): Promise<void> {
@@ -80,7 +68,7 @@ export function createSharingSlice(ctx: Context): SharingSlice {
       const graph = files.find((f) => f.kind === 'graph');
       if (!graph) throw new Error('This link is damaged: it holds no graph.');
       pendingFasta = files.find((f) => f.kind === 'fasta')?.file;
-      set({ pendingShare: parseShareState(view), pendingPacked: true });
+      set({ pendingShare: parseShareState(view) });
       clearFragment();
       get().open(graph.file);
     } catch (error) {
@@ -90,7 +78,7 @@ export function createSharingSlice(ctx: Context): SharingSlice {
     }
   }
 
-  async function restore(shared: ShareState, positions: Float32Array<ArrayBuffer> | undefined, fasta?: File) {
+  async function restore(shared: ShareState, fasta: File | undefined) {
     if (fasta) {
       const { load } = get();
       const source = load.state === 'loaded' ? load.source : undefined;
@@ -102,11 +90,11 @@ export function createSharingSlice(ctx: Context): SharingSlice {
       );
       if (!attached) return;
     }
-    set({ pendingShare: undefined, pendingPacked: false });
-    await restoreShared(ctx, shared, positions);
+    set({ pendingShare: undefined });
+    await restoreShared(ctx, shared);
   }
 
-  async function capture(includeUrl: boolean): Promise<ShareState> {
+  async function capture(): Promise<ShareState> {
     const s = get();
     if (s.load.state !== 'loaded' || !s.fingerprint) throw new Error('open a graph first');
     const pathNames = s.paths.state === 'ready' ? s.paths.list.names : [];
@@ -114,7 +102,6 @@ export function createSharingSlice(ctx: Context): SharingSlice {
     const dpr = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1;
     return {
       file: s.fingerprint,
-      url: includeUrl ? s.load.file.url : undefined,
       layout: { ...s.layoutOptions, kind: s.gpuLayout ? 'gpu' : 'cpu' },
       merged: s.merged !== undefined,
       camera: s.camera && { x: s.camera.x, y: s.camera.y, zoom: s.camera.zoom / dpr },
@@ -128,57 +115,34 @@ export function createSharingSlice(ctx: Context): SharingSlice {
 
   return {
     pendingShare: undefined,
-    pendingPacked: false,
 
     async readShareLink(hash) {
       if (isPackedFragment(hash)) {
         await openPacked(hash);
-        return;
-      }
-      if (!isShareFragment(hash)) return;
-      try {
-        set({ pendingShare: parseShareState(await decodeFragment(hash)) });
-      } catch (error) {
+      } else if (hash.startsWith('#v=')) {
         clearFragment();
-        get().toast('This share link cannot be opened', error instanceof Error ? error.message : String(error));
+        get().toast(
+          'This link holds no graph',
+          'It was made by an older GRAPE that shared only the view. Ask for a new link, which carries the graph.',
+        );
       }
     },
 
-    applyShare(fingerprint) {
+    applyShare() {
       const shared = get().pendingShare;
       if (!shared) {
         get().restartLayout();
         return;
       }
-      const positions = pendingPositions;
-      pendingPositions = undefined;
       const fasta = pendingFasta;
       pendingFasta = undefined;
-      clearFragment();
-      // A packed link's graph is the file itself, checked by its CRC as it unpacked.
-      if (!get().pendingPacked && !sameFile(shared.file, fingerprint)) {
-        set({ pendingShare: undefined });
-        get().toast(
-          'This is not the file the link was made from',
-          'It opens as it is. The link was made from a file of a different size, segment count or content.',
-        );
-        get().restartLayout();
-        return;
-      }
-      restore(shared, positions, fasta).catch((error: unknown) => {
-        get().toast('The shared view could not be restored', error instanceof Error ? error.message : String(error));
+      restore(shared, fasta).catch((error: unknown) => {
+        get().toast('The shared view could not be restored', message(error));
       });
     },
 
-    dismissShare() {
-      pendingPositions = undefined;
-      pendingFasta = undefined;
-      set({ pendingShare: undefined, pendingPacked: false });
-      clearFragment();
-    },
-
     async saveSession() {
-      const view = await capture(false);
+      const view = await capture();
       const { positions } = await ctx.bridge.ask({ type: 'read-positions' }, 'positions');
       return services.graph.writeSession(view, positions);
     },
@@ -186,25 +150,29 @@ export function createSharingSlice(ctx: Context): SharingSlice {
     openSession(file) {
       services.graph
         .readSession(file)
-        .then(({ view, positions }) => {
+        .then(async ({ view, positions }) => {
           const shared = parseShareState(view);
-          pendingPositions = positions;
-          set({ pendingShare: shared });
-          const { fingerprint } = get();
-          // The graph it was saved from may be open already.
-          if (get().load.state === 'loaded' && fingerprint && sameFile(shared.file, fingerprint)) {
-            get().applyShare(fingerprint);
+          const { load, fingerprint } = get();
+          if (load.state !== 'loaded' || !fingerprint) {
+            get().toast('Open the graph first, then the session file');
+          } else if (!sameFile(shared.file, fingerprint)) {
+            get().toast(
+              'This session was saved from another graph',
+              'The open graph differs in size, segment count or content from the one the session was saved from.',
+            );
+          } else {
+            await restoreShared(ctx, shared, positions);
           }
         })
         .catch((error: unknown) => {
-          get().toast('This session cannot be opened', error instanceof Error ? error.message : String(error));
+          get().toast('This session cannot be opened', message(error));
         });
     },
 
     async packLink() {
       const s = get();
       if (s.load.state !== 'loaded') throw new Error('open a graph first');
-      const view = await capture(false);
+      const view = await capture();
       const files: LinkFile[] = [{ kind: 'graph', file: s.load.source }];
       if (s.sequenceFile.state === 'added') files.push({ kind: 'fasta', file: s.sequenceFile.source });
       const base = `${location.origin}${location.pathname}`;
@@ -222,14 +190,6 @@ export function createSharingSlice(ctx: Context): SharingSlice {
 
     cancelPack() {
       services.pack.cancel();
-    },
-
-    async shareLink(includeUrl) {
-      const state = await capture(includeUrl);
-      const base = `${location.origin}${location.pathname}`;
-      const link = `${base}${await encodeFragment(state)}`;
-      if (link.length <= MAX_LINK_CHARS || !state.selection) return { link, selectionDropped: false };
-      return { link: `${base}${await encodeFragment({ ...state, selection: undefined })}`, selectionDropped: true };
     },
   };
 }

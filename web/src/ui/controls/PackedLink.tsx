@@ -54,7 +54,7 @@ export function PackedLink({ ready }: { ready: boolean }) {
 
   return (
     <>
-      <h3 className="menu-heading muted small">Link with the graph</h3>
+      <h3 className="menu-heading muted small">Link</h3>
       <p className="small">
         The whole graph and the view in one link, so it opens with nothing else to find. Anyone with the link gets every
         sequence in it.

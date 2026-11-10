@@ -132,7 +132,6 @@ test('a link with the graph opens the same graph and view in a tab with no file'
   await other.setViewportSize(VIEWPORT);
   await other.goto(onBackend(link));
   await settled(other);
-  await expect(other.getByTestId('shared-view')).toBeHidden();
   await expect.poll(async () => (await snapshot(other)).selected).toBe(3);
   await other.getByRole('button', { name: 'Hide the sidebar' }).click();
   await other.mouse.move(0, VIEWPORT.height - 10);

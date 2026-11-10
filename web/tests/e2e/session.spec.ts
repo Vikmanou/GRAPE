@@ -1,8 +1,8 @@
 // A session file reproduces a view exactly in another browser page and on the
 // other backend: the WebGPU project saves and WebGL2 opens it; the WebGL2
-// project, which CI runs, saves and opens on WebGL2.
+// project, which CI runs, saves and opens on WebGL2. The graph opens first.
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, type Page, test } from '@playwright/test';
 import { backend, failOnPageError, gotoApp, repo, skipUnlessBackend } from './helpers';
 
@@ -86,10 +86,9 @@ test('a session file reproduces the view exactly on WebGL2', async ({ page, cont
   await other.setViewportSize(VIEWPORT);
   await other.goto('/?renderer=webgl2');
   await expect(other.getByTestId('status-renderer')).toHaveAttribute('data-renderer', 'webgl2');
-  await other.getByTestId('open-input').setInputFiles(path);
-  await expect.poll(() => other.evaluate(() => location.hash)).toBe('');
   await other.getByTestId('open-input').setInputFiles(FILE);
   await settled(other);
+  await other.getByTestId('open-input').setInputFiles(path);
   await expect
     .poll(() =>
       other.evaluate(
@@ -98,7 +97,7 @@ test('a session file reproduces the view exactly on WebGL2', async ({ page, cont
       ),
     )
     .toBe(2);
-  // Drawn from the session's positions: no layout ran.
+  // Drawn from the session's positions, which replace the layout that ran on opening.
   const status = await other.evaluate(
     () => (window as unknown as { grapeTest: Hooks }).grapeTest.store.getState().layoutStatus as { total: number },
   );
@@ -127,4 +126,32 @@ test('a session file reproduces the view exactly on WebGL2', async ({ page, cont
   );
   // The bundled examples differ by under 0.001% between backends from the same positions (milestone 7).
   expect(different).toBeLessThan(backend() === 'webgl2' ? 0.002 : 0.01);
+});
+
+test('the share menu saves a session file, which needs its graph open', async ({ page }) => {
+  failOnPageError(page);
+  await gotoApp(page);
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await skipUnlessBackend(page);
+  await page.getByTestId('open-input').setInputFiles(FILE);
+  await settled(page);
+  await page.getByTestId('share-menu').locator('summary').click();
+  const download = page.waitForEvent('download');
+  await page.getByTestId('share-save-session').click();
+  const saved = await download;
+  expect(saved.suggestedFilename()).toBe('acacia-mitochondrion-spades.grape.json.gz');
+  const path = await saved.path();
+
+  await page.goto(page.url());
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await page
+    .getByTestId('open-input')
+    .setInputFiles({ name: 'view.grape.json.gz', mimeType: 'application/gzip', buffer: readFileSync(path) });
+  await expect(page.getByText('Open the graph first, then the session file')).toBeVisible();
+  await page.getByTestId('open-input').setInputFiles(repo('testdata/tangle.gfa'));
+  await settled(page);
+  await page
+    .getByTestId('open-input')
+    .setInputFiles({ name: 'view.grape.json.gz', mimeType: 'application/gzip', buffer: readFileSync(path) });
+  await expect(page.getByText('This session was saved from another graph')).toBeVisible();
 });
