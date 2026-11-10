@@ -73,6 +73,14 @@ export function StatusBar({ onToggleWarnings }: Props) {
           </button>
         </span>
       )}
+      {load.state === 'unpacking' && (
+        <span data-testid="status-task">
+          Unpacking the graph from the link…{' '}
+          <button type="button" className="link" onClick={onCancel}>
+            Cancel
+          </button>
+        </span>
+      )}
       {load.state === 'parsing' && (
         <span data-testid="status-task">
           Parsing {formatPercent(load.fraction)}{' '}

@@ -3,7 +3,7 @@ import { formatBytes, formatCount } from '../format';
 
 /** A view from a link or session file, waiting for the user to open the file it was made from. */
 export function SharedView() {
-  const shared = useApp((s) => s.pendingShare);
+  const shared = useApp((s) => (s.pendingPacked ? undefined : s.pendingShare));
   const openUrl = useApp((s) => s.openUrl);
   const dismiss = useApp((s) => s.dismissShare);
   if (!shared) return null;

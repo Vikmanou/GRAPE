@@ -165,6 +165,11 @@ function setup() {
         for (const p of parses) p.reject(new WorkerTerminatedError('graph'));
       },
     },
+    pack: {
+      pack: () => Promise.reject(new Error('unused')),
+      unpack: () => Promise.reject(new Error('unused')),
+      cancel: () => undefined,
+    },
     layoutClient: () => {
       const layout = new FakeLayout();
       layouts.push(layout);

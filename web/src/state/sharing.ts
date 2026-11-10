@@ -1,18 +1,37 @@
 import { setBits } from './bits';
-import { decodeFragment, encodeFragment, isShareFragment } from './share/codec';
+import type { LinkFile } from '../workers/protocol/pack';
+import { WorkerTerminatedError } from '../workers/rpc';
+import {
+  decodeFragment,
+  encodeFragment,
+  isPackedFragment,
+  isShareFragment,
+  packedFragment,
+  packedPayload,
+} from './share/codec';
 import { type Fingerprint, sameFile } from './share/fingerprint';
-import { restoreShared } from './share/restore';
+import { restoreShared, until } from './share/restore';
 import { parseShareState, type ShareState } from './share/state';
 import type { Context } from './store';
 
 /** Past this many characters a link may be cut off by chat apps and mail clients; the selection is dropped first. */
 export const MAX_LINK_CHARS = 8000;
+/** Chrome refuses URLs past 2 MiB (chromium/src/url/url_constants.h, kMaxURLChars). */
+export const MAX_PACKED_LINK_CHARS = 2 * 1024 * 1024;
 
 export interface SharingSlice {
   /** A link to the current view; `includeUrl` adds where the file was downloaded from. */
   shareLink: (includeUrl: boolean) => Promise<{ link: string; selectionDropped: boolean }>;
+  /**
+   * A link carrying the whole graph, or undefined when the graph would make it
+   * longer than `MAX_PACKED_LINK_CHARS`.
+   */
+  packLink: () => Promise<string | undefined>;
+  cancelPack: () => void;
   /** A view from a link, waiting for the user to open its file. */
   pendingShare: ShareState | undefined;
+  /** The waiting view came with its graph, which is being opened. */
+  pendingPacked: boolean;
   /** Reads a share link from the page's fragment, at start. */
   readShareLink: (hash: string) => Promise<void>;
   /** Restores the waiting view on a newly loaded file if it is the one the link was made from; otherwise lays it out as usual. */
@@ -38,6 +57,53 @@ export function createSharingSlice(ctx: Context): SharingSlice {
   const { get, set, services } = ctx;
   /** A session's positions, waiting with `pendingShare` for its graph. */
   let pendingPositions: Float32Array<ArrayBuffer> | undefined;
+  /** The FASTA a packed link carried, attached before its view is restored. */
+  let pendingFasta: File | undefined;
+
+  async function openPacked(hash: string): Promise<void> {
+    const info = { name: 'graph from the link', size: 0 };
+    let payload: string;
+    try {
+      payload = packedPayload(hash);
+    } catch (error) {
+      clearFragment();
+      get().toast('This share link cannot be opened', error instanceof Error ? error.message : String(error));
+      return;
+    }
+    get().stopLayout();
+    set({ load: { state: 'unpacking', file: info } });
+    const unpacking = get().load;
+    try {
+      const { view, files } = await services.pack.unpack(payload);
+      if (get().load !== unpacking) return;
+      const graph = files.find((f) => f.kind === 'graph');
+      if (!graph) throw new Error('This link is damaged: it holds no graph.');
+      pendingFasta = files.find((f) => f.kind === 'fasta')?.file;
+      set({ pendingShare: parseShareState(view), pendingPacked: true });
+      clearFragment();
+      get().open(graph.file);
+    } catch (error) {
+      if (error instanceof WorkerTerminatedError || get().load !== unpacking) return;
+      clearFragment();
+      set({ load: { state: 'failed', file: info, message: error instanceof Error ? error.message : String(error) } });
+    }
+  }
+
+  async function restore(shared: ShareState, positions: Float32Array<ArrayBuffer> | undefined, fasta?: File) {
+    if (fasta) {
+      const { load } = get();
+      const source = load.state === 'loaded' ? load.source : undefined;
+      get().addSequences(fasta);
+      const attached = await until(
+        ctx,
+        (s) => s.sequenceFile.state === 'added' || s.sequenceFile.state === 'failed',
+        (s) => s.load.state !== 'loaded' || s.load.source !== source,
+      );
+      if (!attached) return;
+    }
+    set({ pendingShare: undefined, pendingPacked: false });
+    await restoreShared(ctx, shared, positions);
+  }
 
   async function capture(includeUrl: boolean): Promise<ShareState> {
     const s = get();
@@ -61,8 +127,13 @@ export function createSharingSlice(ctx: Context): SharingSlice {
 
   return {
     pendingShare: undefined,
+    pendingPacked: false,
 
     async readShareLink(hash) {
+      if (isPackedFragment(hash)) {
+        await openPacked(hash);
+        return;
+      }
       if (!isShareFragment(hash)) return;
       try {
         set({ pendingShare: parseShareState(await decodeFragment(hash)) });
@@ -80,9 +151,12 @@ export function createSharingSlice(ctx: Context): SharingSlice {
       }
       const positions = pendingPositions;
       pendingPositions = undefined;
-      set({ pendingShare: undefined });
+      const fasta = pendingFasta;
+      pendingFasta = undefined;
       clearFragment();
-      if (!sameFile(shared.file, fingerprint)) {
+      // A packed link's graph is the file itself, checked by its CRC as it unpacked.
+      if (!get().pendingPacked && !sameFile(shared.file, fingerprint)) {
+        set({ pendingShare: undefined });
         get().toast(
           'This is not the file the link was made from',
           'It opens as it is. The link was made from a file of a different size, segment count or content.',
@@ -90,14 +164,15 @@ export function createSharingSlice(ctx: Context): SharingSlice {
         get().restartLayout();
         return;
       }
-      restoreShared(ctx, shared, positions).catch((error: unknown) => {
+      restore(shared, positions, fasta).catch((error: unknown) => {
         get().toast('The shared view could not be restored', error instanceof Error ? error.message : String(error));
       });
     },
 
     dismissShare() {
       pendingPositions = undefined;
-      set({ pendingShare: undefined });
+      pendingFasta = undefined;
+      set({ pendingShare: undefined, pendingPacked: false });
       clearFragment();
     },
 
@@ -123,6 +198,22 @@ export function createSharingSlice(ctx: Context): SharingSlice {
         .catch((error: unknown) => {
           get().toast('This session cannot be opened', error instanceof Error ? error.message : String(error));
         });
+    },
+
+    async packLink() {
+      const s = get();
+      if (s.load.state !== 'loaded') throw new Error('open a graph first');
+      const view = await capture(false);
+      const files: LinkFile[] = [{ kind: 'graph', file: s.load.source }];
+      if (s.sequenceFile.state === 'added') files.push({ kind: 'fasta', file: s.sequenceFile.source });
+      const base = `${location.origin}${location.pathname}`;
+      const room = MAX_PACKED_LINK_CHARS - base.length - packedFragment('').length;
+      const payload = await services.pack.pack(view, files, room);
+      return payload === undefined ? undefined : `${base}${packedFragment(payload)}`;
+    },
+
+    cancelPack() {
+      services.pack.cancel();
     },
 
     async shareLink(includeUrl) {

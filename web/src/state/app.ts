@@ -2,6 +2,7 @@ import { Engine } from '../engine/Engine';
 import { detectBackend } from '../engine/core/detect';
 import { GraphClient } from '../workers/graph/GraphClient';
 import { LayoutClient } from '../workers/layout/LayoutClient';
+import { PackClient } from '../workers/pack/PackClient';
 import { SequenceClient } from '../workers/sequence/SequenceClient';
 import { handleKey } from './shortcuts';
 import { createAppStore, installStore, type AppStore } from './store';
@@ -13,6 +14,7 @@ export function startApp(): AppStore {
     createAppStore({
       graph: new GraphClient(),
       sequence: new SequenceClient(),
+      pack: new PackClient(),
       layoutClient: () => new LayoutClient(),
       createEngine: (host, kind) => Engine.create(host, kind),
       detectBackend: () => detectBackend(),

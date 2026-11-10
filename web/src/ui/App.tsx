@@ -48,9 +48,11 @@ export function App() {
       {(renderer === 'webgpu' || renderer === 'webgl2') && !engineError && <EngineHost />}
       <TopBar file={file} onOpen={openFile} />
       {unsupported && <Unsupported detail={engineError} />}
-      {!unsupported && (load.state === 'idle' || load.state === 'parsing' || load.state === 'fetching') && (
-        <EmptyState dragging={dragging} />
-      )}
+      {!unsupported &&
+        (load.state === 'idle' ||
+          load.state === 'parsing' ||
+          load.state === 'fetching' ||
+          load.state === 'unpacking') && <EmptyState dragging={dragging} />}
       {load.state === 'failed' && (
         <div className="load-error" role="alert" data-testid="load-error">
           <strong>Could not open {load.file.name}</strong>

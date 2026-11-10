@@ -4,6 +4,7 @@ import type { BackendKind } from '../engine/core/detect';
 import type { GraphClient } from '../workers/graph/GraphClient';
 import type { Topology } from '../workers/protocol/graph';
 import type { LayoutControl, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { PackClient } from '../workers/pack/PackClient';
 import type { WithoutId, WorkerMemory } from '../workers/rpc';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
@@ -63,6 +64,8 @@ export type SequenceService = Pick<
   | 'cancelSearch'
 >;
 
+export type PackService = Pick<PackClient, 'pack' | 'unpack' | 'cancel'>;
+
 export interface LayoutService {
   start(
     mode: 'cpu' | 'gpu',
@@ -82,6 +85,7 @@ export interface LayoutService {
 export interface Services {
   graph: GraphService;
   sequence: SequenceService;
+  pack: PackService;
   layoutClient(): LayoutService;
   createEngine(host: HTMLElement, kind: 'webgpu' | 'webgl2'): Promise<EngineLike>;
   detectBackend(): Promise<BackendKind>;

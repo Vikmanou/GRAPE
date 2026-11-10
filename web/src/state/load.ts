@@ -22,14 +22,17 @@ export type LoadState =
   | { state: 'idle' }
   /** `fraction` is undefined when the server gives no length. */
   | { state: 'fetching'; file: FileInfo; fraction: number | undefined }
+  /** A share link's graph being unpacked (sharing.ts). */
+  | { state: 'unpacking'; file: FileInfo }
   | { state: 'parsing'; file: FileInfo; fraction: number }
-  | { state: 'loaded'; file: FileInfo; result: ParseResult }
+  /** `source` is kept to pack into a share link. */
+  | { state: 'loaded'; file: FileInfo; result: ParseResult; source: File }
   | { state: 'failed'; file: FileInfo; message: string };
 
 export type SequenceFileState =
   | { state: 'none' }
   | { state: 'reading'; name: string; fraction: number }
-  | { state: 'added'; name: string; attached: FastaAttached }
+  | { state: 'added'; name: string; attached: FastaAttached; source: File }
   | { state: 'failed'; name: string; message: string };
 
 export type CoreStatus =
@@ -165,7 +168,7 @@ export function createFileSlice(ctx: Context): FileSlice {
           ({ result, sequences }) => {
             if (parsing !== file) return;
             parsing = undefined;
-            set({ load: { state: 'loaded', file: info, result } });
+            set({ load: { state: 'loaded', file: info, result, source: file } });
             const loaded = get().load;
             const shared = get().pendingShare !== undefined;
             hash.then(
@@ -220,14 +223,15 @@ export function createFileSlice(ctx: Context): FileSlice {
             load: { ...load, result },
             merged: undefined,
             mergeOn: false,
-            sequenceFile: { state: 'added', name, attached },
+            sequenceFile: { state: 'added', name, attached, source: file },
           });
           get().clearSearch();
           await services.sequence.load(sequences);
           get().resetColorRange();
-          // New lengths change the layout; new GC only colours.
-          if (attached.resized > 0 || merged) get().restartLayout();
-          else ctx.bridge.send({ type: 'set-gc', gc: result.attributes.gc });
+          // New lengths change the layout; new GC only colours. A shared view lays itself out next.
+          if (attached.resized > 0 || merged) {
+            if (!get().pendingShare) get().restartLayout();
+          } else ctx.bridge.send({ type: 'set-gc', gc: result.attributes.gc });
         })
         .catch((error: unknown) => {
           if (error instanceof WorkerTerminatedError) return;
@@ -236,6 +240,7 @@ export function createFileSlice(ctx: Context): FileSlice {
     },
 
     cancelLoad() {
+      if (get().load.state === 'unpacking') services.pack.cancel();
       downloading?.abort();
       downloading = undefined;
       services.graph.cancel();

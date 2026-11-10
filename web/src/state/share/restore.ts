@@ -3,7 +3,11 @@ import type { Context } from '../store';
 import type { ShareState } from './state';
 
 /** Resolves once `ready` holds, or with false once `stale` does: another file was opened meanwhile. */
-function until(ctx: Context, ready: (s: AppState) => boolean, stale: (s: AppState) => boolean): Promise<boolean> {
+export function until(
+  ctx: Context,
+  ready: (s: AppState) => boolean,
+  stale: (s: AppState) => boolean,
+): Promise<boolean> {
   return new Promise((resolve) => {
     const check = (s: AppState) => {
       if (stale(s)) return false;
