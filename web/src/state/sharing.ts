@@ -18,6 +18,8 @@ import type { Context } from './store';
 export const MAX_LINK_CHARS = 8000;
 /** Chrome refuses URLs past 2 MiB (chromium/src/url/url_constants.h, kMaxURLChars). */
 export const MAX_PACKED_LINK_CHARS = 2 * 1024 * 1024;
+/** Firefox 157 refuses URLs past about 1 MiB, measured: 1,048,570 characters open, 1,048,575 do not. */
+export const FIREFOX_LINK_CHARS = 1_048_570;
 
 export type PackedLink = { state: 'ready'; link: string } | { state: 'too-big' } | { state: 'cancelled' };
 

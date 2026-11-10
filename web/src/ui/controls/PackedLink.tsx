@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FIREFOX_LINK_CHARS } from '../../state/sharing';
 import { useApp } from '../../state/store';
 import { copyText } from '../files';
 import { formatCount } from '../format';
@@ -15,7 +16,9 @@ export function linkFit(chars: number): string {
   if (chars <= 2000) return 'Short enough for any chat app.';
   if (chars <= 28_000) return 'Fits a Slack or Teams message; too long for Discord (2,000 characters).';
   if (chars <= 40_000) return 'Fits a Slack message (40,000 characters); too long for Teams and Discord.';
-  return 'Too long for chat apps: send it by email or in a document. Pasting it into Open URL also opens it.';
+  const where = 'Too long for chat apps: send it by email or in a document.';
+  if (chars <= FIREFOX_LINK_CHARS) return `${where} Pasting it into Open URL also opens it.`;
+  return `${where} Firefox cannot open a link this long from its address bar: there, paste it into Open URL.`;
 }
 
 /** The share menu's link that carries the whole graph, so it opens with nothing else. */

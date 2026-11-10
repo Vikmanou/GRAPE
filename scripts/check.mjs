@@ -32,10 +32,11 @@ const steps = [
     : [
         ['vite build', ...web('build')],
         ['bundle size', 'node', ['scripts/size-report.mjs']],
-        // Playwright's browser is a separate download from `npm install`.
+        // Playwright's browsers are a separate download from `npm install`;
+        // Firefox runs the packed-link flow, whose URL limit is half Chrome's.
         // This is a no-op once the browser is present, so it runs every time
         // instead of being a setup step to remember.
-        ['browser', 'npx', ['playwright', 'install', 'chromium']],
+        ['browser', 'npx', ['playwright', 'install', 'chromium', 'firefox']],
         // One worker when headed: GPU tests running side by side slow each other down.
         ['playwright', ...web('e2e', ...(headed ? ['--headed', '--workers=1'] : []))],
       ]),

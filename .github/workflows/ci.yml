@@ -36,7 +36,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox
 
       # The same gate that runs locally.
       - run: npm run check

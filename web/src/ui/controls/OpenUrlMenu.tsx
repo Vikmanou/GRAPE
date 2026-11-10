@@ -21,7 +21,9 @@ export function OpenUrlMenu() {
         <label>
           Address of a GFA or FASTG file, plain or gzipped, or a GRAPE share link
           <input
-            type="url"
+            // Not type="url": Firefox's check refuses share links over 1 MiB.
+            type="text"
+            inputMode="url"
             required
             data-testid="open-url-input"
             placeholder="https://example.org/assembly.gfa.gz"
