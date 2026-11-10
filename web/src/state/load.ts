@@ -2,6 +2,7 @@ import type { FastaAttached, ParseResult } from '../workers/protocol/graph';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import { fetchFile, fileNameOf } from './fetchFile';
+import { isPackedFragment, isShareFragment } from './share/codec';
 import { type Fingerprint, headHash } from './share/fingerprint';
 import { isSessionFile } from './sharing';
 import type { MergeSlice } from './merge';
@@ -108,6 +109,11 @@ export function createFileSlice(ctx: Context): FileSlice {
         url = new URL(text.trim());
       } catch {
         get().toast('That is not a URL', `"${text}" is not a full address such as https://example.org/graph.gfa.gz`);
+        return;
+      }
+      // A share link pasted here opens without the address bar's length limits.
+      if (isPackedFragment(url.hash) || isShareFragment(url.hash)) {
+        void get().readShareLink(url.hash);
         return;
       }
       if (url.protocol !== 'https:' && url.protocol !== 'http:') {

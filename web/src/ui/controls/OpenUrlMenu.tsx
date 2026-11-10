@@ -19,7 +19,7 @@ export function OpenUrlMenu() {
         }}
       >
         <label>
-          Address of a GFA or FASTG file, plain or gzipped
+          Address of a GFA or FASTG file, plain or gzipped, or a GRAPE share link
           <input
             type="url"
             required

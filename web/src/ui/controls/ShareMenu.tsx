@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/store';
 import { copyText, download, fileStem } from '../files';
+import { PackedLink } from './PackedLink';
 
 type Copied =
   | { state: 'idle' }
   | { state: 'copied'; link: string; selectionDropped: boolean }
   | { state: 'failed'; link: string | undefined };
 
-/** "Share" in the top bar: a link to the view, which never carries sequences, and session files. */
+/** "Share" in the top bar: a link to the view alone, a link with the whole graph, and session files. */
 export function ShareMenu() {
   const menu = useRef<HTMLDetailsElement>(null);
   const file = useApp((s) => (s.load.state === 'loaded' ? s.load.file : undefined));
@@ -61,7 +62,7 @@ export function ShareMenu() {
     >
       <summary>Share</summary>
       <div className="menu-popup menu-popup-end share">
-        <h3 className="menu-heading muted small">Link</h3>
+        <h3 className="menu-heading muted small">Link to the view</h3>
         <p className="small">
           The view as a link: layout seed, settings, camera, selection and highlighted paths. It never holds sequences;
           whoever opens it opens the same file themselves.
@@ -105,6 +106,7 @@ export function ShareMenu() {
             )}
           </p>
         )}
+        <PackedLink ready={ready} />
         <h3 className="menu-heading muted small">Session file</h3>
         <p className="small">
           The same view with every position, so it opens exactly as it is on any computer or browser. Open it, then the

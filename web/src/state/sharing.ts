@@ -19,14 +19,13 @@ export const MAX_LINK_CHARS = 8000;
 /** Chrome refuses URLs past 2 MiB (chromium/src/url/url_constants.h, kMaxURLChars). */
 export const MAX_PACKED_LINK_CHARS = 2 * 1024 * 1024;
 
+export type PackedLink = { state: 'ready'; link: string } | { state: 'too-big' } | { state: 'cancelled' };
+
 export interface SharingSlice {
   /** A link to the current view; `includeUrl` adds where the file was downloaded from. */
   shareLink: (includeUrl: boolean) => Promise<{ link: string; selectionDropped: boolean }>;
-  /**
-   * A link carrying the whole graph, or undefined when the graph would make it
-   * longer than `MAX_PACKED_LINK_CHARS`.
-   */
-  packLink: () => Promise<string | undefined>;
+  /** A link carrying the whole graph, unless that would pass `MAX_PACKED_LINK_CHARS`. */
+  packLink: () => Promise<PackedLink>;
   cancelPack: () => void;
   /** A view from a link, waiting for the user to open its file. */
   pendingShare: ShareState | undefined;
@@ -208,8 +207,15 @@ export function createSharingSlice(ctx: Context): SharingSlice {
       if (s.sequenceFile.state === 'added') files.push({ kind: 'fasta', file: s.sequenceFile.source });
       const base = `${location.origin}${location.pathname}`;
       const room = MAX_PACKED_LINK_CHARS - base.length - packedFragment('').length;
-      const payload = await services.pack.pack(view, files, room);
-      return payload === undefined ? undefined : `${base}${packedFragment(payload)}`;
+      try {
+        const payload = await services.pack.pack(view, files, room);
+        return payload === undefined
+          ? { state: 'too-big' }
+          : { state: 'ready', link: `${base}${packedFragment(payload)}` };
+      } catch (error) {
+        if (error instanceof WorkerTerminatedError) return { state: 'cancelled' };
+        throw error;
+      }
     },
 
     cancelPack() {
