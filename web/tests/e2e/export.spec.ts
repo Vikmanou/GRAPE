@@ -109,7 +109,10 @@ test('a PNG of the view matches the screen, and tiles join without seams', async
     return btoa(text);
   });
   const doubled = { x: 0, y: 0, width: full.width * 2, height: full.height * 2 };
-  const tiled = await exportAndCompare(page, 2, 333, reference, doubled, 0);
+  // WebGL2 on a real GPU rounds antialiased edges by a unit or two differently
+  // from one tile origin to the next (measured: 183 pixels, at most 2 in sum);
+  // a seam would differ by far more.
+  const tiled = await exportAndCompare(page, 2, 333, reference, doubled, 3);
   expect(tiled.width).toBe(VIEWPORT.width * 2);
   expect(tiled.different).toBe(0);
 });
