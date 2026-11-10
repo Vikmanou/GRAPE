@@ -6,6 +6,7 @@ import { ExampleMenu } from '../controls/ExampleMenu';
 import { ExportMenu } from '../controls/ExportMenu';
 import { OpenUrlMenu } from '../controls/OpenUrlMenu';
 import { ShareMenu } from '../controls/ShareMenu';
+import { useMenuGroup } from '../controls/menus';
 import { formatBytes } from '../format';
 
 const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.json';
@@ -19,6 +20,7 @@ export function TopBar({ file, onOpen }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const shortcutsOpen = useApp((s) => s.shortcutsOpen);
   const setShortcutsOpen = useApp((s) => s.setShortcutsOpen);
+  useMenuGroup();
   return (
     <header className="top-bar" data-inset="top">
       <span className="brand">GRAPE</span>
