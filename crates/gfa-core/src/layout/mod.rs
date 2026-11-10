@@ -14,7 +14,7 @@ mod quality;
 pub mod rng;
 mod topology;
 
-pub use fixed::{Fixed, FixedError};
+pub use fixed::{Fixed, FixedError, positions_from_lines};
 pub use points::{Chains, link_geometry, link_points};
 pub use quality::{Quality, measure};
 pub use topology::{Topology, TopologyError};

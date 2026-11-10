@@ -3,7 +3,8 @@ import { WorkerTerminatedError } from '../workers/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import { fetchFile, fileNameOf } from './fetchFile';
 import { type Fingerprint, headHash } from './share/fingerprint';
-import { isSessionFile } from './sharing';
+/** BandageNG's layout files are told from graphs by name. */
+const isLayoutFile = (name: string) => /\.layout$/i.test(name);
 import type { MergeSlice } from './merge';
 import type { Context } from './store';
 
@@ -145,8 +146,8 @@ export function createFileSlice(ctx: Context): FileSlice {
     },
 
     open(file, url) {
-      if (isSessionFile(file.name)) {
-        get().openSession(file);
+      if (isLayoutFile(file.name)) {
+        get().openLayout(file);
         return;
       }
       downloading?.abort();

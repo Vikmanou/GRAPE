@@ -1,3 +1,5 @@
+import type { LayoutLines } from '../protocol/layout';
+import type { LayoutFormat } from './layoutFile';
 import type {
   FastaAttached,
   GraphRequest,
@@ -103,17 +105,18 @@ export class GraphClient {
     return expect(await this.rpc.request({ type: 'gfa', keep }), 'gfa').records;
   }
 
-  async writeSession(view: unknown, positions: Float32Array<ArrayBuffer>): Promise<Blob> {
+  /** The shown graph's layout from `x, y` per point, as BandageNG's Export layout writes it. */
+  async writeLayout(positions: Float32Array<ArrayBuffer>, format: LayoutFormat, double: boolean): Promise<Blob> {
     const response = await this.rpc.request(
-      { type: 'write-session', view, positions },
+      { type: 'write-layout', positions, format, double },
       { transfer: [positions.buffer] },
     );
-    return expect(response, 'session-written').blob;
+    return expect(response, 'layout-written').blob;
   }
 
-  async readSession(file: Blob): Promise<{ view: unknown; positions: Float32Array<ArrayBuffer> }> {
-    const { view, positions } = expect(await this.rpc.request({ type: 'read-session', file }), 'session-read');
-    return { view, positions };
+  /** One line per segment of the shown graph from a BandageNG `.layout` file. */
+  async readLayout(file: Blob): Promise<LayoutLines> {
+    return expect(await this.rpc.request({ type: 'read-layout', file }), 'layout-read').lines;
   }
 
   async searchLinks(): Promise<SearchLinks> {

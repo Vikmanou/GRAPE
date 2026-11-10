@@ -9,7 +9,7 @@ import { ShareMenu } from '../controls/ShareMenu';
 import { useMenuGroup } from '../controls/menus';
 import { formatBytes } from '../format';
 
-const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.json';
+const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.layout';
 
 interface Props {
   file: FileInfo | undefined;

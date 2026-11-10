@@ -1,5 +1,5 @@
 import type { Topology } from '../protocol/graph';
-import type { LayoutControl, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
+import type { LayoutControl, LayoutLines, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
 import { expect, RpcClient, type WithoutId, type WorkerMemory } from '../rpc';
 
 export type LayoutListener = (response: LayoutResponse) => void;
@@ -8,7 +8,7 @@ function spawn(): RpcClient<LayoutRequest, LayoutResponse> {
   return new RpcClient<LayoutRequest, LayoutResponse>({
     name: 'layout',
     spawn: () => new Worker(new URL('./layout.worker.ts', import.meta.url), { type: 'module', name: 'layout' }),
-    isUpdate: (response) => response.type === 'geometry' || response.type === 'positions',
+    isUpdate: (response) => response.type === 'geometry' || response.type === 'positions' || response.type === 'drawn',
   });
 }
 
@@ -43,13 +43,16 @@ export class LayoutClient {
     );
   }
 
-  /** Geometry and a grid around saved positions, with no layout run; they arrive as a settled CPU layout's do. */
-  restore(topology: Topology, positions: Float32Array<ArrayBuffer>, listener: LayoutListener): void {
+  /** Geometry and a grid around a layout file's lines, with no layout run; they arrive as a settled CPU layout's do. */
+  restore(topology: Topology, lines: LayoutLines, listener: LayoutListener): void {
     this.cancel();
     const rpc = spawn();
     this.rpc = rpc;
     rpc
-      .request({ type: 'fixed', topology, positions }, { onUpdate: listener, transfer: [positions.buffer] })
+      .request(
+        { type: 'fixed', topology, lines },
+        { onUpdate: listener, transfer: [lines.points.buffer, lines.starts.buffer] },
+      )
       .catch((error: unknown) => {
         if (this.rpc === rpc)
           listener({ type: 'error', id: 0, message: String(error instanceof Error ? error.message : error) });

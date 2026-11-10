@@ -1,5 +1,5 @@
 import { USABLE_LEVEL } from '../engine/core/backend';
-import type { LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { LayoutLines, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
 import { shownGraph } from './load';
 import type { Context } from './store';
 import { exposeSettledLayout } from './testHooks';
@@ -36,12 +36,11 @@ export interface LayoutSlice {
   setLayoutPaused: (paused: boolean) => void;
   /**
    * Lays out the loaded graph from the start, when it and its renderer are
-   * ready; with `positions`, `x, y` per point saved earlier, draws them as
-   * they are instead.
+   * ready; with `lines` from a layout file, draws them instead.
    */
-  restartLayout: (positions?: Float32Array<ArrayBuffer>) => void;
-  /** The next layout draws these positions, saved in a session, instead of running. */
-  queuePositions: (positions: Float32Array<ArrayBuffer>) => void;
+  restartLayout: (lines?: LayoutLines) => void;
+  /** Applies a BandageNG layout file to the open graph, as its Load layout does. */
+  openLayout: (file: File) => void;
   stopLayout: () => void;
 }
 
@@ -55,9 +54,8 @@ const ignore = () => undefined;
 export function createLayoutSlice(ctx: Context): LayoutSlice {
   const { set, get, services } = ctx;
   let stopRun: (() => void) | undefined;
-  let queued: Float32Array<ArrayBuffer> | undefined;
 
-  function run(saved: Float32Array<ArrayBuffer> | undefined): () => void {
+  function run(saved: LayoutLines | undefined): () => void {
     const { gpuLayout: gpu, layoutOptions: options } = get();
     const graph = shownGraph(get());
     if (!graph) return ignore;
@@ -98,6 +96,10 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
     const listen = (response: LayoutResponse) => {
       if (!live) return;
       switch (response.type) {
+        // Segments the file leaves out are not drawn, as in BandageNG.
+        case 'drawn':
+          get().setFilters({ drawn: response.drawn.every((d) => d === 1) ? undefined : response.drawn });
+          break;
         case 'geometry':
           total = response.totalIterations;
           set({ fps: undefined });
@@ -178,16 +180,26 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       set({ layoutPaused: paused });
     },
 
-    queuePositions(positions) {
-      queued = positions;
-    },
-
-    restartLayout(positions) {
+    restartLayout(lines) {
       get().stopLayout();
       if (get().renderer !== 'none' && !ctx.bridge.attached) return;
-      const saved = positions ?? queued;
-      queued = undefined;
-      stopRun = run(saved);
+      stopRun = run(lines);
+    },
+
+    openLayout(file) {
+      const { load } = get();
+      if (load.state !== 'loaded') {
+        get().toast('Open the graph first, then the layout');
+        return;
+      }
+      services.graph.readLayout(file).then(
+        (lines) => {
+          if (get().load === load) get().restartLayout(lines);
+        },
+        (error: unknown) => {
+          get().toast('This layout cannot be opened', error instanceof Error ? error.message : String(error));
+        },
+      );
     },
 
     stopLayout() {

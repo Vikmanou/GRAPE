@@ -1,4 +1,5 @@
 import type { EngineCommand } from '../engine/commands';
+import type { LayoutFormat } from '../workers/graph/layoutFile';
 import { setBits } from './bits';
 import type { Context } from './store';
 
@@ -13,6 +14,8 @@ export interface ExportSlice {
   exportPng: (scale: number) => Promise<Blob>;
   /** The current view as an SVG; fails past 50,000 segments in view. */
   exportSvg: () => Promise<Blob>;
+  /** Where every segment is drawn, as BandageNG's Export layout writes it. */
+  exportLayout: (format: LayoutFormat) => Promise<Blob>;
 }
 
 export function createExportSlice(ctx: Context): ExportSlice {
@@ -41,6 +44,11 @@ export function createExportSlice(ctx: Context): ExportSlice {
     async exportFasta(scope) {
       const records = await services.graph.exportRecords(setBits(await bits(scope)));
       return services.sequence.fasta(records);
+    },
+
+    async exportLayout(format) {
+      const { positions } = await ctx.bridge.ask({ type: 'read-positions' }, 'positions');
+      return services.graph.writeLayout(positions, format, get().displayOptions.double);
     },
 
     async exportGfa(scope) {

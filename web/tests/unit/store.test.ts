@@ -4,7 +4,7 @@ import type { EngineLike } from '../../src/state/bridge';
 import { DEFAULT_SEED, listedHits, readHit } from '../../src/state/search';
 import { createAppStore, type LayoutService, type Services } from '../../src/state/store';
 import type { ParseResult } from '../../src/workers/protocol/graph';
-import type { LayoutResponse } from '../../src/workers/protocol/layout';
+import type { LayoutLines, LayoutResponse } from '../../src/workers/protocol/layout';
 import type { SearchResults } from '../../src/workers/protocol/sequence';
 import { SearchCancelledError, WorkerTerminatedError } from '../../src/workers/rpc';
 
@@ -44,10 +44,10 @@ class FakeLayout implements LayoutService {
     this.listener = listener;
   }
 
-  restored: Float32Array | undefined;
+  restored: LayoutLines | undefined;
 
-  restore(_t: unknown, positions: Float32Array, listener: (response: LayoutResponse) => void): void {
-    this.restored = positions;
+  restore(_t: unknown, lines: LayoutLines, listener: (response: LayoutResponse) => void): void {
+    this.restored = lines;
     this.listener = listener;
   }
 
@@ -158,8 +158,8 @@ function setup() {
       addFasta: () => Promise.reject(new Error('unused')),
       gfa: () => Promise.reject(new Error('unused')),
       memory: () => Promise.reject(new Error('unused')),
-      writeSession: () => Promise.reject(new Error('unused')),
-      readSession: () => Promise.reject(new Error('unused')),
+      writeLayout: () => Promise.reject(new Error('unused')),
+      readLayout: () => Promise.reject(new Error('unused')),
       cancel: () => {
         cancels++;
         for (const p of parses) p.reject(new WorkerTerminatedError('graph'));
@@ -211,17 +211,19 @@ async function loadedWithEngine() {
 }
 
 describe('store', () => {
-  it('draws saved positions without a layout run', async () => {
+  it('draws a layout file without a layout run and hides the segments it leaves out', async () => {
     const { store, layouts } = await loadedWithEngine();
-    const saved = new Float32Array([1, 2, 3, 4]);
-    store.getState().restartLayout(saved);
+    const lines = { points: new Float32Array([1, 2, 3, 4]), starts: Uint32Array.of(0, 2) };
+    store.getState().restartLayout(lines);
     const layout = layouts.at(-1);
     if (!layout) throw new Error('no layout');
-    expect(layout.restored).toBe(saved);
+    expect(layout.restored).toBe(lines);
+    layout.listener?.({ type: 'drawn', id: 1, drawn: Uint8Array.of(1, 0) });
+    expect(store.getState().filters.drawn).toEqual(Uint8Array.of(1, 0));
     layout.listener?.({ type: 'geometry', id: 1, geometry, totalIterations: 0 });
     const progress = { iteration: 0, level: 0, levels: 1, pinned: 0, refining: false, done: true };
     const grid = undefined as unknown as Extract<LayoutResponse, { type: 'positions' }>['grid'];
-    layout.listener?.({ type: 'positions', id: 1, positions: saved, grid, progress });
+    layout.listener?.({ type: 'positions', id: 1, positions: new Float32Array(4), grid, progress });
     expect(store.getState().layoutStatus.state).toBe('done');
   });
 

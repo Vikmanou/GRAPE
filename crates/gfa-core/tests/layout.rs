@@ -2,8 +2,8 @@ mod common;
 
 use common::load;
 use gfa_core::layout::{
-    Fixed, FixedError, Layout, LayoutOptions, Topology, TopologyError, link_geometry, link_points,
-    measure,
+    Chains, Fixed, FixedError, Layout, LayoutOptions, Topology, TopologyError, link_geometry,
+    link_points, measure, positions_from_lines,
 };
 
 const TESTDATA: [&str; 14] = [
@@ -369,22 +369,88 @@ fn dragging_never_repacks_components() {
 }
 
 #[test]
-fn saved_positions_get_the_geometry_a_layout_draws() {
+fn given_positions_get_the_geometry_a_layout_draws() {
     for name in TESTDATA {
         let graph = load(name);
         let t = graph.topology();
         let layout = Layout::new(t, LayoutOptions::default()).unwrap();
-        let fixed = Fixed::new(&t, layout.points()).unwrap();
+        let fixed = Fixed::new(&t).unwrap();
         assert_eq!(fixed.chains, layout.chains, "{name}");
         assert_eq!(fixed.pieces, layout.chains.pieces(), "{name}");
         assert_eq!(fixed.links, link_geometry(&t, &layout.chains), "{name}");
-        assert_eq!(
-            Fixed::new(&t, layout.points() + 1).err(),
-            Some(FixedError::Points {
-                expected: layout.points(),
-                found: layout.points() + 1
-            }),
-            "{name}"
-        );
     }
+}
+
+/// One line per kept segment, its chain's own points.
+fn lines_of(
+    chains: &Chains,
+    positions: &[f32],
+    keep: impl Fn(usize) -> bool,
+) -> (Vec<f32>, Vec<u32>) {
+    let mut lines = Vec::new();
+    let mut starts = vec![0u32];
+    for s in 0..chains.start.len() {
+        if keep(s) {
+            let first = chains.start[s] as usize;
+            for p in first..=first + usize::from(chains.pieces[s]) {
+                lines.extend([positions[2 * p], positions[2 * p + 1]]);
+            }
+        }
+        starts.push((lines.len() / 2) as u32);
+    }
+    (lines, starts)
+}
+
+#[test]
+fn lines_with_the_chains_points_are_kept_exactly() {
+    let (_, laid) = run("tangle.gfa", LayoutOptions::default());
+    let graph = load("tangle.gfa");
+    let t = graph.topology();
+    let chains = &Fixed::new(&t).unwrap().chains;
+    let (lines, starts) = lines_of(chains, &laid, |_| true);
+    let (positions, drawn) = positions_from_lines(chains, &lines, &starts).unwrap();
+    assert_eq!(positions, laid);
+    assert!(drawn.iter().all(|&d| d));
+}
+
+#[test]
+fn foreign_lines_are_resampled_rescaled_and_missing_segments_left_undrawn() {
+    let graph = load("tangle.gfa");
+    let t = graph.topology();
+    let chains = &Fixed::new(&t).unwrap().chains;
+    // Two-point lines along x, ten times longer than the chains: Bandage's own units.
+    let mut lines = Vec::new();
+    let mut starts = vec![0u32];
+    for s in 0..chains.start.len() {
+        if s != 1 {
+            let length = chains.piece_length[s] * f32::from(chains.pieces[s]) * 10.0;
+            lines.extend([s as f32 * 1000.0, 0.0, s as f32 * 1000.0 + length, 0.0]);
+        }
+        starts.push((lines.len() / 2) as u32);
+    }
+    let (positions, drawn) = positions_from_lines(chains, &lines, &starts).unwrap();
+    assert!(!drawn[1] && drawn[0]);
+    for s in (0..chains.start.len()).filter(|&s| s != 1) {
+        let first = chains.start[s] as usize;
+        let pieces = usize::from(chains.pieces[s]);
+        let chain = chains.piece_length[s] * pieces as f32;
+        for j in 0..=pieces {
+            let want = s as f32 * 100.0 + chain * j as f32 / pieces as f32;
+            assert!(
+                (positions[2 * (first + j)] - want).abs() < 1e-2 * want.max(1.0),
+                "{s} {j}"
+            );
+            assert_eq!(positions[2 * (first + j) + 1], 0.0);
+        }
+    }
+    assert_eq!(
+        positions_from_lines(chains, &lines, &starts[1..]),
+        Err(FixedError::Lines)
+    );
+    let mut bad = lines.clone();
+    bad[0] = f32::NAN;
+    assert_eq!(
+        positions_from_lines(chains, &bad, &starts),
+        Err(FixedError::Lines)
+    );
 }

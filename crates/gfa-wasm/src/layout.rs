@@ -1,5 +1,6 @@
+use crate::parse::Loaded;
 use gfa_core::layout::Grid as CoreGrid;
-use gfa_core::layout::{Fixed, LayoutOptions, Topology, link_geometry};
+use gfa_core::layout::{Fixed, LayoutOptions, Topology, link_geometry, positions_from_lines};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -149,27 +150,28 @@ impl Layout {
     }
 }
 
-/// The geometry around positions saved earlier, with no layout run.
+/// The geometry around positions from a layout file's lines, with no layout run.
 #[wasm_bindgen]
 pub struct FixedLayout {
     fixed: Fixed,
     positions: Vec<f32>,
+    drawn: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl FixedLayout {
+    /// `starts` holds one offset per segment and one more, in points, into `lines` (`x, y` pairs).
     #[wasm_bindgen(constructor)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         lengths: &[u32],
         components: &[u32],
         link_from: &[u32],
         link_to: &[u32],
         link_bits: &[u8],
-        positions: Vec<f32>,
+        lines: &[f32],
+        starts: &[u32],
     ) -> Result<FixedLayout, JsError> {
-        if !positions.len().is_multiple_of(2) || positions.iter().any(|v| !v.is_finite()) {
-            return Err(JsError::new("the saved positions are damaged"));
-        }
         let topology = Topology {
             lengths,
             components,
@@ -177,9 +179,23 @@ impl FixedLayout {
             link_to,
             link_bits,
         };
-        let fixed =
-            Fixed::new(&topology, positions.len() / 2).map_err(|e| JsError::new(&e.to_string()))?;
-        Ok(FixedLayout { fixed, positions })
+        let fixed = Fixed::new(&topology).map_err(|e| JsError::new(&e.to_string()))?;
+        let (positions, drawn) = positions_from_lines(&fixed.chains, lines, starts)
+            .map_err(|e| JsError::new(&e.to_string()))?;
+        Ok(FixedLayout {
+            fixed,
+            positions,
+            drawn: drawn.into_iter().map(u8::from).collect(),
+        })
+    }
+
+    pub fn positions(&self) -> Vec<f32> {
+        self.positions.clone()
+    }
+
+    /// 1 per segment the lines draw.
+    pub fn drawn(&self) -> Vec<u8> {
+        self.drawn.clone()
     }
 
     pub fn points(&self) -> usize {
@@ -327,4 +343,22 @@ pub fn pack(boxes: &[f32], frozen: &[u8]) -> Vec<f32> {
         return Vec::new();
     }
     gfa_core::layout::pack(boxes, &frozen)
+}
+
+#[wasm_bindgen]
+impl Loaded {
+    /// `first point, pieces` per segment: segment `s` draws points `first` to
+    /// `first + pieces`, as every layout of this graph lays them out.
+    #[wasm_bindgen(js_name = layoutChains)]
+    pub fn layout_chains(&self) -> Result<Vec<u32>, JsError> {
+        let fixed =
+            Fixed::new(&self.graph().topology()).map_err(|e| JsError::new(&e.to_string()))?;
+        Ok(fixed
+            .chains
+            .start
+            .iter()
+            .zip(&fixed.chains.pieces)
+            .flat_map(|(&start, &pieces)| [start, u32::from(pieces)])
+            .collect())
+    }
 }

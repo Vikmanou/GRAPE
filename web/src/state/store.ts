@@ -3,7 +3,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { BackendKind } from '../engine/core/detect';
 import type { GraphClient } from '../workers/graph/GraphClient';
 import type { Topology } from '../workers/protocol/graph';
-import type { LayoutControl, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
+import type { LayoutControl, LayoutLines, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
 import type { PackClient } from '../workers/pack/PackClient';
 import type { WithoutId, WorkerMemory } from '../workers/rpc';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
@@ -45,8 +45,8 @@ export type GraphService = Pick<
   | 'gfa'
   | 'addFasta'
   | 'memory'
-  | 'writeSession'
-  | 'readSession'
+  | 'writeLayout'
+  | 'readLayout'
 >;
 
 export type SequenceService = Pick<
@@ -73,7 +73,7 @@ export interface LayoutService {
     options: LayoutOptions,
     listener: (response: LayoutResponse) => void,
   ): void;
-  restore(topology: Topology, positions: Float32Array<ArrayBuffer>, listener: (response: LayoutResponse) => void): void;
+  restore(topology: Topology, lines: LayoutLines, listener: (response: LayoutResponse) => void): void;
   pack(boxes: Float32Array<ArrayBuffer>): Promise<Float32Array>;
   /** Steers a running CPU layout. */
   send(request: WithoutId<LayoutControl>): void;

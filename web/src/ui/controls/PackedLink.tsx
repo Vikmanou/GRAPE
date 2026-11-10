@@ -103,8 +103,8 @@ export function PackedLink({ ready }: { ready: boolean }) {
       )}
       {packing.state === 'too-big' && (
         <p className="small" role="status" data-testid="share-too-big">
-          This graph is too large to fit in a link, even packed: browsers refuse links over 2 MB. Share the link to the
-          view and send the file itself, or a session file.
+          This graph is too large to fit in a link, even packed: browsers refuse links over 2 MB. Send the file itself,
+          with an exported Bandage layout to draw it the same way.
         </p>
       )}
       {packing.state === 'failed' && (

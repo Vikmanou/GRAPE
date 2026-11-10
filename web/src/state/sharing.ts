@@ -2,7 +2,6 @@ import { setBits } from './bits';
 import type { LinkFile } from '../workers/protocol/pack';
 import { WorkerTerminatedError } from '../workers/rpc';
 import { isPackedFragment, packedFragment, packedPayload } from './share/codec';
-import { sameFile } from './share/fingerprint';
 import { restoreShared, until } from './share/restore';
 import { parseShareState, type ShareState } from './share/state';
 import type { Context } from './store';
@@ -24,15 +23,6 @@ export interface SharingSlice {
   readShareLink: (hash: string) => Promise<void>;
   /** Restores the waiting view on the graph that came with it; otherwise lays the graph out as usual. */
   applyShare: () => void;
-  /** The current view and every point's position, as a session file. */
-  saveSession: () => Promise<Blob>;
-  /** Restores a session on the graph it was saved from, which must be open. */
-  openSession: (file: File) => void;
-}
-
-/** Session files are told from graphs by name: `.grape.json`, gzipped or not. */
-export function isSessionFile(name: string): boolean {
-  return /\.grape\.json(\.gz)?$/i.test(name);
 }
 
 /** The fragment is applied once: reloading the page afterwards keeps the user's own view. */
@@ -139,34 +129,6 @@ export function createSharingSlice(ctx: Context): SharingSlice {
       restore(shared, fasta).catch((error: unknown) => {
         get().toast('The shared view could not be restored', message(error));
       });
-    },
-
-    async saveSession() {
-      const view = await capture();
-      const { positions } = await ctx.bridge.ask({ type: 'read-positions' }, 'positions');
-      return services.graph.writeSession(view, positions);
-    },
-
-    openSession(file) {
-      services.graph
-        .readSession(file)
-        .then(async ({ view, positions }) => {
-          const shared = parseShareState(view);
-          const { load, fingerprint } = get();
-          if (load.state !== 'loaded' || !fingerprint) {
-            get().toast('Open the graph first, then the session file');
-          } else if (!sameFile(shared.file, fingerprint)) {
-            get().toast(
-              'This session was saved from another graph',
-              'The open graph differs in size, segment count or content from the one the session was saved from.',
-            );
-          } else {
-            await restoreShared(ctx, shared, positions);
-          }
-        })
-        .catch((error: unknown) => {
-          get().toast('This session cannot be opened', message(error));
-        });
     },
 
     async packLink() {

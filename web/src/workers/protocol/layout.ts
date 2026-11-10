@@ -9,6 +9,12 @@ export interface LayoutOptions {
   quality: Quality;
 }
 
+/** One line of `x, y` points per segment, from a layout file: `starts[s]` to `starts[s + 1]` points into `points`. */
+export interface LayoutLines {
+  points: Float32Array<ArrayBuffer>;
+  starts: Uint32Array<ArrayBuffer>;
+}
+
 export type LayoutRequest =
   /**
    * Runs the CPU layout, posting positions as it goes, and keeps answering
@@ -21,8 +27,8 @@ export type LayoutRequest =
   | { type: 'unpin'; id: number }
   /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
   | { type: 'refine'; id: number; selected: Uint32Array<ArrayBuffer> | undefined }
-  /** Geometry and a grid around positions saved earlier, with no layout run; ends with `ok`. */
-  | { type: 'fixed'; id: number; topology: Topology; positions: Float32Array<ArrayBuffer> }
+  /** Geometry and a grid around a layout file's lines, with no layout run; ends with `ok`. */
+  | { type: 'fixed'; id: number; topology: Topology; lines: LayoutLines }
   /** Coarsens only, for the GPU layout; later `pack` requests use its components. */
   | { type: 'hierarchy'; id: number; topology: Topology; options: LayoutOptions }
   /** `x0, y0, x1, y1` per component, and 1 per component laid out straight. */
@@ -114,6 +120,8 @@ export type LayoutResponse =
       progress: CpuProgress;
     }
   | { type: 'ok'; id: number }
+  /** 1 per segment a layout file draws, before its positions. */
+  | { type: 'drawn'; id: number; drawn: Uint8Array<ArrayBuffer> }
   | { type: 'hierarchy'; id: number; hierarchy: Hierarchy }
   /** `dx, dy` per component. */
   | { type: 'packed'; id: number; offsets: Float32Array }

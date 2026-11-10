@@ -1122,3 +1122,26 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   useless, and the waiting notice confusing.
 - **Alternatives**: keeping view-only links for graphs too large to pack;
   sessions that wait for their graph without a notice.
+
+## 2026-11-10: Layouts are saved and loaded as BandageNG does; no session files
+
+- **Decision**: the session file (`.grape.json.gz`: a view and float32
+  positions) is removed. Export writes BandageNG's layout files
+  (layout/io.cpp in asl/BandageNG): `.layout`, a JSON object from node name
+  and strand (`name+`, and `name-` backwards in double mode) to the node's
+  line points, and `.tsv`, one line per node with the middle point of its
+  line at `%g` precision. Opening a `.layout` file applies it to the open
+  graph, as BandageNG's Load layout does: names the graph lacks are refused
+  with its messages, and segments the file leaves out are hidden (a filter
+  that Clear removes). Each line is resampled along its length onto the
+  segment's chain and scaled by the median ratio of chain length to line
+  length, since Bandage's units are not GRAPE's; a file whose lines all have
+  their chain's point count, as GRAPE writes them, is used exactly, so an
+  exported layout draws again bit for bit on either renderer. The original
+  Bandage (rrwick) has no layout files.
+- **Reason**: the owner asked that saving a drawing match Bandage. BandageNG's
+  format is the one Bandage users have, needs no format of GRAPE's own, and
+  the fixed-layout path built for sessions already draws given positions.
+- **Alternatives**: keeping session files beside layout files; placing the
+  segments a layout leaves out around the pinned ones instead of hiding
+  them.

@@ -10,6 +10,8 @@ export interface Filters {
   /** 0 shows components of any size. */
   minComponentLength: number;
   depth: { min: number; max: number } | undefined;
+  /** 1 per segment a loaded layout file draws (layout.ts). */
+  drawn: Uint8Array | undefined;
 }
 
 export const NO_FILTERS: Filters = {
@@ -17,6 +19,7 @@ export const NO_FILTERS: Filters = {
   components: undefined,
   minComponentLength: 0,
   depth: undefined,
+  drawn: undefined,
 };
 
 export interface FilterSlice {
@@ -42,13 +45,14 @@ export function createFilterSlice(ctx: Context): FilterSlice {
 
   function apply(filters: Filters): void {
     set({ filters });
-    const { neighbourhood, components, minComponentLength, depth } = filters;
+    const { neighbourhood, components, minComponentLength, depth, drawn } = filters;
     const lengths = minComponentLength > 0 ? shownGraph(get())?.components.lengths : undefined;
     const filter: Filter = {
       neighbourhood,
       components,
       minComponentLength: lengths && { bases: minComponentLength, lengths },
       depth,
+      drawn,
     };
     ctx.bridge.send({ type: 'set-filter', filter });
   }

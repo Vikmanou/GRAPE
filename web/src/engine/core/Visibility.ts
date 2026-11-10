@@ -11,6 +11,8 @@ export interface Filter {
   minComponentLength?: { bases: number; lengths: Float64Array } | undefined;
   /** Segments of unknown depth stay shown. */
   depth?: { min: number; max: number } | undefined;
+  /** 1 per segment a loaded layout file draws. */
+  drawn?: Uint8Array | undefined;
 }
 
 export const NO_FILTER: Filter = {};
@@ -31,11 +33,12 @@ export interface Hidden {
 }
 
 export function filtering(filter: Filter): boolean {
-  return !!(filter.neighbourhood ?? filter.components ?? filter.minComponentLength ?? filter.depth);
+  return !!(filter.neighbourhood ?? filter.components ?? filter.minComponentLength ?? filter.depth ?? filter.drawn);
 }
 
 function shown(filter: Filter, data: FilterData, segment: number): boolean {
-  const { neighbourhood, components, minComponentLength, depth } = filter;
+  const { neighbourhood, components, minComponentLength, depth, drawn } = filter;
+  if (drawn && !drawn[segment]) return false;
   if (neighbourhood && (neighbourhood.distances[segment] ?? UNREACHED) > neighbourhood.steps) return false;
   const component = data.components[segment] ?? 0;
   if (components && !components[component]) return false;

@@ -7,7 +7,7 @@ import type { GraphRequest, GraphResponse } from '../protocol/graph';
 import { type ChainMap, chainTransfers, linkTransfers, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';
 import { describe, gfaRecords, resultTransfers, sequenceSource } from './results';
-import { readSession, writeSession } from './session';
+import { readLayout, writeLayout } from './layoutFile';
 import { type Compression, detectCompression, readFile } from './readFile';
 
 const PROGRESS_INTERVAL_MS = 50;
@@ -206,12 +206,20 @@ async function handle(request: GraphRequest): Promise<void> {
       case 'add-fasta':
         await addFasta(id, request.file);
         return;
-      case 'write-session':
-        post({ type: 'session-written', id, blob: await writeSession(request.view, request.positions) });
+      case 'write-layout': {
+        const g = loaded();
+        const chains = g.layoutChains();
+        const names = g.names(Uint32Array.from({ length: chains.length / 2 }, (_, i) => i));
+        const blob = writeLayout(names, chains, request.positions, request.format, request.double);
+        post({ type: 'layout-written', id, blob });
         return;
-      case 'read-session': {
-        const { view, positions } = await readSession(request.file);
-        post({ type: 'session-read', id, view, positions }, [positions.buffer]);
+      }
+      case 'read-layout': {
+        const g = loaded();
+        const segments = g.layoutChains().length / 2;
+        const names = g.names(Uint32Array.from({ length: segments }, (_, i) => i));
+        const lines = readLayout(await request.file.text(), new Map(names.map((n, i) => [n, i])), segments);
+        post({ type: 'layout-read', id, lines }, [lines.points.buffer, lines.starts.buffer]);
         return;
       }
       case 'gfa': {

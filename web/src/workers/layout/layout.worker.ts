@@ -2,7 +2,14 @@ import init, { FixedLayout, Layout, pack, type Hierarchy as WasmHierarchy } from
 import { RIBBON_WIDTH } from '../../engine/style/widths';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import type { Topology } from '../protocol/graph';
-import type { Hierarchy, LayoutControl, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
+import type {
+  Hierarchy,
+  LayoutControl,
+  LayoutLines,
+  LayoutOptions,
+  LayoutRequest,
+  LayoutResponse,
+} from '../protocol/layout';
 import { plain } from '../plain';
 import { CpuRun, gridBuffers, takeGrid } from './cpuRun';
 import { iterationsFor } from './quality';
@@ -75,10 +82,13 @@ function control(request: LayoutControl): void {
   post({ type: 'ok', id: request.id });
 }
 
-function fixed(id: number, t: Topology, positions: Float32Array<ArrayBuffer>): void {
-  const layout = new FixedLayout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, positions);
+function fixed(id: number, t: Topology, lines: LayoutLines): void {
+  const layout = new FixedLayout(t.lengths, t.components, t.linkFrom, t.linkTo, t.linkBits, lines.points, lines.starts);
   try {
     postGeometry(id, layout, t.lengths.length, 0);
+    const drawn = plain(layout.drawn());
+    post({ type: 'drawn', id, drawn }, [drawn.buffer]);
+    const positions = plain(layout.positions());
     const grid = takeGrid(layout.grid(RIBBON_WIDTH / 2));
     const progress = { iteration: 0, level: 0, levels: 1, pinned: 0, refining: false, done: true };
     post({ type: 'positions', id, positions, grid, progress }, [positions.buffer, ...gridBuffers(grid)]);
@@ -104,7 +114,7 @@ async function handle(request: LayoutRequest): Promise<void> {
     return;
   }
   if (request.type === 'fixed') {
-    fixed(request.id, request.topology, request.positions);
+    fixed(request.id, request.topology, request.lines);
     return;
   }
   const layout = create(request.topology, request.options);

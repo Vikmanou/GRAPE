@@ -55,9 +55,10 @@ highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
   a DNA-aware coder (about 1.7 to 1.9 bits per base), so it opens with
   nothing else to download. Graphs up to roughly 7 million bases of distinct sequence
   fit Chrome's 2 MB link limit; past 1 MB, Firefox opens the link when it is
-  pasted into Open URL. A session file also keeps every position, so the
-  view comes back exactly on the same graph in any browser, on either
-  renderer.
+  pasted into Open URL.
+- Export and load layouts as BandageNG does (`.layout`, and `.tsv` with one
+  point per segment), so a drawing moves between GRAPE and BandageNG and
+  comes back exactly in GRAPE on either renderer.
 - Open a graph from a URL; your browser downloads it directly.
 - Find segments by a list of names or a regular expression.
 - Drag a segment to pin it while the rest of the graph follows; unpin, or lay

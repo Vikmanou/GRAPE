@@ -27,7 +27,7 @@ test('top bar menus close each other, on a press outside and on Escape', async (
 
   // A press inside the open menu keeps it open.
   await share.locator('summary').click();
-  await share.getByTestId('share-save-session').hover();
+  await share.locator('p').first().hover();
   await page.mouse.down();
   await page.mouse.up();
   await expect(share).toHaveAttribute('open', '');

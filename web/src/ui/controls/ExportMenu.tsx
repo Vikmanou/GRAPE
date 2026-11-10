@@ -24,6 +24,7 @@ export function ExportMenu() {
   const exportFasta = useApp((s) => s.exportFasta);
   const exportPng = useApp((s) => s.exportPng);
   const exportSvg = useApp((s) => s.exportSvg);
+  const exportLayout = useApp((s) => s.exportLayout);
   const toast = useApp((s) => s.toast);
   const [busy, setBusy] = useState(false);
   if (file === undefined) return null;
@@ -78,6 +79,25 @@ export function ExportMenu() {
       ],
     ],
     ['FASTA', [scoped('visible', 'fasta'), scoped('selection', 'fasta')]],
+    [
+      'Layout',
+      [
+        {
+          id: 'export-layout',
+          label: 'Bandage layout',
+          title: 'Where every segment is drawn, as BandageNG exports it; open it with the graph to draw it again',
+          suffix: '.layout',
+          save: () => exportLayout('layout'),
+        },
+        {
+          id: 'export-layout-tsv',
+          label: 'TSV, one point per segment',
+          title: 'Each segment and the middle of its line, as BandageNG exports TSV',
+          suffix: '.tsv',
+          save: () => exportLayout('tsv'),
+        },
+      ],
+    ],
   ];
 
   const run = (item: Item) => {
