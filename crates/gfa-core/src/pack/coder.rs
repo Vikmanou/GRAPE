@@ -25,6 +25,10 @@ impl Encoder {
         }
     }
 
+    pub(crate) fn len(&self) -> usize {
+        self.out.len()
+    }
+
     pub(crate) fn finish(mut self) -> Vec<u8> {
         for _ in 0..4 {
             self.out.push((self.low >> 24) as u8);

@@ -1,7 +1,7 @@
 mod common;
 
 use common::testdata;
-use gfa_core::pack::{PackError, pack, unpack};
+use gfa_core::pack::{PackError, pack, pack_within, unpack};
 use proptest::prelude::*;
 
 #[test]
@@ -13,6 +13,14 @@ fn every_test_file_round_trips() {
         let file = testdata(&name);
         assert_eq!(unpack(&pack(&file)).unwrap(), file, "{name}");
     }
+}
+
+#[test]
+fn packing_stops_at_the_limit() {
+    let file = testdata("paths.gfa");
+    let size = pack(&file).len();
+    assert_eq!(pack_within(&file, size), Some(pack(&file)));
+    assert_eq!(pack_within(&file, size - 1), None);
 }
 
 #[test]

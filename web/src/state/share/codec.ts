@@ -1,3 +1,5 @@
+import { base64url, fromBase64url } from '../../workers/pack/base64url';
+
 /** The share link's format version, first in the fragment; a link of another version is refused. */
 export const SHARE_VERSION = 1;
 const PREFIX = '#v=';
@@ -6,17 +8,6 @@ export class ShareLinkError extends Error {}
 
 async function deflate(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream) {
   return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
-}
-
-function base64url(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromBase64url(text: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
 
 /** `#v=<version>.<base64url of deflate-raw of the JSON>` (spec, Features 12). */

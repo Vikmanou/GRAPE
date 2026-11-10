@@ -45,6 +45,12 @@ impl std::fmt::Display for PackError {
 impl std::error::Error for PackError {}
 
 pub fn pack(file: &[u8]) -> Vec<u8> {
+    pack_within(file, usize::MAX).unwrap_or_default()
+}
+
+/// Like `pack`, but gives up as soon as the result would pass `limit` bytes,
+/// so a graph too big for a link costs seconds rather than minutes.
+pub fn pack_within(file: &[u8], limit: usize) -> Option<Vec<u8>> {
     let mode = split::mode_of(file);
     let s = split::split(file, mode);
     let mut out = vec![MAGIC, VERSION, u8::from(mode == Mode::Fasta)];
@@ -53,19 +59,27 @@ pub fn pack(file: &[u8]) -> Vec<u8> {
     for raw in [&s.text, &s.lengths, &s.side] {
         let mut e = Encoder::new();
         let mut m = TextModel::new(raw.len());
-        for &b in raw {
-            m.code(&mut e, b);
+        for chunk in raw.chunks(CHECK_EVERY) {
+            for &b in chunk {
+                m.code(&mut e, b);
+            }
+            (out.len() + e.len() <= limit).then_some(())?;
         }
         section(&mut out, raw.len(), &e.finish());
     }
     let mut e = Encoder::new();
     let mut m = DnaModel::new(s.bases.len());
-    for &b in &s.bases {
-        m.code(&mut e, b);
+    for chunk in s.bases.chunks(CHECK_EVERY) {
+        for &b in chunk {
+            m.code(&mut e, b);
+        }
+        (out.len() + e.len() <= limit).then_some(())?;
     }
     section(&mut out, s.bases.len(), &e.finish());
-    out
+    (out.len() <= limit).then_some(out)
 }
+
+const CHECK_EVERY: usize = 1 << 16;
 
 fn section(out: &mut Vec<u8>, raw: usize, coded: &[u8]) {
     put(out, raw as u64);
