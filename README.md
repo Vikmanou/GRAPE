@@ -77,7 +77,7 @@ npm run check:quick    # Rust and TypeScript checks with unit tests
 npm run check:headed   # full gate with browser tests on the real GPU
 npm run format         # rustfmt and Prettier
 npm run samples        # download real sample graphs (see samples/README.md)
-npm run fuzz           # fuzz the parser
+npm run fuzz           # fuzz the parser and the link packer
 npm run bench:parse    # time parsing a synthetic 200k-segment graph
 npm run bench:layout   # GPU layout timings and quality against the CPU reference
 npm run bench:interaction  # frame rates and pointer latency on the 200k and 1M graphs

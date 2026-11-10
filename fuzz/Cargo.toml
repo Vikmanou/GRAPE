@@ -17,3 +17,10 @@ path = "fuzz_targets/parse.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "pack"
+path = "fuzz_targets/pack.rs"
+test = false
+doc = false
+bench = false

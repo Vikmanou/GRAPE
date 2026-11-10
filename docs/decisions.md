@@ -1057,3 +1057,27 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   sends nothing but the address.
 - **Alternatives**: fetching in the graph worker; streaming straight into
   the parser.
+
+## 2026-11-09: Graphs in share links are packed by a context-mixing codec in gfa-core
+
+- **Decision**: `gfa_core::pack` codes the file losslessly. It splits each
+  line into text, sequence lengths, 2-bit bases and a side stream for case
+  and non-ACGT runs, and codes each stream with a binary arithmetic coder
+  and logistic mixing after lpaq1. Bases mix order 1 to 24 contexts, with
+  GeCo's inverted repeats from order 11 up, plus forward and
+  reverse-complement match models. The text model adds contexts from the
+  same column of the previous line of the same record type. Everything is
+  integer arithmetic, so native and WASM code the same bits. A CRC-32 of the
+  file catches a cut or altered link.
+- **Reason**: a pasted link must hold the whole graph. Brotli is not in
+  every browser's `CompressionStream` and zstd is in none, and both stop
+  near 2 bits per base. Measured against xz -9e on the samples, packed size
+  is 26% smaller on SARS-CoV-2 (9,545 against 12,900 bytes), 16% on LPA
+  (68,603 against 82,500), 9% on the Acacia mitochondrion (202,026 against
+  222,380) and 2.5% on MHC (1,121,259 against 1,149,748). Bases cost 1.67
+  bits on MHC and 1.89 on the plant mitochondrion, close to what
+  reference-free DNA compressors reach, and changing the mixer rate or the
+  counter limits moved the size by under 0.4%. Native speed is about 1 MB
+  of file a second each way.
+- **Alternatives**: deflate-raw through `CompressionStream`; a zstd or xz
+  build in WASM; dropping tags and comments for a smaller lossy link.

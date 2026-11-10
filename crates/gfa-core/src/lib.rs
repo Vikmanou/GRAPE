@@ -4,6 +4,7 @@
 
 pub mod analysis;
 pub mod layout;
+pub mod pack;
 mod parse;
 pub mod search;
 mod store;
