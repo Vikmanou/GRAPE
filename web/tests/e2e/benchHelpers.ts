@@ -8,16 +8,27 @@ export interface Point {
   y: number;
 }
 
+/** Each row is "<memory in KB> <command line>", one per process. */
+function processRows(): string[] {
+  if (process.platform === 'win32') {
+    const script =
+      "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | ForEach-Object { '{0} {1}' -f [int64]($_.WorkingSetSize / 1KB), $_.CommandLine }";
+    return execFileSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' })
+      .split('\n')
+      .map((row) => row.trim());
+  }
+  return execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
+    .split('\n')
+    .map((row) => row.trim());
+}
+
 /**
  * Resident memory in MB of the page's renderer process, which holds the page
  * and its workers, and of Chromium's GPU process, which holds GPU buffers on
- * integrated graphics.
+ * integrated graphics. On Windows this is the working set, the nearest figure.
  */
 export function memoryMb(): { tab: number; gpu: number } {
-  const rows = execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
-    .split('\n')
-    .map((row) => row.trim())
-    .filter((row) => row.includes('ms-playwright/chromium'));
+  const rows = processRows().filter((row) => /ms-playwright[\\/]chromium/.test(row));
   const sum = (match: (row: string) => boolean) =>
     Math.round(rows.filter(match).reduce((kb, row) => kb + Number(row.split(/\s+/)[0]), 0) / 1024);
   return {

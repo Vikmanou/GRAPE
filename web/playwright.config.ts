@@ -29,7 +29,7 @@ const chromium = (['webgl2', 'webgpu'] as const).map((renderer) => ({
         '--disable-renderer-backgrounding',
         '--disable-background-timer-throttling',
         '--enable-features=Vulkan',
-        ...(gpuHeadless ? ['--use-angle=vulkan', '--use-vulkan'] : []),
+        ...(gpuHeadless && process.platform === 'linux' ? ['--use-angle=vulkan', '--use-vulkan'] : []),
       ],
     },
   },
