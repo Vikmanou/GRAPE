@@ -33,7 +33,7 @@ struct Glyph {
 const START = 6u;
 const PIECES = 7u;
 // Pixels of background colour around each glyph, so labels read over ribbons.
-const HALO_PX = 1.0;
+const HALO_PX = 1.5;
 
 // Mirrors `anchor` in labels.wgsl.
 fn anchor(segment: u32) -> vec2f {

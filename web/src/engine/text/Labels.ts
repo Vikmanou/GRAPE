@@ -14,7 +14,7 @@ export interface LabelOptions {
   fontPx: number;
 }
 
-export const DEFAULT_LABEL_OPTIONS: LabelOptions = { max: 2000, minRibbonPx: 3, fontPx: 12 };
+export const DEFAULT_LABEL_OPTIONS: LabelOptions = { max: 2000, minRibbonPx: 3, fontPx: 14 };
 
 /** Placement waits for the view to rest this long, but runs at least this often while it moves. */
 const REST_MS = 150;

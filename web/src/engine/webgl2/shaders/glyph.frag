@@ -9,7 +9,7 @@ in vec2 uv;
 out vec4 fragment;
 
 // Pixels of background colour around each glyph, so labels read over ribbons.
-const float HALO_PX = 1.0;
+const float HALO_PX = 1.5;
 
 float median(vec3 c) {
   return max(min(c.r, c.g), min(max(c.r, c.g), c.b));

@@ -205,7 +205,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
     const size = fontPx / view.zoom;
     const line = lineHeight / view.zoom;
     out.push(
-      `<g font-family="'JetBrains Mono', monospace" font-size="${f(size)}" text-anchor="middle" dominant-baseline="central" fill="${ink.color}" stroke="${bg.color}" stroke-width="${f(2 * pixel)}" paint-order="stroke">\n`,
+      `<g font-family="'JetBrains Mono', monospace" font-size="${f(size)}" text-anchor="middle" dominant-baseline="central" fill="${ink.color}" stroke="${bg.color}" stroke-width="${f(3 * pixel)}" paint-order="stroke">\n`,
     );
     for (const { segment, text } of labels) {
       if (bit(scene.hidden?.segments, segment)) continue;
