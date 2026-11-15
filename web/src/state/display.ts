@@ -4,6 +4,7 @@ import type { Theme } from '../engine/style/palette';
 import type { Context } from './store';
 import { resolveTheme, type ThemeChoice } from './theme';
 
+export type FindMode = 'name' | 'sequence';
 export type SidebarTab = 'overview' | 'display' | 'find' | 'paths' | 'layout';
 
 export interface DisplaySlice {
@@ -26,6 +27,9 @@ export interface DisplaySlice {
   /** Whether the info panel shows while something is selected. */
   infoOpen: boolean;
   toggleInfo: () => void;
+  /** Whether Find looks for segment names or for a sequence. */
+  findMode: FindMode;
+  setFindMode: (mode: FindMode) => void;
   /** The Find panel should take focus when it next renders. */
   findFocus: boolean;
   focusFind: () => void;
@@ -72,9 +76,13 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
       set({ infoOpen: !get().infoOpen });
     },
 
+    findMode: 'name',
+    setFindMode(findMode) {
+      set({ findMode });
+    },
     findFocus: false,
     focusFind() {
-      set({ sidebar: { open: true, tab: 'find' }, findFocus: true });
+      set({ sidebar: { open: true, tab: 'find' }, findMode: 'name', findFocus: true });
     },
     findFocused() {
       set({ findFocus: false });

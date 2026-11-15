@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { MAX_SEED, MIN_SEED } from '../../state/search';
 import { useApp } from '../../state/store';
+import { Disclosure } from '../controls/Disclosure';
 import { NumberField } from '../controls/NumberField';
 import { formatBases, formatBytes, formatCount, formatPercent } from '../format';
 import { SearchResults } from './SearchResults';
@@ -19,7 +20,6 @@ export function SequenceSearch() {
   const running = run.state === 'indexing' || run.state === 'searching';
   return (
     <section className="find sequence-search" aria-label="Sequence search" data-testid="sequence-search">
-      <h3>Sequence search</h3>
       <label htmlFor="search-sequence">DNA bases or FASTA</label>
       <textarea
         id="search-sequence"
@@ -64,16 +64,21 @@ export function SequenceSearch() {
           }}
         />
       </div>
-      <div className="row">
-        <span title="Exact bases a hit must hold somewhere; shorter finds more and takes longer">Seed length</span>
-        <NumberField
-          label="Seed length"
-          testId="search-seed"
-          value={seed}
-          valid={(k) => Number.isInteger(k) && k >= MIN_SEED && k <= MAX_SEED}
-          onValue={setSeed}
-        />
-      </div>
+      <Disclosure title="Detail" testId="search-detail">
+        <div className="row">
+          <label title="Exact bases a hit must hold somewhere; shorter finds more and takes longer">
+            Match at least{' '}
+            <NumberField
+              label="Seed length"
+              testId="search-seed"
+              value={seed}
+              valid={(k) => Number.isInteger(k) && k >= MIN_SEED && k <= MAX_SEED}
+              onValue={setSeed}
+            />{' '}
+            exact bases
+          </label>
+        </div>
+      </Disclosure>
       <div data-testid="search-status" aria-live="polite">
         {run.state === 'indexing' && (
           <p className="muted">

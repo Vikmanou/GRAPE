@@ -23,7 +23,7 @@ export function FilterControls() {
 
   return (
     <section className="controls" aria-label="Filters">
-      <h3>Filters</h3>
+      <h3>Limit the view</h3>
       {drawn && (
         <div className="row">
           <label title="A loaded layout file leaves the other segments out, as BandageNG does">

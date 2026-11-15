@@ -39,6 +39,7 @@ const hitRgb = [HIT_COLOR & 0xff, (HIT_COLOR >>> 8) & 0xff, (HIT_COLOR >>> 16) &
 async function openFind(page: Page): Promise<void> {
   await openSettled(page, GRAPH);
   await showTab(page, 'find');
+  await page.getByTestId('find-mode-sequence').click();
 }
 
 async function search(page: Page, text: string): Promise<void> {
