@@ -1277,8 +1277,8 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   Pages from `.github/workflows/pages.yml` on every push to `main`. The
   accessibility audit is `tests/e2e/a11y.spec.ts` (every control has a name, ids
   are unique, the focus is outlined) plus the contrast tests of 11.2. The README
-  carries two GIFs made from Playwright screenshots joined with ImageMagick, and
-  the benchmark table.
+  carries one captioned GIF of a full walk through (about 1 MB, 1280 px wide), made
+  from Playwright screenshots joined with ImageMagick, and the benchmark table.
 - **Reason**: the spec asks for a site that works offline after the first load.
   The build is under 2 MB, so a full precache is simpler than a runtime cache
   and has no cold-start gap offline.

@@ -15,10 +15,7 @@ all run on your machine.
 highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
 (CC-BY-4.0). It is one of the bundled examples under Open, then Examples.</sub>
 
-Opening a graph and watching the layout settle, then finding segments by name:
-
-![Opening the 13-haplotype LPA graph, which lays out on screen in a second](assets/open-and-settle.gif)
-![Finding eight segments by name and seeing them selected on the graph](assets/find-and-select.gif)
+![A walk through GRAPE: open an example, watch the layout settle, colour by depth, show names, select a segment, find segments and zoom in](assets/grape-demo.gif)
 
 ## Features
 
