@@ -5,7 +5,7 @@ import type { Context } from './store';
 import { resolveTheme, type ThemeChoice } from './theme';
 
 export type FindMode = 'name' | 'sequence';
-export type SidebarTab = 'overview' | 'display' | 'find' | 'paths' | 'layout';
+export type SidebarTab = 'overview' | 'display' | 'find' | 'paths';
 
 export interface DisplaySlice {
   renderer: BackendKind | 'detecting';

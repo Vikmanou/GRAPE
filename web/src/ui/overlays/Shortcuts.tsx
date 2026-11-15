@@ -7,7 +7,7 @@ import { useApp } from '../../state/store';
  */
 const FROM_BANDAGE: [string, string][] = [
   ['Load graph', 'Open, or drop the file on the page'],
-  ['Draw graph', 'Automatic: the graph draws as it loads; Layout tab to draw it again'],
+  ['Draw graph', 'Automatic: the graph draws as it loads; Display tab, Layout (advanced), to draw it again'],
   ['Graph scope: Around nodes, Depth range', 'Display tab, Show only'],
   ['Colour by: Random colours, Uniform colour, Colour by depth', 'Display tab, Colour by'],
   ['Node labels: Name, Length, Depth', 'Display tab, Labels'],

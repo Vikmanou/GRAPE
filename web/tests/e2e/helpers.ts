@@ -36,8 +36,12 @@ export async function skipUnlessBackend(page: Page): Promise<void> {
   test.skip(renderer !== backend(), `needs ${backend()} (WebGPU needs npm run check:headed)`);
 }
 
+/** `layout` is the Layout (advanced) group of the Display tab, opened. */
 export async function showTab(page: Page, tab: 'overview' | 'display' | 'find' | 'paths' | 'layout'): Promise<void> {
-  await page.getByTestId(`tab-${tab}`).click();
+  await page.getByTestId(`tab-${tab === 'layout' ? 'display' : tab}`).click();
+  if (tab !== 'layout') return;
+  const group = page.getByTestId('layout-advanced');
+  if ((await group.getAttribute('open')) === null) await group.locator('summary').click();
 }
 
 /** Opens the info panel's "More actions" group, which folds Whole component, Invert and Download FASTA away. */

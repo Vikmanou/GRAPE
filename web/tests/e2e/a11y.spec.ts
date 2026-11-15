@@ -46,7 +46,7 @@ test('every control has a name in each tab, with a selection and in the help ove
     document.querySelector('[data-probe]')?.remove();
   });
   const all: string[] = [];
-  for (const tab of ['overview', 'display', 'find', 'paths', 'layout'] as const) {
+  for (const tab of ['overview', 'display', 'find', 'paths'] as const) {
     await showTab(page, tab);
     all.push(...(await problems(page)).map((p) => `${tab}: ${p}`));
   }

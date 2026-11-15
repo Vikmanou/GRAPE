@@ -6,7 +6,6 @@ import { Tabs } from '../controls/Tabs';
 import { SHEET_QUERY, useMedia } from '../useMedia';
 import { Display } from './Display';
 import { Find } from './Find';
-import { LayoutTab } from './LayoutTab';
 import { Overview } from './Overview';
 import { Paths } from './Paths';
 
@@ -15,7 +14,6 @@ const TABS = [
   { id: 'display', label: 'Display' },
   { id: 'find', label: 'Find' },
   { id: 'paths', label: 'Paths' },
-  { id: 'layout', label: 'Layout' },
 ] as const satisfies readonly { id: SidebarTab; label: string }[];
 
 export function Sidebar({ result }: { result: ParseResult }) {
@@ -58,7 +56,6 @@ export function Sidebar({ result }: { result: ParseResult }) {
         {tab === 'display' && <Display />}
         {tab === 'find' && <Find />}
         {tab === 'paths' && <Paths />}
-        {tab === 'layout' && <LayoutTab />}
       </div>
     </aside>
   );

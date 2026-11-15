@@ -50,12 +50,12 @@ test('the top bar is reachable in order and every stop shows a focus ring', asyn
 test('the sidebar tabs move with the arrow keys, wrapping at the ends', async ({ page }) => {
   await open(page);
   await page.getByTestId('tab-overview').focus();
-  const order = ['display', 'find', 'paths', 'layout', 'overview'];
+  const order = ['display', 'find', 'paths', 'overview'];
   for (const tab of order) {
     await page.keyboard.press('ArrowRight');
     await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId(`tab-${tab}`)).toBeFocused();
   }
   await page.keyboard.press('ArrowLeft');
-  await expect(page.getByTestId('tab-layout')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('tab-paths')).toHaveAttribute('aria-selected', 'true');
 });
