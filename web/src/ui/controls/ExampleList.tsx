@@ -17,7 +17,10 @@ export function ExampleList({ onPick }: { onPick?: () => void }) {
             }}
           >
             <span className="example-title">{example.title}</span>
-            <span className="muted"> · {example.shows}</span>
+            <span className="muted">
+              {' '}
+              · {example.shows} · {example.size}
+            </span>
           </button>
           <span className="example-credit muted">
             <a href={example.source} target="_blank" rel="noreferrer">

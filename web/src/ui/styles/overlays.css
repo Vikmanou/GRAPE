@@ -6,6 +6,13 @@
 .warnings-panel {
   right: 8px;
   width: min(440px, calc(100% - 16px));
+  /* Shadows at the top and bottom edge show that more lies beyond it. */
+  background:
+    linear-gradient(var(--panel) 30%, transparent) 0 0 / 100% 28px no-repeat local,
+    linear-gradient(transparent, var(--panel) 70%) 0 100% / 100% 28px no-repeat local,
+    linear-gradient(rgb(0 0 0 / 16%), transparent) 0 0 / 100% 8px no-repeat scroll,
+    linear-gradient(transparent, rgb(0 0 0 / 16%)) 0 100% / 100% 8px no-repeat scroll,
+    var(--panel);
 }
 
 .warnings-panel header {
@@ -230,4 +237,16 @@ kbd {
 
 .example-credit a {
   color: var(--muted);
+}
+
+.empty-url {
+  pointer-events: auto;
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.empty-url input {
+  flex: 1;
+  min-width: 0;
 }

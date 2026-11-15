@@ -121,7 +121,7 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
                   stepPath(i, 0);
                 }}
               >
-                Step
+                Step through
               </button>
             </td>
           </tr>

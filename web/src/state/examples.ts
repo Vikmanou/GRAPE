@@ -5,6 +5,8 @@ export interface Example {
   title: string;
   /** What the graph shows. */
   shows: string;
+  /** The size of the file the example downloads. */
+  size: string;
   credit: string;
   licence: 'CC-BY-4.0' | 'MIT';
   source: string;
@@ -16,6 +18,7 @@ const ACACIA_SOURCE = 'https://doi.org/10.5281/zenodo.5722622';
 export const EXAMPLES: readonly Example[] = [
   {
     id: 'chloroplast',
+    size: '49 KB',
     file: 'acacia-chloroplast-unicycler.gfa.gz',
     title: 'Acacia chloroplast',
     shows: 'Unicycler, a closed circle',
@@ -25,6 +28,7 @@ export const EXAMPLES: readonly Example[] = [
   },
   {
     id: 'mitochondrion',
+    size: '244 KB',
     file: 'acacia-mitochondrion-spades.gfa.gz',
     title: 'Acacia mitochondrion',
     shows: 'SPAdes, repeats',
@@ -34,6 +38,7 @@ export const EXAMPLES: readonly Example[] = [
   },
   {
     id: 'lpa',
+    size: '173 KB',
     file: 'lpa-13-haplotypes.gfa.gz',
     title: 'LPA kringle region',
     shows: '13 haplotypes, loops and tangles',
@@ -43,6 +48,7 @@ export const EXAMPLES: readonly Example[] = [
   },
   {
     id: 'human-mito',
+    size: '6 KB',
     file: 'human-mitochondrion-minigraph.gfa.gz',
     title: 'Human mitochondrion',
     shows: 'minigraph, 8 segments',
