@@ -104,7 +104,20 @@ export function packStyle(out: ArrayBuffer, style: Style, graph: StyledGraph, di
 }
 
 /** The fields of the shaders' segment table, each a run of one u32 per segment. */
-export const FIELDS = ['depth', 'gc', 'length', 'component', 'tag', 'tag2', 'start', 'pieces', 'path'] as const;
+export const FIELDS = [
+  'depth',
+  'gc',
+  'length',
+  'component',
+  'tag',
+  'tag2',
+  'start',
+  'pieces',
+  'path',
+  'path2',
+  'path3',
+  'path4',
+] as const;
 
 export type SegmentField = (typeof FIELDS)[number];
 
@@ -129,6 +142,9 @@ export function segmentRuns(geometry: Geometry, data: SegmentData): ArrayBufferV
     start: geometry.segmentStarts,
     pieces: Uint32Array.from(geometry.segmentPieces),
     path: data.pathColors ?? new Uint32Array(n),
+    path2: data.pathExtra?.[0] ?? new Uint32Array(n),
+    path3: data.pathExtra?.[1] ?? new Uint32Array(n),
+    path4: data.pathExtra?.[2] ?? new Uint32Array(n),
   };
   return FIELDS.map((field) => runs[field]);
 }

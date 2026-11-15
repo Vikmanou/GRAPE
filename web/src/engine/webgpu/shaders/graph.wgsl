@@ -75,6 +75,10 @@ const TAG2 = 5u;
 const START = 6u;
 const PIECES = 7u;
 const PATH = 8u;
+// The second to fourth highlighted path colours, after `PATH`.
+const PATH_STRIPES = 3u;
+// `style.mode` of the path colour mode: segment_color's default branch.
+const PATH_MODE = 7u;
 
 fn field(f: u32, segment: u32) -> u32 {
   return segment_table[f * style.segments + segment];
@@ -230,6 +234,17 @@ struct Ribbon {
   @location(3) @interpolate(flat) segment: u32,
   // 1 or -1 where the piece ends in an arrowhead at its end or start.
   @location(4) @interpolate(flat) arrow: f32,
+  // Dimmed colours of the paths that stripe this ribbon, across its width, and how many; 1 or 0 for a plain ribbon.
+  @location(5) @interpolate(flat) stripes: vec4u,
+  @location(6) @interpolate(flat) stripe_count: u32,
+}
+
+// Unselected segments fade into the background when dimming is on.
+fn faded(color: vec4f, segment: u32) -> vec4f {
+  if style.dim == 1u && !is_selected(segment) {
+    return vec4f(mix(unpack4x8unorm(style.dim_background).rgb, color.rgb, DIMMED), color.a);
+  }
+  return color;
 }
 
 // Each piece is a capsule cut from a quad by a signed distance, which gives
@@ -270,11 +285,19 @@ fn ribbon_piece(v: u32, piece: vec2u) -> Ribbon {
   out.clip = to_clip(a + along * local.x + across * local.y);
   out.local = local;
   out.size = vec2f(length_ab, half);
-  var color = segment_color(piece.y, view.strand);
-  if style.dim == 1u && !is_selected(piece.y) {
-    color = vec4f(mix(unpack4x8unorm(style.dim_background).rgb, color.rgb, DIMMED), color.a);
+  out.color = faded(segment_color(piece.y, view.strand), piece.y);
+  out.stripes = vec4u(0u);
+  out.stripe_count = 0u;
+  if style.mode == PATH_MODE {
+    for (var k = 0u; k <= PATH_STRIPES; k++) {
+      let stripe = field(PATH + k, piece.y);
+      if stripe == 0u {
+        break;
+      }
+      out.stripes[k] = pack4x8unorm(faded(unpack4x8unorm(stripe), piece.y));
+      out.stripe_count = k + 1u;
+    }
   }
-  out.color = color;
   out.segment = piece.y;
   out.arrow = arrow;
   return out;
@@ -299,11 +322,17 @@ fn inside_piece(local: vec2f, size: vec2f, arrow: f32) -> f32 {
 
 @fragment
 fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
-  let alpha = coverage(inside(in)) * in.color.a;
+  var color = in.color;
+  if in.stripe_count > 1u {
+    // One stripe per highlighted path, side by side across the width.
+    let across = clamp(in.local.y / in.size.y * 0.5 + 0.5, 0.0, 0.9999);
+    color = unpack4x8unorm(in.stripes[u32(across * f32(in.stripe_count))]);
+  }
+  let alpha = coverage(inside(in)) * color.a;
   if alpha <= 0.0 {
     discard;
   }
-  return vec4f(in.color.rgb * alpha, alpha);
+  return vec4f(color.rgb * alpha, alpha);
 }
 
 @fragment

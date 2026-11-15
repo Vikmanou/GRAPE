@@ -206,7 +206,10 @@ export class Engine {
         break;
       case 'set-path-colors':
         this.backend.setSegmentRun('path', command.colors);
-        this.exporter.setSegments({ pathColors: command.colors });
+        this.backend.setSegmentRun('path2', command.extra[0]);
+        this.backend.setSegmentRun('path3', command.extra[1]);
+        this.backend.setSegmentRun('path4', command.extra[2]);
+        this.exporter.setSegments({ pathColors: command.colors, pathExtra: command.extra });
         break;
       case 'set-gc':
         this.backend.setSegmentRun('gc', command.gc);

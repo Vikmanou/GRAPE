@@ -79,4 +79,24 @@ describe('SVG export', () => {
     });
     await expect(viewToSvg(big)).rejects.toBeInstanceOf(TooManySegmentsError);
   });
+
+  it('stripes a ribbon by the paths highlighted on it, the first on the side of lower y', async () => {
+    const base = scene();
+    const red = 0xff0000ff;
+    const blue = 0xffff0000;
+    const text = await svg(
+      scene({
+        style: { theme: 'light', display: { ...DEFAULT_DISPLAY, color: 'path' } },
+        segments: {
+          ...base.segments,
+          pathColors: Uint32Array.from([red, 0, 0]),
+          pathExtra: [Uint32Array.from([blue, 0, 0]), new Uint32Array(3), new Uint32Array(3)],
+        },
+      }),
+    );
+    // Segment `a` is 5 wide: two stripes of 2.5, a quarter of its width either side of the middle.
+    expect(attributes(text, 'path', 'stroke-width', 'stroke="#ff0000"')).toEqual(['2.5']);
+    expect(attributes(text, 'path', 'stroke-width', 'stroke="#0000ff"')).toEqual(['2.5']);
+    expect(attributes(text, 'path', 'd', 'stroke="#ff0000"')[0]).toBe('M0 -1.25L20 -1.25L40 -1.25');
+  });
 });

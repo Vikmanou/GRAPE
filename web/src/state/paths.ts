@@ -15,6 +15,8 @@ export interface PathsSlice {
   highlightedPaths: number[];
   /** Each segment's colour in the path mode, from the first highlighted path that visits it. */
   pathColors: Uint32Array<ArrayBuffer> | undefined;
+  /** The colours of the second to fourth highlighted paths that visit each segment, which stripe its ribbon. */
+  pathExtra: [Uint32Array<ArrayBuffer>, Uint32Array<ArrayBuffer>, Uint32Array<ArrayBuffer>] | undefined;
   /** Asks the graph worker for the loaded graph's P and W records. */
   loadPaths: () => void;
   /** Highlights a path, switching to the path colour mode, or stops highlighting it. */
@@ -63,15 +65,25 @@ export function createPathsSlice(ctx: Context): PathsSlice {
     const all = await Promise.all(highlighted.map(stepsOf));
     if (get().highlightedPaths !== highlighted) return;
     const colors = new Uint32Array(segments);
+    const extra: PathsSlice['pathExtra'] = [
+      new Uint32Array(segments),
+      new Uint32Array(segments),
+      new Uint32Array(segments),
+    ];
+    const runs = [colors, ...extra];
     for (const [k, path] of highlighted.entries()) {
       const color = pathColor(path);
       for (const step of all[k] ?? []) {
         const segment = (step & ~REVERSE_STEP) >>> 0;
-        if (segment < segments && colors[segment] === 0) colors[segment] = color;
+        if (segment >= segments) continue;
+        // The first four paths that visit a segment take a stripe each; a path that visits it twice takes one.
+        if (runs.some((run) => run[segment] === color)) continue;
+        const free = runs.find((run) => run[segment] === 0);
+        if (free) free[segment] = color;
       }
     }
-    set({ pathColors: colors });
-    ctx.bridge.send({ type: 'set-path-colors', colors });
+    set({ pathColors: colors, pathExtra: extra });
+    ctx.bridge.send({ type: 'set-path-colors', colors, extra });
   }
 
   function highlight(highlightedPaths: number[]): void {
@@ -86,12 +98,19 @@ export function createPathsSlice(ctx: Context): PathsSlice {
     paths: { state: 'none' },
     highlightedPaths: [],
     pathColors: undefined,
+    pathExtra: undefined,
     pathStep: undefined,
 
     loadPaths() {
       const ticket = ++request;
       steps = new Map();
-      set({ paths: { state: 'loading' }, highlightedPaths: [], pathColors: undefined, pathStep: undefined });
+      set({
+        paths: { state: 'loading' },
+        highlightedPaths: [],
+        pathColors: undefined,
+        pathExtra: undefined,
+        pathStep: undefined,
+      });
       services.graph.paths().then(
         (list) => {
           if (ticket === request) set({ paths: { state: 'ready', list } });

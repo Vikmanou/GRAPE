@@ -1,5 +1,14 @@
 import type { Geometry } from '../../workers/protocol/layout';
-import type { Backend, BackendEvents, LabelMetrics, PlacedLabels, SegmentData, Style, View } from '../core/backend';
+import type {
+  Backend,
+  BackendEvents,
+  LabelMetrics,
+  PathField,
+  PlacedLabels,
+  SegmentData,
+  Style,
+  View,
+} from '../core/backend';
 import type { Bounds } from '../core/camera';
 import type { Hidden } from '../core/Visibility';
 import { DEFAULT_DISPLAY } from '../style/display';
@@ -120,7 +129,7 @@ export class WebGpuBackend implements Backend {
     this.hover = segment;
   }
 
-  setSegmentRun(field: 'path' | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void {
+  setSegmentRun(field: PathField | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void {
     this.renderer.setSegmentRun(field, values);
   }
 

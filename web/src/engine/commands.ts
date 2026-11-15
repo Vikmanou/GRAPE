@@ -21,7 +21,11 @@ export type EngineCommand =
   /** Hides segments, and the links that touch them, without touching the layout. */
   | { type: 'set-filter'; filter: Filter }
   /** One RGBA8 colour per segment for the path colour mode, 0 off every highlighted path. */
-  | { type: 'set-path-colors'; colors: Uint32Array<ArrayBuffer> }
+  | {
+      type: 'set-path-colors';
+      colors: Uint32Array<ArrayBuffer>;
+      extra: [Uint32Array<ArrayBuffer>, Uint32Array<ArrayBuffer>, Uint32Array<ArrayBuffer>];
+    }
   /** Search hits to draw on the ribbons, kept through new layouts; undefined draws none. */
   | { type: 'set-bands'; bands: HitBands | undefined }
   /** New GC fractions per segment, NaN without a sequence, after sequences were added. */

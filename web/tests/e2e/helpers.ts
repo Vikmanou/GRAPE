@@ -156,6 +156,37 @@ export async function ribbonColor(page: Page, x: number, y: number): Promise<[nu
   }, png.toString('base64'));
 }
 
+/** Whether pixels near `x, y` (within `radius`) show each colour in `wanted`, within `tolerance` per channel. */
+export async function showsColors(
+  page: Page,
+  x: number,
+  y: number,
+  wanted: number[][],
+  radius = 6,
+  tolerance = 24,
+): Promise<boolean[]> {
+  const png = await page.screenshot({
+    clip: { x: Math.floor(x) - radius, y: Math.floor(y) - radius, width: 2 * radius + 1, height: 2 * radius + 1 },
+  });
+  return page.evaluate(
+    async ([data, colors, tol]) => {
+      const image = await createImageBitmap(await (await fetch(`data:image/png;base64,${data}`)).blob());
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height).data;
+      return colors.map((want) => {
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (want.every((v, k) => Math.abs((pixels[i + k] ?? 0) - v) <= tol)) return true;
+        }
+        return false;
+      });
+    },
+    [png.toString('base64'), wanted, tolerance] as const,
+  );
+}
+
 /** Within a few levels per channel, for colours read off antialiased ribbons. */
 export function near(got: number[], want: number[], tolerance = 24): boolean {
   return got.every((v, i) => Math.abs(v - (want[i] ?? 0)) <= tolerance);

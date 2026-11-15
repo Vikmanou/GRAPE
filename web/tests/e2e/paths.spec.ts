@@ -14,6 +14,7 @@ import {
   ribbonColor,
   repo,
   segmentsOnScreen,
+  showsColors,
   showTab,
   skipUnlessBackend,
   storeAction,
@@ -89,6 +90,22 @@ test('paths and walks list with their lengths and highlight in their own colour'
   }
   await page.getByTestId('paths-clear').click();
   await expect.poll(() => colouredSegments(page)).toEqual([]);
+});
+
+test('a segment on several highlighted paths shows a stripe for each', async ({ page }) => {
+  await openSettled(page, repo('testdata/paths.gfa'));
+  await showTab(page, 'display');
+  await page.getByTestId('dim-unselected').uncheck();
+  const segments = await segmentsOnScreen(page, 3);
+  await showTab(page, 'paths');
+  // p1 visits s11, s12 and s13; the second walk visits s11 and s13 only.
+  await page.getByTestId('path-highlight-0').check();
+  await page.getByTestId('path-highlight-2').check();
+  await expect.poll(() => colouredSegments(page)).toEqual([0, 1, 2]);
+  for (const [segment, at] of segments) {
+    const shown = await showsColors(page, at.x, at.y, [rgb(pathColor(0)), rgb(pathColor(2))]);
+    expect(shown, `segment ${segment}`).toEqual(segment === 1 ? [true, false] : [true, true]);
+  }
 });
 
 test('stepping selects each step in turn', async ({ page }) => {

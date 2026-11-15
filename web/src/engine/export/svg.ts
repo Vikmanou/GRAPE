@@ -59,6 +59,19 @@ function fadeInto(color: number, into: number, keep: number): number {
   return (channel(0) | channel(8) | channel(16) | (color & 0xff000000)) >>> 0;
 }
 
+/** The colours of the paths highlighted on `segment`, first to fourth, when the path colour mode stripes its ribbon. */
+function pathStripes(active: boolean, data: SegmentData, segment: number): number[] {
+  if (!active) return [];
+  const runs = [data.pathColors, ...(data.pathExtra ?? [])];
+  const found: number[] = [];
+  for (const run of runs) {
+    const color = run?.[segment] ?? 0;
+    if (color === 0) break;
+    found.push(color);
+  }
+  return found;
+}
+
 const yieldToEvents = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** The view as an SVG in layout units, drawn as the shaders draw it; throws past `SVG_MAX_SEGMENTS`. */
@@ -146,6 +159,17 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
       const color = cssColor(faded ? fadeInto(packed, background, DIMMED) : packed);
       if (dot) {
         out.push(`<circle cx="${f(dot[0])}" cy="${f(dot[1])}" r="${f(halfWidth(s))}" fill="${color}"/>\n`);
+        continue;
+      }
+      const stripes = pathStripes(display.color === 'path', data, s);
+      if (stripes.length > 1) {
+        // One stripe per highlighted path, side by side across the width, the first on the side of lower y as the shaders draw it.
+        const w = (halfWidth(s) * 2) / stripes.length;
+        stripes.forEach((stripe, k) => {
+          const offset = strand * STRAND_SHIFT + ((stripes.length - 1) / 2 - k) * w;
+          const stripeColor = cssColor(faded ? fadeInto(stripe, background, DIMMED) : stripe);
+          out.push(`<path d="${path(chain(scene, s, 1, offset))}" stroke="${stripeColor}" stroke-width="${f(w)}"/>\n`);
+        });
         continue;
       }
       const d = path(chain(scene, s, strand, STRAND_SHIFT));

@@ -112,6 +112,7 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
               ...graph.topology,
               meanDepth: graph.stats.meanDepth,
               pathColors: get().pathColors,
+              pathExtra: get().pathExtra,
             },
           });
           get().refreshLabels();

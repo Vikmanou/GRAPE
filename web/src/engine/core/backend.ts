@@ -34,7 +34,12 @@ export interface SegmentData extends SegmentAttributes {
   meanDepth: number;
   /** The highlighted path colour of each segment, RGBA8, 0 for none. */
   pathColors?: Uint32Array | undefined;
+  /** The second to fourth highlighted path colours of each segment, for ribbons striped by path. */
+  pathExtra?: readonly [Uint32Array, Uint32Array, Uint32Array] | undefined;
 }
+
+/** The segment table runs holding a segment's highlighted path colours, first to fourth. */
+export type PathField = 'path' | 'path2' | 'path3' | 'path4';
 
 export interface Style {
   theme: Theme;
@@ -154,7 +159,7 @@ export interface Backend {
    * Replaces one run of the segment table: `path`, one RGBA8 colour per
    * segment for the path colour mode (0 off every highlighted path), or `gc`.
    */
-  setSegmentRun(field: 'path' | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void;
+  setSegmentRun(field: PathField | 'gc', values: Uint32Array<ArrayBuffer> | Float32Array<ArrayBuffer>): void;
   /** `BAND_WORDS` per ribbon piece a search hit crosses (core/Bands.ts). */
   setBands(instances: Uint32Array<ArrayBuffer>): void;
   draw(view: View): void;
