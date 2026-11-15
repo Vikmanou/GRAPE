@@ -1290,3 +1290,16 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   measurements; Edge, Safari and a screen reader, listed in
   `docs/browser-checks.md`. The README benchmark table repeats the 2026-11-13
   numbers in `bench/results.md` until a new run replaces them.
+
+## 2026-11-15: Screenshot baselines take CI's rendering
+
+- **Decision**: the mitochondrion and chloroplast WebGL2 baselines are now the
+  images CI's software rasteriser drew, and the baseline comparison allows 2% of
+  pixels to differ instead of 1%. The comparison between WebGL2 and WebGPU keeps 1%.
+- **Reason**: after the graph look change the first CI run differed from the
+  baselines made on the owner's machine by 1.2% (mitochondrion) and 2.0%
+  (chloroplast) of the pixels: smoothed thin curves anti-alias differently on
+  another rasteriser. The same images differ from CI's by about 1.4% on this
+  machine, so a 1% limit cannot hold on both.
+- **Alternatives**: keeping 1% with CI's images (fails on the owner's machine);
+  dropping the baselines (loses the regression check).

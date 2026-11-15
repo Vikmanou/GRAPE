@@ -13,6 +13,8 @@ const CLIP = { x: 48, y: 48, width: VIEWPORT.width - 56, height: VIEWPORT.height
 const PIXEL_THRESHOLD = 48;
 /** At most this share of the pixels may differ between backends. */
 const MAX_DIFFERENT = 0.01;
+/** Baselines come from CI's software rasteriser; another machine's anti-aliases the smoothed thin curves differently, up to about 1.5%. */
+const MAX_BASELINE_DRIFT = 0.02;
 
 async function drawn(page: Page, query: string, example: string, renderer: string): Promise<Buffer> {
   failOnPageError(page);
@@ -82,6 +84,6 @@ for (const example of EXAMPLES) {
     test.setTimeout(120_000);
     test.skip(backend() !== 'webgl2', 'WebGL2 baselines');
     await drawn(page, 'renderer=webgl2', example, 'webgl2');
-    await expect(page).toHaveScreenshot(`${example}.png`, { clip: CLIP, maxDiffPixelRatio: MAX_DIFFERENT });
+    await expect(page).toHaveScreenshot(`${example}.png`, { clip: CLIP, maxDiffPixelRatio: MAX_BASELINE_DRIFT });
   });
 }
