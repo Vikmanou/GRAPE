@@ -100,7 +100,7 @@
   font: inherit;
   color: var(--fg);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   padding: 1px 4px;
 }
@@ -184,7 +184,7 @@
     monospace;
   color: var(--fg);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   padding: 4px;
   resize: vertical;
@@ -251,7 +251,7 @@
   margin-bottom: 6px;
   color: var(--fg);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   padding: 4px;
 }

@@ -1,0 +1,48 @@
+/* Bench palette. Text pairs are 4.5:1 or better and control borders 3:1 or better
+   against the panel and the chrome (WCAG 1.4.3, 1.4.11); tests/unit/tokens.test.ts
+   checks both. --bg is the canvas and must match `palettes` in engine/style/palette.ts. */
+:root {
+  --bg: #fbfcfd;
+  --chrome: #e9edf1;
+  --panel: #ffffff;
+  --fg: #14202b;
+  --muted: #4a5866;
+  --border: #d3dae1;
+  --control-border: #76828f;
+  --accent: #2457d6;
+  --warn: #9a4f00;
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #171c23;
+    --chrome: #1f2630;
+    --panel: #1f2630;
+    --fg: #e6ebf1;
+    --muted: #9fb0c2;
+    --border: #323c49;
+    --control-border: #7b8a9b;
+    --accent: #7da2ff;
+    --warn: #e8b45a;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #171c23;
+  --chrome: #1f2630;
+  --panel: #1f2630;
+  --fg: #e6ebf1;
+  --muted: #9fb0c2;
+  --border: #323c49;
+  --control-border: #7b8a9b;
+  --accent: #7da2ff;
+  --warn: #e8b45a;
+  color-scheme: dark;
+}

@@ -1,5 +1,5 @@
 // Single source of render colors, shared by the WebGPU renderer and the
-// WebGL2 fallback. Keep `background` in sync with --bg in ui/styles.css.
+// WebGL2 fallback. Keep `background` in sync with --bg in ui/styles/tokens.css.
 
 export type Theme = 'light' | 'dark';
 
@@ -34,8 +34,8 @@ function mixed([r, g, b]: Rgba, [br, bg, bb]: Rgba, keep: number): Rgba {
 const LIGHT_SELECTION = hex('#0000ff');
 const DARK_SELECTION = hex('#7aa2ff');
 
-const LIGHT_BACKGROUND = hex('#f7f7f5');
-const DARK_BACKGROUND = hex('#17161a');
+const LIGHT_BACKGROUND = hex('#fbfcfd');
+const DARK_BACKGROUND = hex('#171c23');
 
 export const palettes: Record<Theme, Palette> = {
   light: {
