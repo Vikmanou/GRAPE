@@ -155,3 +155,19 @@
 .open-popup {
   width: min(30rem, calc(100vw - 32px));
 }
+
+.menu-items button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-color: transparent;
+  padding: 3px 8px;
+}
+
+.menu-items button:hover:not(:disabled) {
+  border-color: var(--control-border);
+}
+
+.menu-hint {
+  font-weight: 400;
+}

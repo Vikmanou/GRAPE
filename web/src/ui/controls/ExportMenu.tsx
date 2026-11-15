@@ -7,6 +7,10 @@ interface Item {
   id: string;
   label: string;
   title: string;
+  /** One line under the label, in the menu. */
+  hint: string;
+  /** Why the item is off, shown instead of the hint. */
+  reason?: string | undefined;
   /** What the saved file's name adds to the graph's. */
   suffix: string;
   save: () => Promise<Blob>;
@@ -37,6 +41,11 @@ export function ExportMenu() {
       scope === 'selection'
         ? `The selected segments${kind === 'gfa' ? ' and the links among them' : ''}`
         : `The segments the filters leave shown${kind === 'gfa' ? ' and the links among them' : ''}`,
+    hint:
+      scope === 'selection'
+        ? `The selected segments${kind === 'gfa' ? ', with the links among them' : ''}`
+        : `The segments the filters leave shown${kind === 'gfa' ? ', with the links among them' : ''}`,
+    reason: scope === 'selection' && selected === 0 ? 'Select segments first' : undefined,
     suffix: `.${scope === 'selection' ? 'selection' : 'shown'}.${kind}`,
     save: () => (kind === 'gfa' ? exportGfa(scope) : exportFasta(scope)),
     disabled: scope === 'selection' && selected === 0,
@@ -45,6 +54,7 @@ export function ExportMenu() {
     id: `export-png-${String(scale)}`,
     label: scale === 1 ? 'PNG, screen size' : `PNG, ${String(scale)}× screen size`,
     title: 'The current view as a picture, drawn larger for print when asked',
+    hint: scale === 1 ? 'The view as it is in the window' : 'Larger, for print',
     suffix: scale === 1 ? '.png' : `.${String(scale)}x.png`,
     save: () => exportPng(scale),
   });
@@ -59,6 +69,7 @@ export function ExportMenu() {
           id: 'export-svg',
           label: 'SVG',
           title: 'The current view as vector shapes, up to 50,000 segments in view',
+          hint: 'Vector shapes, up to 50,000 segments in view',
           suffix: '.svg',
           save: exportSvg,
         },
@@ -71,6 +82,7 @@ export function ExportMenu() {
           id: 'export-gfa-all',
           label: 'Whole graph',
           title: 'Every segment and link, as Bandage saves the entire graph',
+          hint: 'Every segment and link',
           suffix: '.gfa',
           save: shownGfa,
         },
@@ -86,6 +98,7 @@ export function ExportMenu() {
           id: 'export-layout',
           label: 'Bandage layout',
           title: 'Where every segment is drawn, as BandageNG exports it; open it with the graph to draw it again',
+          hint: 'Where every segment is drawn; open it with the graph',
           suffix: '.layout',
           save: () => exportLayout('layout'),
         },
@@ -93,6 +106,7 @@ export function ExportMenu() {
           id: 'export-layout-tsv',
           label: 'TSV, one point per segment',
           title: 'Each segment and the middle of its line, as BandageNG exports TSV',
+          hint: 'One line per segment, at the middle of its line',
           suffix: '.tsv',
           save: () => exportLayout('tsv'),
         },
@@ -135,7 +149,8 @@ export function ExportMenu() {
                       run(item);
                     }}
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    <span className="menu-hint muted small">{item.reason ?? item.hint}</span>
                   </button>
                 </li>
               ))}
