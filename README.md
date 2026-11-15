@@ -13,7 +13,12 @@ all run on your machine.
 
 <sub>Acacia mitochondrion assembled by SPAdes, with three of its contig paths
 highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
-(CC-BY-4.0). It is one of the bundled examples under Load example.</sub>
+(CC-BY-4.0). It is one of the bundled examples under Open, then Examples.</sub>
+
+Opening a graph and watching the layout settle, then finding segments by name:
+
+![Opening the 13-haplotype LPA graph, which lays out on screen in a second](assets/open-and-settle.gif)
+![Finding eight segments by name and seeing them selected on the graph](assets/find-and-select.gif)
 
 ## Features
 
@@ -22,7 +27,7 @@ highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
   warning.
 - Graph stats, a sortable table of components (length, mean depth, whether
   it closes into a circle) and parse warnings with line numbers.
-- Four bundled example graphs under Load example.
+- Four bundled example graphs under Open, then Examples.
 - Segments drawn as ribbons and links as curves, in Bandage's style.
 - Multilevel force-directed layout on the GPU that you watch settle, with
   pause, resume, a seed you can set (the same seed gives the same layout) and
@@ -63,12 +68,29 @@ highlighted, from [Zenodo 5722622](https://doi.org/10.5281/zenodo.5722622)
 - Find segments by a list of names or a regular expression.
 - Drag a segment to pin it while the rest of the graph follows; unpin, or lay
   out just the selection again.
+- Works offline after one visit: the browser keeps a copy of the app.
 - Keyboard shortcuts for all of the above; press `?` for the list.
 
 GRAPE draws with WebGPU where the browser has it (current desktop Chrome and
 Edge, Safari 26, Firefox on Windows) and with WebGL2 everywhere else, with the
 same features: Chrome 56, Edge 79, Firefox 51, Safari 15 or later. Try it at
 [vikmanou.github.io/GRAPE](https://vikmanou.github.io/GRAPE/).
+
+## Benchmarks
+
+Measured with `npm run bench:layout` on 2026-11-13 (AMD Ryzen 9 9950X, an
+NVIDIA Blackwell GPU, Playwright's Chromium). Times count from opening the
+file. The full tables, the per-level profile and the memory of each part of
+the page are in [bench/results.md](bench/results.md).
+
+| Graph                            | Parse | First usable | Settled | Tab memory | Zoomed out | Zoomed in |
+| -------------------------------- | ----: | -----------: | ------: | ---------: | ---------: | --------: |
+| bacterial-spades.gfa             | 0.0 s |        0.5 s |   0.7 s |     184 MB |     60 fps |    60 fps |
+| mitochondrion-acacia-spades.gfa  | 0.0 s |        0.5 s |   0.6 s |     191 MB |     60 fps |    60 fps |
+| lpa-13-haplotypes.gfa            | 0.0 s |        0.8 s |   0.9 s |     200 MB |     60 fps |    60 fps |
+| potato-hifiasm-unitigs-noseq.gfa | 0.1 s |        0.9 s |   0.9 s |     270 MB |     60 fps |    60 fps |
+| 200,000 segments (synthetic)     | 0.3 s |        1.3 s |   1.5 s |     383 MB |     60 fps |    60 fps |
+| 1,000,000 segments (synthetic)   | 1.4 s |        3.1 s |   5.9 s |    1097 MB |     60 fps |    60 fps |
 
 ## Development
 
@@ -77,6 +99,7 @@ Requires Rust and Node 22+.
 ```sh
 npm install
 npm run dev            # build the WASM core and start Vite
+npm run build          # the production build, with the offline worker, in web/dist
 npm run check          # the full gate CI runs
 npm run check:quick    # Rust and TypeScript checks with unit tests
 npm run check:headed   # full gate with browser tests on the real GPU
@@ -93,7 +116,10 @@ Native tools for the Rust core, run with
 times parsing, `layout_file` times the CPU reference layout (`--svg out.svg`
 draws it) and `compare_layout` measures a GPU layout against it.
 
-Design decisions are recorded in [docs/decisions.md](docs/decisions.md).
+Design decisions are recorded in [docs/decisions.md](docs/decisions.md). The
+browsers and assistive tools the site was checked in are listed in
+[docs/browser-checks.md](docs/browser-checks.md). Pushing to `main` publishes the
+site to GitHub Pages (`.github/workflows/pages.yml`).
 
 ## About AI
 

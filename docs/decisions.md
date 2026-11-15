@@ -1263,3 +1263,30 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Not measured**: the saving. The 200k and 1M graphs were not run in this
   session; the owner runs `npm run bench:layout` on another device and the
   table in `bench/results.md` carries the new numbers.
+
+## 2026-11-15: Shipping (release stage 11.4)
+
+- **Decision**: the site keeps a copy of itself in a hand-written service worker
+  (`web/build/offline.ts` writes `sw.js` into the build; `src/offline.ts`
+  registers it in production builds only). It caches every file of the build at
+  install, answers same-origin reads from the cache and falls back to the
+  network, and sends navigations to the cached page. The cache name carries a
+  hash of the build, and a new worker waits until the old tabs close, so a
+  running page never loses files it still has to load. Cross-origin requests,
+  which include Open from URL, are not touched. The site deploys to GitHub
+  Pages from `.github/workflows/pages.yml` on every push to `main`. The
+  accessibility audit is `tests/e2e/a11y.spec.ts` (every control has a name, ids
+  are unique, the focus is outlined) plus the contrast tests of 11.2. The README
+  carries two GIFs made from Playwright screenshots joined with ImageMagick, and
+  the benchmark table.
+- **Reason**: the spec asks for a site that works offline after the first load.
+  The build is under 2 MB, so a full precache is simpler than a runtime cache
+  and has no cold-start gap offline.
+- **Alternatives**: Workbox (a dependency for a site of fixed files); `skipWaiting`
+  (swaps the cache under a running page, whose lazily loaded workers could then
+  miss a file); an axe dependency (rejected in 11.2); screenshots only in the
+  README.
+- **Not done here**: the 1M graph and the Bandage comparison, both owner-run
+  measurements; Edge, Safari and a screen reader, listed in
+  `docs/browser-checks.md`. The README benchmark table repeats the 2026-11-13
+  numbers in `bench/results.md` until a new run replaces them.
