@@ -200,7 +200,7 @@ fn strand_point(i: u32, start: u32, last: u32) -> vec2f {
 }
 
 // Faded unselected segments keep this much of their colour.
-const DIMMED = 0.25;
+const DIMMED = 0.35;
 
 // x along, y across.
 const QUAD = array<vec2f, 6>(

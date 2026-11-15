@@ -5,7 +5,7 @@ flat out uint segment;
 flat out float arrow;
 
 // Faded unselected segments keep this much of their colour.
-const float DIMMED = 0.25;
+const float DIMMED = 0.35;
 
 // A segment drawn as a dot draws it once, from its first piece.
 bool repeats_dot(uvec2 piece) {

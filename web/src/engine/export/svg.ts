@@ -10,7 +10,7 @@ export const SVG_MAX_SEGMENTS = 50_000;
 /** Segments written between yields to the event loop. */
 const SLICE = 2_000;
 /** `DIMMED` in graph.wgsl. */
-const DIMMED = 0.25;
+const DIMMED = 0.35;
 
 export interface SvgLabels {
   labels: { segment: number; text: string }[];
