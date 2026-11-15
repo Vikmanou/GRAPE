@@ -81,29 +81,29 @@ test('a walk through a short segment takes the base the query has', async ({ pag
 test('hits colour exactly their part of the ribbon and go when asked', async ({ page }) => {
   await openFind(page);
   const whole = await spot(page, 'd');
-  const before = await ribbonColor(page, whole.x, whole.y);
+  const before = await ribbonColor(page, whole.x, whole.y, 1);
   await search(page, bases('d'));
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, hitRgb))).toBe(true);
   await page.getByTestId('search-show').uncheck();
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y).then((c) => near(c, before))).toBe(true);
+  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, before))).toBe(true);
   await page.getByTestId('search-show').check();
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, hitRgb))).toBe(true);
   // The first third of h leaves the middle of its ribbon as it was.
   const middle = await spot(page, 'h');
-  const unhit = await ribbonColor(page, middle.x, middle.y);
+  const unhit = await ribbonColor(page, middle.x, middle.y, 1);
   await search(page, bases('h').slice(0, 30));
   await expect(page.getByTestId('search-hit-0')).toContainText('h+');
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y).then((c) => near(c, before))).toBe(true);
-  expect(near(await ribbonColor(page, middle.x, middle.y), unhit)).toBe(true);
+  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, before))).toBe(true);
+  expect(near(await ribbonColor(page, middle.x, middle.y, 1), unhit)).toBe(true);
 });
 
 test('a filter hides the hits of the segments it hides', async ({ page }) => {
   await openFind(page);
   const at = await spot(page, 'd');
   await search(page, bases('d'));
-  await expect.poll(() => ribbonColor(page, at.x, at.y).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => ribbonColor(page, at.x, at.y, 1).then((c) => near(c, hitRgb))).toBe(true);
   await storeAction(page, 'setFilters', { minComponentLength: 100000 });
-  await expect.poll(() => ribbonColor(page, at.x, at.y).then((c) => near(c, hitRgb))).toBe(false);
+  await expect.poll(() => ribbonColor(page, at.x, at.y, 1).then((c) => near(c, hitRgb))).toBe(false);
 });
 
 test('a FASTA file searches every record, which the table can pick between', async ({ page }) => {

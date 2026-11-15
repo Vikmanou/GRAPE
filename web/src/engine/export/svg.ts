@@ -204,6 +204,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
   const bands = scene.bands;
   if (bands && bands.segments.length > 0) {
     const visible = new Set(shown);
+    const edge = paint(palette.link);
     out.push('<g fill="none" stroke-linecap="butt" stroke-linejoin="round">\n');
     for (let i = 0; i < bands.segments.length; i++) {
       const s = bands.segments[i] ?? 0;
@@ -217,7 +218,8 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
       );
       const band = paint(bands.colors[i] ?? 0);
       out.push(
-        `<path d="${path(points)}" stroke="${band.color}" stroke-opacity="${f(band.opacity)}" stroke-width="${f(halfWidth(s) * 2)}"/>\n`,
+        `<path d="${path(points)}" stroke="${edge.color}" stroke-width="${f(halfWidth(s) * 2)}"/>\n`,
+        `<path d="${path(points)}" stroke="${band.color}" stroke-opacity="${f(band.opacity)}" stroke-width="${f(Math.max(halfWidth(s) * 2 - 2 * pixel, pixel))}"/>\n`,
       );
     }
     out.push('</g>\n');

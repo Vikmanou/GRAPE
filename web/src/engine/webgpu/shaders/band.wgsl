@@ -55,9 +55,12 @@ fn band_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -
 @fragment
 fn band_fragment(in: Band) -> @location(0) vec4f {
   let along = min(in.local.x - in.cut.x, in.cut.y - in.local.x);
-  let alpha = coverage(min(inside_piece(in.local, in.size, in.arrow), along)) * in.color.a;
+  let d = min(inside_piece(in.local, in.size, in.arrow), along);
+  let alpha = coverage(d) * in.color.a;
   if alpha <= 0.0 {
     discard;
   }
-  return vec4f(in.color.rgb * alpha, alpha);
+  // A 1 pixel edge in the link colour, which contrasts with the background, so a band reads against ribbons of its own hue.
+  let color = select(in.color.rgb, view.link_color.rgb, d < view.world_per_pixel);
+  return vec4f(color * alpha, alpha);
 }

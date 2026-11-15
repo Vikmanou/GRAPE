@@ -130,10 +130,10 @@ export async function segmentsOnScreen(page: Page, count: number): Promise<Map<n
 
 /**
  * The colour of the ribbon at page coordinates `x, y`: of the pixels around
- * it, the one least like the background, so an antialiased edge does not count.
+ * it (within `r`), the one least like the background, so an antialiased edge does not count.
+ * A search hit's band has a dark edge, so those checks read a small `r`.
  */
-export async function ribbonColor(page: Page, x: number, y: number): Promise<[number, number, number]> {
-  const r = 3;
+export async function ribbonColor(page: Page, x: number, y: number, r = 3): Promise<[number, number, number]> {
   const png = await page.screenshot({
     clip: { x: Math.floor(x) - r, y: Math.floor(y) - r, width: 2 * r + 1, height: 2 * r + 1 },
   });
