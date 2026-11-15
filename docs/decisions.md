@@ -1145,3 +1145,51 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: keeping session files beside layout files; placing the
   segments a layout leaves out around the pinned ones instead of hiding
   them.
+
+## 2026-11-14: Graph look (release stage 11.1)
+
+- **Decision**: nine fixes from the ux-review of labels, ribbons and links, all
+  approved by the owner.
+  - Dimmed ribbons fade into the background colour (`DIMMED` 0.35, was 0.25
+    alpha) instead of going translucent, so the overlap at piece joints shows
+    no darker dots. The hover outline is opaque (selection colour mixed with
+    the background), for the same reason. The SVG export fades the same way.
+  - The selection outline is two rings, an outer one in the selection colour
+    and an inner one in `selectionInner` (white in light, dark navy in dark),
+    each its own pass so neither overdraws the other at joints; the minimum
+    width is 3 pixels, 1.5 a ring. SVG draws the same two rings.
+  - Floating panels are opaque (`--panel` had 0.9 alpha, which let ribbons and
+    labels show through the text).
+  - Links keep 0.4 of full strength at ribbons 1 pixel wide and fade out by
+    0.2 pixels, draw at least 1.5 pixels wide, and their Bézier handle is
+    capped at half the gap between the ends (the loop case for ends that meet
+    is unchanged), which removes the squiggles between close segments.
+  - Labels are 14 px (was 12) with a 1.5 px halo (was 1). They do not grow with
+    the ribbon: the GPU placement measures every label at one font size. With
+    ribbons under "from ribbons" pixels, a segment is still labelled when its
+    chain is on screen at least as long as its label is wide (`fit` in the
+    placement of both backends); under 0.1 px no placement runs, so a huge
+    graph at fit costs nothing. "No label fits at this zoom" shows when none
+    does.
+  - A segment on several highlighted paths is striped across its width, up to
+    four stripes, first path on the side of lower y; the segment table gains
+    `path2` to `path4` (12 bytes a segment). SVG draws the stripes as offset
+    strokes.
+  - Search hit bands get a 1 px edge in the link colour. The SVG edge is a
+    wider stroke under the band, so it has no edge at the flat ends.
+  - Ribbon bends are smoothed on screen: each piece is drawn as 4 capsules
+    along a uniform Catmull-Rom curve through the chain's points once ribbons
+    are 2 pixels wide, so ends and links stay put. Bands, box select and
+    queries still use the straight pieces.
+- **Reason**: audit screenshots of the four examples and four test graphs on
+  both backends, both themes (docs/graph-look/before and after). Smoothing is
+  screen only because PNG and SVG exports must match Bandage's straight
+  pieces; `pixelScale` set (exports) draws one capsule per piece as before.
+  Piece counts stay Bandage's because BandageNG layout files hold the points.
+- **Alternatives**: more pieces per segment (breaks layout files); smoothing in
+  exports too (exports stop matching Bandage); scaling label size with ribbon
+  width (needs per-label sizes in the placement pass); a floor under link
+  fade at any width (draws every link of a 1M graph at fit).
+- **Measured**: GPU time per frame while zooming on the mitochondrion and lpa
+  examples, WebGPU, was 0.5 to 0.6 ms with and without smoothing. The 200k
+  and 1M graphs were not measured.
