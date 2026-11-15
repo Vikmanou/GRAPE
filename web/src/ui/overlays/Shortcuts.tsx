@@ -1,6 +1,22 @@
 import { SHORTCUTS } from '../../state/shortcuts';
 import { useApp } from '../../state/store';
 
+/**
+ * Where Bandage's controls live in GRAPE, for people who know Bandage. The
+ * names are Bandage's own, from ui/mainwindow.ui in rrwick/Bandage.
+ */
+const FROM_BANDAGE: [string, string][] = [
+  ['Load graph', 'Open, or drop the file on the page'],
+  ['Draw graph', 'Automatic: the graph draws as it loads; Layout tab to draw it again'],
+  ['Graph scope: Around nodes, Depth range', 'Find tab, Limit the view'],
+  ['Colour by: Random colours, Uniform colour, Colour by depth', 'Display tab, Colour by'],
+  ['Node labels: Name, Length, Depth', 'Display tab, Labels'],
+  ['Find nodes', 'Find tab, By name'],
+  ['BLAST', 'Find tab, By sequence: GRAPE searches the sequences itself'],
+  ['Save image (current view)', 'Export, PNG or SVG'],
+  ['Select none, Invert selection, Zoom to fit selection', 'Esc, I and Z'],
+];
+
 export function Shortcuts() {
   const open = useApp((s) => s.shortcutsOpen);
   const setOpen = useApp((s) => s.setShortcutsOpen);
@@ -10,11 +26,11 @@ export function Shortcuts() {
       className="shortcuts floating-panel"
       role="dialog"
       aria-modal="false"
-      aria-label="Keyboard shortcuts"
+      aria-label="Help and keyboard shortcuts"
       data-testid="shortcuts"
     >
       <header>
-        <h2>Keyboard shortcuts</h2>
+        <h2>Help and keyboard shortcuts</h2>
         <button
           type="button"
           className="icon"
@@ -26,6 +42,7 @@ export function Shortcuts() {
           ×
         </button>
       </header>
+      <h3>Keyboard and mouse</h3>
       <table>
         <tbody>
           {SHORTCUTS.map((s) => (
@@ -52,6 +69,17 @@ export function Shortcuts() {
             <td>Drag a segment</td>
             <td>Move and pin it</td>
           </tr>
+        </tbody>
+      </table>
+      <h3>Coming from Bandage</h3>
+      <table data-testid="from-bandage">
+        <tbody>
+          {FROM_BANDAGE.map(([bandage, here]) => (
+            <tr key={bandage}>
+              <td>{bandage}</td>
+              <td>{here}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </section>

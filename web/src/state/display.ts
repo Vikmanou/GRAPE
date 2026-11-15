@@ -34,6 +34,9 @@ export interface DisplaySlice {
   findFocus: boolean;
   focusFind: () => void;
   findFocused: () => void;
+  /** The first-run card has been dismissed; saved with the settings. */
+  welcomed: boolean;
+  setWelcomed: (welcomed: boolean) => void;
   /** The list of what the parser skipped. */
   warningsOpen: boolean;
   setWarningsOpen: (open: boolean) => void;
@@ -91,6 +94,10 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
       set({ findFocus: false });
     },
 
+    welcomed: false,
+    setWelcomed(welcomed) {
+      set({ welcomed });
+    },
     warningsOpen: false,
     setWarningsOpen(warningsOpen) {
       set({ warningsOpen });

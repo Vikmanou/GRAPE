@@ -159,6 +159,7 @@
 .shortcuts {
   top: 56px;
   bottom: auto;
+  max-height: calc(100% - 96px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;

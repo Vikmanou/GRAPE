@@ -45,3 +45,19 @@ test('find, invert, clear, panels and fit from the keyboard', async ({ page }) =
   await page.keyboard.press('f');
   await expect.poll(async () => (await appState(page)).zoom).toBeCloseTo(fitted, 6);
 });
+
+test('the help lists where Bandage controls live and the first-run card shows once', async ({ page }) => {
+  await openSettled(page, repo('testdata/tangle.gfa'));
+  const card = page.getByTestId('welcome');
+  await expect(card).toBeVisible();
+  await page.getByTestId('welcome-dismiss').click();
+  await expect(card).toBeHidden();
+  await page.reload();
+  await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
+  await page.getByTestId('open-input').setInputFiles(repo('testdata/tangle.gfa'));
+  await expect(page.getByTestId('stat-segments')).toBeVisible();
+  await expect(card).toBeHidden();
+  await page.getByTestId('help').click();
+  await expect(page.getByTestId('from-bandage')).toContainText('Draw graph');
+  await expect(page.getByTestId('from-bandage')).toContainText('Find nodes');
+});

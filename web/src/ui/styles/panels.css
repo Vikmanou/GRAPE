@@ -455,3 +455,19 @@ button.primary {
 button.primary:hover {
   filter: brightness(1.1);
 }
+
+.welcome {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+
+.welcome h3 {
+  margin: 0 0 4px;
+}
+
+.welcome ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}

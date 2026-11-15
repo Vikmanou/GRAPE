@@ -14,6 +14,7 @@ export interface Settings {
   theme: ThemeChoice;
   sidebar: { open: boolean; tab: SidebarTab };
   infoOpen: boolean;
+  welcomed: boolean;
   display: SavedDisplay;
   labels: LabelSettings;
 }
@@ -33,7 +34,14 @@ export function savedDisplay({
 
 export function settingsOf(s: AppState): Settings {
   const display = savedDisplay(s.displayOptions);
-  return { theme: s.themeChoice, sidebar: s.sidebar, infoOpen: s.infoOpen, display, labels: s.labels };
+  return {
+    theme: s.themeChoice,
+    sidebar: s.sidebar,
+    infoOpen: s.infoOpen,
+    welcomed: s.welcomed,
+    display,
+    labels: s.labels,
+  };
 }
 
 /** Storage can be missing, full or blocked; the app runs the same without it. */
@@ -51,6 +59,7 @@ export function readSettings(storage: Pick<Storage, 'getItem'> | undefined): Par
       theme,
       sidebar,
       infoOpen: typeof stored.infoOpen === 'boolean' ? stored.infoOpen : true,
+      welcomed: stored.welcomed === true,
       display,
       labels: sameShape(DEFAULT_LABELS, stored.labels),
     };
@@ -81,6 +90,7 @@ export function persistSettings(store: AppStore, storage = localStorageOrNone())
   const app = store.getState();
   if (saved.sidebar) store.setState({ sidebar: saved.sidebar });
   if (saved.infoOpen !== undefined) store.setState({ infoOpen: saved.infoOpen });
+  if (saved.welcomed) store.setState({ welcomed: true });
   if (saved.display) app.setDisplayOptions(saved.display);
   if (saved.labels) app.setLabels(saved.labels);
   app.setThemeChoice(saved.theme ?? 'system');

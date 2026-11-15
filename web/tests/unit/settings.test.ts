@@ -10,6 +10,7 @@ function memoryStorage(): Pick<Storage, 'getItem' | 'setItem'> {
 
 const display = savedDisplay(DEFAULT_DISPLAY);
 const settings: Settings = {
+  welcomed: true,
   theme: 'dark',
   sidebar: { open: false, tab: 'display' },
   infoOpen: false,
