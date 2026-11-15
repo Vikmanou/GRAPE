@@ -12,6 +12,7 @@ test('neighbourhood, depth and size filters hide segments and clear at once', as
   await openSettled(page, repo('testdata/linear.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('dim-unselected').uncheck();
+  await showTab(page, 'find');
   await page.evaluate(() => {
     type Store = { getState(): { select(s: Uint32Array, mode: string): void } };
     const store = (window as unknown as { grapeTest: { store: Store } }).grapeTest.store;

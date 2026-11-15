@@ -12,7 +12,7 @@ async function open(page: Page): Promise<void> {
   await skipUnlessBackend(page);
   test.skip(!existsSync(PANGENOME), 'run `npm run samples` first');
   await page.getByTestId('open-input').setInputFiles(PANGENOME);
-  await showTab(page, 'display');
+  await showTab(page, 'layout');
 }
 
 test('pauses and resumes the layout', async ({ page }) => {

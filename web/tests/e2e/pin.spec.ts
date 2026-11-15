@@ -54,7 +54,7 @@ test('a dragged segment stays where it is dropped until unpinned', async ({ page
   await expect.poll(() => segmentAt(page, to)).toBe(segment);
   expect((await appState(page)).selection.count).toBe(0);
 
-  await showTab(page, 'display');
+  await showTab(page, 'layout');
   await page.getByTestId('unpin-all').click();
   await expect.poll(() => pinned(page)).toBe(0);
   expect(gpuErrors).toEqual([]);
@@ -71,7 +71,7 @@ test('re-layout selection moves only the selection', async ({ page }) => {
   // The info panel opens and the view refits around it before positions are read.
   await expect(page.getByTestId('info-panel')).toBeVisible();
   await page.waitForTimeout(300);
-  await showTab(page, 'display');
+  await showTab(page, 'layout');
   const others = [...(await segmentsOnScreen(page, 20)).entries()].filter(([segment]) => segment !== moved);
   const [[kept, keptAt] = []] = others;
   if (kept === undefined || !keptAt) throw new Error('no other segment on screen');

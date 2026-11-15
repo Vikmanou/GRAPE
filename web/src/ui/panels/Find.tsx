@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../state/store';
 import { formatCount } from '../format';
+import { FilterControls } from './FilterControls';
 import { SequenceSearch } from './SequenceSearch';
 
 /** Missing names listed before the rest are summarised. */
@@ -87,6 +88,7 @@ export function Find() {
         </div>
       </section>
       <SequenceSearch />
+      <FilterControls />
     </>
   );
 }

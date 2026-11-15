@@ -24,7 +24,7 @@ async function settledHash(page: Page, after: number): Promise<{ run: number; ha
 }
 
 async function setSeed(page: Page, seed: number): Promise<void> {
-  await showTab(page, 'display');
+  await showTab(page, 'layout');
   await page.getByTestId('layout-seed').fill(String(seed));
   await page.getByTestId('layout-seed').press('Enter');
 }
