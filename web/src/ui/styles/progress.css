@@ -1,0 +1,55 @@
+/* Running tasks sit just under the top bar: a thin bar across the window and a chip for each task. */
+.progress {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.progress-bar {
+  display: block;
+  width: 100%;
+  height: 3px;
+  appearance: none;
+  border: 0;
+  background: var(--border);
+  color: var(--accent);
+}
+
+.progress-bar::-webkit-progress-bar {
+  background: var(--border);
+}
+
+.progress-bar::-webkit-progress-value {
+  background: var(--accent);
+}
+
+.progress-bar::-moz-progress-bar {
+  background: var(--accent);
+}
+
+.progress-tasks {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.progress-task {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px 3px 12px;
+  font-size: 13px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.progress-task button {
+  border-radius: 999px;
+  padding: 0 10px;
+}

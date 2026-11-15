@@ -6,6 +6,7 @@ import { EngineHost } from './EngineHost';
 import { usePanelInsets } from './insets';
 import { Info } from './panels/Info';
 import { Sidebar } from './panels/Sidebar';
+import { ProgressStrip } from './bars/ProgressStrip';
 import { StatusBar } from './bars/StatusBar';
 import { TopBar } from './bars/TopBar';
 import { Unsupported } from './overlays/Unsupported';
@@ -46,6 +47,7 @@ export function App() {
     <main className="app">
       {(renderer === 'webgpu' || renderer === 'webgl2') && !engineError && <EngineHost />}
       <TopBar file={file} onOpen={openFile} />
+      <ProgressStrip />
       {unsupported && <Unsupported detail={engineError} />}
       {!unsupported &&
         (load.state === 'idle' ||
