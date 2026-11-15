@@ -4,6 +4,8 @@ import { useApp } from '../state/store';
 import { EmptyState } from './overlays/EmptyState';
 import { EngineHost } from './EngineHost';
 import { usePanelInsets } from './insets';
+import { CanvasControls } from './controls/CanvasControls';
+import { HoverTip } from './controls/HoverTip';
 import { Info } from './panels/Info';
 import { Sidebar } from './panels/Sidebar';
 import { ProgressStrip } from './bars/ProgressStrip';
@@ -65,6 +67,8 @@ export function App() {
       )}
       {shown && <Sidebar result={shown} />}
       {load.state === 'loaded' && <Info />}
+      {load.state === 'loaded' && !unsupported && <CanvasControls />}
+      {load.state === 'loaded' && !unsupported && <HoverTip />}
       {load.state === 'loaded' && showWarnings && (
         <Warnings
           warnings={load.result.warnings}

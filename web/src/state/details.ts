@@ -25,6 +25,8 @@ export interface DetailsSlice {
   details: Details;
   /** Fetches what the info panel shows for the current selection. */
   refreshDetails: () => void;
+  /** What the hover tooltip shows for one segment. */
+  describeSegment: (segment: number) => Promise<SegmentInfo | undefined>;
   /** The selected sequences, joined by newlines as Bandage copies them, in Bandage's order. */
   selectedSequences: () => Promise<string>;
   /** FASTA of the selection exactly as Bandage saves it. */
@@ -43,6 +45,10 @@ export function createDetailsSlice(ctx: Context): DetailsSlice {
 
   return {
     details: { state: 'none' },
+
+    describeSegment(segment) {
+      return services.graph.info(segment);
+    },
 
     refreshDetails() {
       const ticket = ++request;
