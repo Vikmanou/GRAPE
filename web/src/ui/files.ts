@@ -1,3 +1,6 @@
+/** What the file pickers offer. */
+export const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.layout';
+
 /** `assembly.gfa.gz` gives `assembly`, for naming what is saved from it. */
 export function fileStem(file: string): string {
   return file.replace(/\.gz$/i, '').replace(/\.(gfa|fastg)$/i, '');

@@ -61,6 +61,16 @@
   border-color: var(--accent);
 }
 
+.drop-zone .primary {
+  pointer-events: auto;
+  padding: 6px 20px;
+  margin: 4px 0 8px;
+  font-weight: 600;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--panel);
+}
+
 .drop-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -185,6 +195,11 @@ kbd {
   margin-top: 16px;
 }
 
+.empty-examples h3 {
+  font-size: 0.9rem;
+  margin: 0 0 6px;
+}
+
 .examples {
   list-style: none;
   margin: 0;
@@ -199,9 +214,18 @@ kbd {
 
 .examples button {
   text-align: left;
+  border-color: transparent;
+}
+
+.examples button:hover {
+  border-color: var(--control-border);
 }
 
 .example-credit {
   font-size: 12px;
-  padding-left: 8px;
+  padding-left: 11px;
+}
+
+.example-credit a {
+  color: var(--muted);
 }

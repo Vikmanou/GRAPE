@@ -2,14 +2,12 @@ import { useRef } from 'react';
 import type { FileInfo } from '../../state/load';
 import { useApp } from '../../state/store';
 import type { ThemeChoice } from '../../state/theme';
-import { ExampleMenu } from '../controls/ExampleMenu';
 import { ExportMenu } from '../controls/ExportMenu';
-import { OpenUrlMenu } from '../controls/OpenUrlMenu';
+import { OpenMenu } from '../controls/OpenMenu';
 import { ShareMenu } from '../controls/ShareMenu';
 import { useMenuGroup } from '../controls/menus';
+import { ACCEPTED_FILES } from '../files';
 import { formatBytes } from '../format';
-
-const ACCEPTED_FILES = '.gfa,.gfa.gz,.fastg,.fastg.gz,.gz,.layout';
 
 interface Props {
   file: FileInfo | undefined;
@@ -29,11 +27,7 @@ export function TopBar({ file, onOpen }: Props) {
           {file.name} <span className="muted">{formatBytes(file.size)}</span>
         </span>
       )}
-      <button type="button" onClick={() => input.current?.click()}>
-        Open…
-      </button>
-      <OpenUrlMenu />
-      <ExampleMenu />
+      <OpenMenu onPickFile={() => input.current?.click()} />
       <ExportMenu />
       <ShareMenu />
       <span className="spacer" />

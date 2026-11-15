@@ -8,7 +8,7 @@ test('top bar menus close each other, on a press outside and on Escape', async (
   await openSettled(page, repo('testdata/tangle.gfa'));
   const exportMenu = page.getByTestId('export-menu');
   const share = page.getByTestId('share-menu');
-  const examples = page.getByTestId('example-menu');
+  const examples = page.getByTestId('open-menu');
 
   await exportMenu.locator('summary').click();
   await expect(exportMenu).toHaveAttribute('open', '');

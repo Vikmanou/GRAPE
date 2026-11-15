@@ -20,7 +20,7 @@ async function drawn(page: Page, query: string, example: string, renderer: strin
   await page.goto(`/?${query}`);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
   await expect(page.getByTestId('status-renderer')).toHaveAttribute('data-renderer', renderer);
-  await page.getByTestId('example-menu').locator('summary').click();
+  await page.getByTestId('open-menu').locator('summary').click();
   await page.getByTestId(`example-${example}`).first().click();
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
   await page.getByRole('button', { name: 'Hide the sidebar' }).click();

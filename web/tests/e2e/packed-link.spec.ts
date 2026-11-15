@@ -183,7 +183,7 @@ test('a link carries an attached FASTA and opens when pasted into Open URL', asy
   failOnPageError(other);
   await gotoApp(other);
   await expect(other.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  await other.getByTestId('open-url-menu').locator('summary').click();
+  await other.getByTestId('open-menu').locator('summary').click();
   await other.getByTestId('open-url-input').fill(link);
   await other.getByTestId('open-url-submit').click();
   await settled(other);
@@ -244,7 +244,7 @@ test('a link over 1 MiB opens from Open URL, and from the address bar in Chromiu
   if (firefox()) {
     await gotoApp(other);
     await expect(other.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-    await other.getByTestId('open-url-menu').locator('summary').click();
+    await other.getByTestId('open-menu').locator('summary').click();
     await other.getByTestId('open-url-input').fill(link);
     await other.getByTestId('open-url-submit').click();
   } else {

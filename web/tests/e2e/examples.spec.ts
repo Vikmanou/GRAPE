@@ -13,12 +13,12 @@ test('each example loads from the menu and is credited', async ({ page }) => {
   await skipUnlessBackend(page);
   await expect(page.getByTestId('empty-state').getByText('Anna Syme (2020)').first()).toBeVisible();
   for (const [id, segments] of Object.entries(SEGMENTS)) {
-    await page.getByTestId('example-menu').locator('summary').click();
-    await page.getByTestId('example-menu').getByTestId(`example-${id}`).click();
+    await page.getByTestId('open-menu').locator('summary').click();
+    await page.getByTestId('open-menu').getByTestId(`example-${id}`).click();
     await expect(page.getByTestId('file-name')).toContainText('.gfa.gz');
     await expect(page.getByTestId('stat-segments')).toHaveText(segments.toLocaleString('en'));
     await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
-    await expect(page.getByTestId('example-menu')).not.toHaveAttribute('open');
+    await expect(page.getByTestId('open-menu')).not.toHaveAttribute('open');
   }
 });
 

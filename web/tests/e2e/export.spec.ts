@@ -15,7 +15,7 @@ async function openExample(page: Page): Promise<void> {
   await gotoApp(page);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
   await skipUnlessBackend(page);
-  await page.getByTestId('example-menu').locator('summary').click();
+  await page.getByTestId('open-menu').locator('summary').click();
   await page.getByTestId('example-chloroplast').first().click();
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
   await page.getByRole('button', { name: 'Hide the sidebar' }).click();
@@ -144,7 +144,7 @@ test('GFA and FASTA cover what the filters show or what is selected', async ({ p
   await gotoApp(page);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
   await skipUnlessBackend(page);
-  await page.getByTestId('example-menu').locator('summary').click();
+  await page.getByTestId('open-menu').locator('summary').click();
   await page.getByTestId('example-mitochondrion').first().click();
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
   // The largest component holds 150 of the 161 segments; the rest are single segments under 1 kb.

@@ -51,7 +51,7 @@ export function App() {
         (load.state === 'idle' ||
           load.state === 'parsing' ||
           load.state === 'fetching' ||
-          load.state === 'unpacking') && <EmptyState dragging={dragging} />}
+          load.state === 'unpacking') && <EmptyState dragging={dragging} onOpen={openFile} />}
       {load.state === 'failed' && (
         <div className="load-error" role="alert" data-testid="load-error">
           <strong>Could not open {load.file.name}</strong>

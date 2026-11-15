@@ -11,7 +11,7 @@ test('a graph opens from a URL, and a failed download says why', async ({ page, 
   await skipUnlessBackend(page);
 
   const open = async (url: string) => {
-    await page.getByTestId('open-url-menu').locator('summary').click();
+    await page.getByTestId('open-menu').locator('summary').click();
     await page.getByTestId('open-url-input').fill(url);
     await page.getByTestId('open-url-submit').click();
   };

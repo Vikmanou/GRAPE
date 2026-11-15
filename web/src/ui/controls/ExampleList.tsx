@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { EXAMPLES } from '../../state/examples';
 import { useApp } from '../../state/store';
 
@@ -29,22 +28,5 @@ export function ExampleList({ onPick }: { onPick?: () => void }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-/** "Load example" in the top bar. */
-export function ExampleMenu() {
-  const menu = useRef<HTMLDetailsElement>(null);
-  return (
-    <details className="menu" ref={menu} data-testid="example-menu">
-      <summary>Load example</summary>
-      <div className="menu-popup">
-        <ExampleList
-          onPick={() => {
-            if (menu.current) menu.current.open = false;
-          }}
-        />
-      </div>
-    </details>
   );
 }
