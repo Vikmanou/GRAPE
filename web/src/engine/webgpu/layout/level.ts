@@ -17,6 +17,14 @@ export const ALL_PAIRS_NODES = 2048;
 
 export type LevelInput = Pick<HierarchyLevel, 'nodes' | 'edges' | 'heat' | 'repulsion' | 'meanRest' | 'iterations'>;
 
+/** What only iterating needs; rebuilt on demand, so a settled level can give it back. */
+interface Scratch {
+  buffers: Buffers;
+  grid: Grid;
+  repelGroups: GPUBindGroup[];
+  moveGroups: GPUBindGroup[];
+}
+
 /** One level's buffers and its force iteration, ping-ponging between two position buffers. */
 export class GpuLevel {
   readonly count: number;
@@ -26,19 +34,18 @@ export class GpuLevel {
   readonly cell: number;
   private readonly buffers: Buffers;
   private readonly positions: [GPUBuffer, GPUBuffer];
-  private readonly grid: Grid;
-  private readonly repelGroups: GPUBindGroup[];
+  private readonly heat: GPUBuffer;
   private readonly allPairs: boolean;
-  private readonly moveGroups: GPUBindGroup[];
+  private scratch: Scratch | undefined;
 
   private current = 0;
   private readonly state: GPUBuffer;
 
   constructor(
     private readonly kernels: Kernels,
-    device: GPUDevice,
+    private readonly device: GPUDevice,
     input: LevelInput,
-    shared: IterationState,
+    private readonly shared: IterationState,
     seed: number,
     allPairsUpTo = ALL_PAIRS_NODES,
   ) {
@@ -62,36 +69,9 @@ export class GpuLevel {
     );
     this.nodes = b.upload('nodes', input.nodes);
     this.edges = b.upload('edges', input.edges);
-    const heat = b.upload('heat', input.heat);
-    const force = b.storage('force', this.count * 8);
+    this.heat = b.upload('heat', input.heat);
     this.positions = [b.storage('positions a', this.count * 8), b.storage('positions b', this.count * 8)];
-    this.grid = new Grid(kernels, b, this.params, this.positions, this.nodes, this.count, shared);
     this.allPairs = this.count <= allPairsUpTo;
-    this.repelGroups = this.positions.map((p) =>
-      this.allPairs
-        ? bind(device, kernels.repelAll, { 0: this.params, 1: p, 2: this.nodes, 7: force, 9: heat })
-        : bind(device, kernels.repel, {
-            0: this.params,
-            4: this.grid.coarse,
-            6: this.grid.starts,
-            7: force,
-            9: heat,
-            12: this.grid.packed,
-          }),
-    );
-    this.moveGroups = this.positions.map((p, k) =>
-      bind(device, kernels.pullAndMove, {
-        0: this.params,
-        1: p,
-        2: this.nodes,
-        3: this.edges,
-        7: force,
-        8: this.positions[1 - k] ?? p,
-        9: heat,
-        10: shared.state,
-        11: shared.energy,
-      }),
-    );
     this.state = shared.state;
     this.restart();
   }
@@ -113,23 +93,66 @@ export class GpuLevel {
   }
 
   encode(passes: Passes, iterations: number): void {
+    const { grid, repelGroups, moveGroups } = this.iterating();
     const n = groups(this.count);
     for (let k = 0; k < iterations; k++) {
-      if (this.allPairs) this.grid.begin(passes, this.current);
-      else this.grid.encode(passes, this.current);
+      if (this.allPairs) grid.begin(passes, this.current);
+      else grid.encode(passes, this.current);
       const repelling = passes.section('repel');
       repelling.setPipeline(this.allPairs ? this.kernels.repelAll : this.kernels.repel);
-      repelling.setBindGroup(0, this.repelGroups[this.current]);
+      repelling.setBindGroup(0, repelGroups[this.current]);
       repelling.dispatchWorkgroups(n);
       const moving = passes.section('move');
       moving.setPipeline(this.kernels.pullAndMove);
-      moving.setBindGroup(0, this.moveGroups[this.current]);
+      moving.setBindGroup(0, moveGroups[this.current]);
       moving.dispatchWorkgroups(n);
       this.current = 1 - this.current;
     }
   }
 
+  /** Gives back the forces and the grid, which a settled level does not use; the next `encode` makes them again. */
+  release(): void {
+    this.scratch?.buffers.destroy();
+    this.scratch = undefined;
+  }
+
   destroy(): void {
+    this.release();
     this.buffers.destroy();
+  }
+
+  private iterating(): Scratch {
+    if (this.scratch) return this.scratch;
+    const { device, kernels, heat, nodes, edges, params, positions, shared } = this;
+    const buffers = new Buffers(device);
+    const force = buffers.storage('force', this.count * 8);
+    const grid = new Grid(kernels, buffers, params, positions, nodes, this.count, shared);
+    const repelGroups = positions.map((p) =>
+      this.allPairs
+        ? bind(device, kernels.repelAll, { 0: params, 1: p, 2: nodes, 7: force, 9: heat })
+        : bind(device, kernels.repel, {
+            0: params,
+            4: grid.coarse,
+            6: grid.starts,
+            7: force,
+            9: heat,
+            12: grid.packed,
+          }),
+    );
+    const moveGroups = positions.map((p, k) =>
+      bind(device, kernels.pullAndMove, {
+        0: params,
+        1: p,
+        2: nodes,
+        3: edges,
+        7: force,
+        8: positions[1 - k] ?? p,
+        9: heat,
+        10: shared.state,
+        11: shared.energy,
+      }),
+    );
+    this.scratch = { buffers, grid, repelGroups, moveGroups };
+    return this.scratch;
   }
 }

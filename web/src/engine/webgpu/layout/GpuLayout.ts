@@ -149,6 +149,7 @@ export class GpuLayout {
     this.device.queue.submit([encoder.finish()]);
     this.levelIteration += k;
     this.iterationCount += k;
+    if (this.levelIndex === 0 && this.levelIteration >= this.budget(0)) this.level.release();
     return k;
   }
 
