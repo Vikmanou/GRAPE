@@ -62,6 +62,15 @@ test('lists warnings with line numbers', async ({ page }) => {
   await expect(panel).toContainText("Segment '1' is defined again");
 });
 
+test('toasts the warnings of a file as it loads and the toast opens the list', async ({ page }) => {
+  await open(page, 'malformed.gfa');
+  const toast = page.getByTestId('toasts');
+  await expect(toast).toContainText('13 lines were skipped or repaired in malformed.gfa');
+  await page.getByTestId('toast-action').click();
+  await expect(page.getByTestId('warnings-panel')).toBeVisible();
+  await expect(toast).toBeHidden();
+});
+
 test('rejects GFA 2 with a clear message', async ({ page }) => {
   await open(page, 'gfa2.gfa');
   await expect(page.getByTestId('load-error')).toContainText('GFA 2.0 is not supported');

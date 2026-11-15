@@ -5,11 +5,13 @@ export interface Toast {
   message: string;
   /** Shown behind a "details" expander. */
   details?: string | undefined;
+  /** A button in the toast; a toast with one stays until dismissed. */
+  action?: { label: string; run: () => void } | undefined;
 }
 
 export interface ToastSlice {
   toasts: Toast[];
-  toast: (message: string, details?: string) => void;
+  toast: (message: string, details?: string, action?: Toast['action']) => void;
   dismissToast: (id: number) => void;
 }
 
@@ -22,10 +24,10 @@ export function createToastSlice({ set, get }: Context): ToastSlice {
   let nextId = 1;
   return {
     toasts: [],
-    toast(message, details) {
+    toast(message, details, action) {
       const id = nextId++;
-      set({ toasts: [...get().toasts, { id, message, details }].slice(-MAX_TOASTS) });
-      if (details === undefined) {
+      set({ toasts: [...get().toasts, { id, message, details, action }].slice(-MAX_TOASTS) });
+      if (details === undefined && action === undefined) {
         setTimeout(() => {
           get().dismissToast(id);
         }, CONFIRMATION_MS);

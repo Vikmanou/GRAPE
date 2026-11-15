@@ -176,7 +176,20 @@ export function createFileSlice(ctx: Context): FileSlice {
           ({ result, sequences }) => {
             if (parsing !== file) return;
             parsing = undefined;
-            set({ load: { state: 'loaded', file: info, result, source: file } });
+            set({ load: { state: 'loaded', file: info, result, source: file }, warningsOpen: false });
+            if (result.warnings.total > 0) {
+              const count = result.warnings.total;
+              get().toast(
+                `${String(count)} ${count === 1 ? 'line was' : 'lines were'} skipped or repaired in ${info.name}`,
+                undefined,
+                {
+                  label: 'Review',
+                  run: () => {
+                    get().setWarningsOpen(true);
+                  },
+                },
+              );
+            }
             const loaded = get().load;
             const shared = get().pendingShare !== undefined;
             hash.then(

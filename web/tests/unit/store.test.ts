@@ -81,7 +81,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-const result = { topology: {}, stats: { segments: 1, links: 0 } } as unknown as ParseResult;
+const result = { topology: {}, stats: { segments: 1, links: 0 }, warnings: { total: 0 } } as unknown as ParseResult;
 const parsed = { result, sequences: { kind: 'dropped' } as const };
 type Parsed = typeof parsed;
 const geometry = {

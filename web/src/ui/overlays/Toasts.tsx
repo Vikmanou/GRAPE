@@ -10,6 +10,18 @@ export function Toasts() {
         <li key={t.id} className="toast" role="status">
           <div className="toast-row">
             <span>{t.message}</span>
+            {t.action && (
+              <button
+                type="button"
+                data-testid="toast-action"
+                onClick={() => {
+                  t.action?.run();
+                  dismiss(t.id);
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
             <button
               type="button"
               className="icon"

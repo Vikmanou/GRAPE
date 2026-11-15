@@ -34,6 +34,9 @@ export interface DisplaySlice {
   findFocus: boolean;
   focusFind: () => void;
   findFocused: () => void;
+  /** The list of what the parser skipped. */
+  warningsOpen: boolean;
+  setWarningsOpen: (open: boolean) => void;
   shortcutsOpen: boolean;
   setShortcutsOpen: (open: boolean) => void;
   fit: () => void;
@@ -88,6 +91,10 @@ export function createDisplaySlice(ctx: Context): DisplaySlice {
       set({ findFocus: false });
     },
 
+    warningsOpen: false,
+    setWarningsOpen(warningsOpen) {
+      set({ warningsOpen });
+    },
     shortcutsOpen: false,
     setShortcutsOpen(shortcutsOpen) {
       set({ shortcutsOpen });

@@ -20,13 +20,14 @@ export function App() {
   const shown = useApp(shownGraph);
   const load = useApp((s) => s.load);
   const open = useApp((s) => s.open);
-  const [showWarnings, setShowWarnings] = useState(false);
+  const showWarnings = useApp((s) => s.warningsOpen);
+  const setShowWarnings = useApp((s) => s.setWarningsOpen);
   const openFile = useCallback(
     (file: File) => {
       setShowWarnings(false);
       open(file);
     },
-    [open],
+    [open, setShowWarnings],
   );
   const dragging = useFileDrop(openFile);
   const sidebarOpen = useApp((s) => s.sidebar.open);
@@ -74,7 +75,7 @@ export function App() {
       <Toasts />
       <StatusBar
         onToggleWarnings={() => {
-          setShowWarnings((shown) => !shown);
+          setShowWarnings(!showWarnings);
         }}
       />
     </main>
