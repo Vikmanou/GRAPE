@@ -172,3 +172,20 @@
 .menu-hint {
   font-weight: 400;
 }
+
+.theme-name {
+  margin-left: 6px;
+  font-size: 13px;
+}
+
+@media (max-width: 899px) {
+  .theme-name {
+    display: none;
+  }
+}
+
+button.icon[data-testid='theme'] {
+  display: inline-flex;
+  width: auto;
+  padding: 0 8px;
+}

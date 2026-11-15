@@ -86,6 +86,7 @@ function ThemeButton() {
       }}
     >
       {THEME_ICONS[choice]()}
+      <span className="theme-name">{THEME_NAMES[choice].replace(' theme', '')}</span>
     </button>
   );
 }

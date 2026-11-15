@@ -34,7 +34,7 @@ function coreLabel(core: CoreStatus): string {
     case 'loading':
       return 'Loading core…';
     case 'ready':
-      return `gfa-core ${core.version} · worker ${Math.round(core.roundTripMs)} ms`;
+      return 'Ready';
     case 'error':
       return `Core failed: ${core.message}`;
   }
@@ -48,6 +48,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
   const paused = useApp((s) => s.layoutPaused);
   const fps = useApp((s) => s.fps);
   const visible = useApp((s) => s.visibleSegments);
+  const selected = useApp((s) => s.selection.count);
   const segments = useApp((s) => shownGraph(s)?.stats.segments ?? 0);
   const warnings = load.state === 'loaded' ? load.result.warnings : undefined;
   const layoutText = layoutLabel(layout, paused);
@@ -60,6 +61,7 @@ export function StatusBar({ onToggleWarnings }: Props) {
             : `${formatCount(visible)} of ${formatCount(segments)} segments shown`}
         </span>
       )}
+      {selected > 0 && <span data-testid="status-selection">{formatCount(selected)} selected</span>}
       {layoutText && (
         <span
           data-testid="status-layout"
@@ -82,7 +84,11 @@ export function StatusBar({ onToggleWarnings }: Props) {
       <span data-testid="status-renderer" data-renderer={backend}>
         {rendererLabel[backend]}
       </span>
-      <span data-testid="status-core" data-state={core.state}>
+      <span
+        data-testid="status-core"
+        data-state={core.state}
+        title={core.state === 'ready' ? `gfa-core ${core.version}` : undefined}
+      >
         {coreLabel(core)}
       </span>
     </footer>

@@ -20,6 +20,8 @@ const FROM_BANDAGE: [string, string][] = [
 export function Shortcuts() {
   const open = useApp((s) => s.shortcutsOpen);
   const setOpen = useApp((s) => s.setShortcutsOpen);
+  const core = useApp((s) => s.core);
+  const renderer = useApp((s) => s.renderer);
   if (!open) return null;
   return (
     <section
@@ -82,6 +84,13 @@ export function Shortcuts() {
           ))}
         </tbody>
       </table>
+      <h3>About this session</h3>
+      <p className="muted small" data-testid="about">
+        {core.state === 'ready'
+          ? `gfa-core ${core.version} · worker round trip ${Math.round(core.roundTripMs)} ms`
+          : 'The core is not ready.'}
+        {` · drawing with ${renderer}`}
+      </p>
     </section>
   );
 }

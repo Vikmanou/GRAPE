@@ -8,7 +8,10 @@ test('loads the core in a worker and settles on a renderer', async ({ page }) =>
 
   const core = page.getByTestId('status-core');
   await expect(core).toHaveAttribute('data-state', 'ready');
-  await expect(core).toContainText(/gfa-core \d+\.\d+\.\d+ · worker \d+ ms/);
+  await expect(core).toHaveText('Ready');
+  await page.getByTestId('help').click();
+  await expect(page.getByTestId('about')).toContainText(/gfa-core \d+\.\d+\.\d+ · worker round trip \d+ ms/);
+  await page.getByTestId('help').click();
 
   const renderer = page.getByTestId('status-renderer');
   await expect(renderer).not.toHaveAttribute('data-renderer', 'detecting');
