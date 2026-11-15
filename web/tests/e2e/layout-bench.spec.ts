@@ -85,6 +85,20 @@ test.describe('layout benchmark', () => {
       const [anchor] = [...(await segmentsOnScreen(page, 1)).values()];
       await zoomIn(page, 30, anchor);
       result.fpsZoomedIn = await panAndZoom(page, anchor);
+      // Last, so the index does not disturb the frame rates: one search builds it.
+      const indexed = await page.evaluate(async () => {
+        type Store = { getState(): { runSearch(q: string): void; searchRun: { state: string }; searchIndex: unknown } };
+        type Hooks = { store: Store; memory(): Promise<unknown> };
+        const hooks = (window as unknown as { grapeTest: Hooks }).grapeTest;
+        hooks.store.getState().runSearch('ACGTACGTACGTACGTACGTACGT');
+        for (;;) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          const state = hooks.store.getState();
+          if (state.searchIndex) return { memory: await hooks.memory() };
+          if (state.searchRun.state === 'failed' || state.searchRun.state === 'idle') return undefined;
+        }
+      });
+      if (indexed) Object.assign(result, { memoryIndexed: indexed.memory, tabMbIndexed: memoryMb().tab });
       writeFileSync(join(job.out, `${name}.json`), JSON.stringify(result));
     });
   }

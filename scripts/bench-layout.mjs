@@ -203,6 +203,27 @@ for (const { name, timing: t, quality: q } of rows) {
     `| ${name} | ${t.tabMb} / ${tabTargetMb(q.segments)}${tabOk ? '' : ' **over**'} | ${parts.map(cell).join(' | ')} |`,
   );
 }
+const indexed = rows.filter(({ timing: t }) => t.memoryIndexed);
+if (indexed.length > 0) {
+  lines.push(
+    '',
+    '## With the search index',
+    '',
+    'One sequence search builds the index; its memory is held by the sequence worker.',
+    'Tab memory is held against the spec target for the graph size.',
+    '',
+    '| Graph | Tab before | Tab with index | Sequence worker before | Sequence worker with index |',
+    '|---|---:|---:|---:|---:|',
+  );
+  for (const { name, timing: t, quality: q } of indexed) {
+    const mb = (part) => (((typeof part === 'number' ? part : part.wasm + part.held) / (1 << 20)) | 0).toString();
+    const tabOk = t.tabMbIndexed <= tabTargetMb(q.segments);
+    if (!tabOk) over.push(`${name}: tab with index ${t.tabMbIndexed} MB`);
+    lines.push(
+      `| ${name} | ${t.tabMb} MB | ${t.tabMbIndexed} / ${tabTargetMb(q.segments)}${tabOk ? '' : ' **over**'} | ${mb(t.memory.sequence)} MB | ${mb(t.memoryIndexed.sequence)} MB |`,
+    );
+  }
+}
 lines.push('');
 writeFileSync(join(root, 'bench', 'results.md'), lines.join('\n'));
 console.log(`\nwrote bench/results.md and ${files.length} screenshots in bench/screenshots`);

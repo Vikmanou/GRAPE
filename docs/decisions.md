@@ -1240,3 +1240,26 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   Examples menu repeated each other.
 - **Alternatives**: the Stain and Console directions; four tabs with disclosures; a
   menu-only Open button; a Stop for the layout; an axe dependency for contrast.
+
+## 2026-11-15: Memory (release stage 11.3)
+
+- **Decision**: the owner kept the spec's tab targets (300 MB up to 5,000
+  segments, 1 GB up to 200,000, 2 GB above) and asked for the GPU part of the
+  1M graph to fit its budget. A settled GPU layout now gives back the forces and
+  the spatial grid, which only iterating uses (`GpuLevel.release`), and builds
+  them again when a refinement starts (`GpuLevel.encode` makes them on demand).
+  The layout benchmark also builds the search index once per graph and reports
+  tab memory and the sequence worker with it.
+- **Reason**: `bench/results.md` showed the 1M graph's GPU part at 748 MB
+  against a 732 MB budget, with the tab at 1097 MB of 2048 MB. Level 0 kept the
+  force buffer (8 B per point), the sorted and packed grid arrays (20 B per
+  point) and the grid's cell tables after the layout was done. The positions,
+  nodes, edges and heat buffers stay, because a refinement needs them and they
+  cannot be rebuilt from the GPU alone.
+- **Alternatives**: freeing the second positions buffer too (needs a copy of
+  the latest positions first, for 8 B per point); dropping the edges and heat
+  buffers (a refinement would need them uploaded again from memory the page no
+  longer keeps); a tab target below 2 GB (not asked for).
+- **Not measured**: the saving. The 200k and 1M graphs were not run in this
+  session; the owner runs `npm run bench:layout` on another device and the
+  table in `bench/results.md` carries the new numbers.
