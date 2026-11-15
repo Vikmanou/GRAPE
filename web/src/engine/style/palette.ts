@@ -9,8 +9,9 @@ export type Rgba = readonly [number, number, number, number];
 export interface Palette {
   background: Rgba;
   link: Rgba;
-  /** Around selected segments; the hovered one gets the lighter `hover`. */
+  /** Around selected segments, outside; `selectionInner` is the ring inside it, so the pair shows on any ribbon colour. The hovered one gets the lighter `hover`. */
   selection: Rgba;
+  selectionInner: Rgba;
   hover: Rgba;
   /** Segments whose depth or GC is unknown, in the modes colouring by them. */
   unknown: Rgba;
@@ -41,6 +42,7 @@ export const palettes: Record<Theme, Palette> = {
     background: LIGHT_BACKGROUND,
     link: hex('#3d3d3a'),
     selection: LIGHT_SELECTION,
+    selectionInner: hex('#ffffff'),
     hover: mixed(LIGHT_SELECTION, LIGHT_BACKGROUND, 0.45),
     unknown: hex('#a3a3a0'),
     label: hex('#1f1f1d'),
@@ -49,6 +51,7 @@ export const palettes: Record<Theme, Palette> = {
     background: DARK_BACKGROUND,
     link: hex('#c9c7d1'),
     selection: DARK_SELECTION,
+    selectionInner: hex('#0b1b4d'),
     hover: mixed(DARK_SELECTION, DARK_BACKGROUND, 0.5),
     unknown: hex('#6b6a72'),
     label: hex('#ececf1'),

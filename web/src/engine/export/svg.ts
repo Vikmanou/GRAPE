@@ -158,6 +158,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
   // Selected segments again on top, outlined, as the highlight passes draw them.
   if (anySelected) {
     const outline = paint(palette.selection);
+    const inner = paint(palette.selectionInner);
     const width = outlineWidth(view.zoom);
     out.push(`<g fill="none" stroke-linecap="round" stroke-linejoin="round">\n`);
     for (const s of shown) {
@@ -168,6 +169,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
         const color = cssColor(segmentColor(colors, data, s, name));
         out.push(
           `<path d="${d}" stroke="${outline.color}" stroke-opacity="${f(outline.opacity)}" stroke-width="${f(w + width)}"/>\n`,
+          `<path d="${d}" stroke="${inner.color}" stroke-opacity="${f(inner.opacity)}" stroke-width="${f(w)}"/>\n`,
           `<path d="${d}" stroke="${color}" stroke-width="${f(Math.max(w - width, pixel))}"/>\n`,
         );
       }

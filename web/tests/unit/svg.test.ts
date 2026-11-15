@@ -5,7 +5,7 @@ import { type SvgScene, TooManySegmentsError, viewToSvg } from '../../src/engine
 
 const tags = { segments: new Uint32Array(0), colors: new Uint32Array(0) };
 
-/** Three segments in a row, `a` of two pieces, joined by two links; `c` far off screen. The selection outline is 1 unit at zoom 4. */
+/** Three segments in a row, `a` of two pieces, joined by two links; `c` far off screen. The selection outline is 1 unit at zoom 4, a pair of rings of half a unit. */
 function scene(patch: Partial<SvgScene> = {}): SvgScene {
   return {
     positions: new Float32Array([0, 0, 20, 0, 40, 0, 50, 0, 70, 0, 5000, 0, 5020, 0]),
@@ -65,7 +65,7 @@ describe('SVG export', () => {
       }),
     );
     expect(attributes(text, 'path', 'd').some((d) => d.startsWith('M0 0'))).toBe(false);
-    expect(attributes(text, 'path', 'stroke-width', 'd="M50 0L70 0"')).toEqual(['5', '6', '4']);
+    expect(attributes(text, 'path', 'stroke-width', 'd="M50 0L70 0"')).toEqual(['5', '6', '5', '4']);
   });
 
   it('refuses a view with more segments than the cap', async () => {

@@ -49,8 +49,8 @@ interface Graph extends Drawn {
 }
 
 /** Each pass and strand draws with its own view uniform. */
-type Pass = 'graph' | 'ids' | 'outline' | 'fill' | 'bands';
-const PASSES: Pass[] = ['graph', 'ids', 'outline', 'fill', 'bands'];
+type Pass = 'graph' | 'ids' | 'outline' | 'inner' | 'fill' | 'bands';
+const PASSES: Pass[] = ['graph', 'ids', 'outline', 'inner', 'fill', 'bands'];
 
 /** `strand` in graph.wgsl's view: 0 draws single mode, 1 and -1 the two strands of double mode. */
 const SINGLE = [0];
@@ -67,6 +67,7 @@ export class Renderer {
   private readonly ribbon: GPURenderPipeline;
   private readonly link: GPURenderPipeline;
   private readonly outline: GPURenderPipeline;
+  private readonly inner: GPURenderPipeline;
   private readonly ribbonIds: GPURenderPipeline;
   private readonly band: GPURenderPipeline;
   private readonly layout: GPUBindGroupLayout;
@@ -111,6 +112,7 @@ export class Renderer {
     this.ribbon = pipeline('ribbon', 'ribbon_vertex', 'ribbon_fragment', { format, blend });
     this.link = pipeline('link', 'link_vertex', 'link_fragment', { format, blend });
     this.outline = pipeline('outline', 'ribbon_vertex', 'ribbon_outline_fragment', { format, blend });
+    this.inner = pipeline('inner outline', 'ribbon_vertex', 'ribbon_inner_fragment', { format, blend });
     this.band = pipeline('band', 'band_vertex', 'band_fragment', { format, blend });
     this.ribbonIds = pipeline('ribbon ids', 'ribbon_vertex', 'ribbon_id_fragment', { format: ID_FORMAT });
     const uniforms = (pass: Pass) =>
@@ -125,6 +127,7 @@ export class Renderer {
       graph: uniforms('graph'),
       ids: uniforms('ids'),
       outline: uniforms('outline'),
+      inner: uniforms('inner'),
       fill: uniforms('fill'),
       bands: uniforms('bands'),
     };
@@ -200,7 +203,7 @@ export class Renderer {
       styled: { segments: geometry.segments, seed, meanDepth: data.meanDepth },
       groups: Object.fromEntries(
         PASSES.map((pass) => {
-          const visiblePieces = pass === 'outline' || pass === 'fill' ? lit : visible;
+          const visiblePieces = pass === 'outline' || pass === 'inner' || pass === 'fill' ? lit : visible;
           return [pass, this.views[pass].map((view) => group(pass, view, visiblePieces))];
         }),
       ) as Record<Pass, GPUBindGroup[]>,
@@ -319,6 +322,7 @@ export class Renderer {
     this.eachStrand(pass, 'graph', view, 0, this.ribbon, PIECES_INDIRECT);
     if (this.highlighting(view)) {
       this.eachStrand(pass, 'outline', view, view.outlineWidth / 2, this.outline, HIGHLIGHT_INDIRECT);
+      this.eachStrand(pass, 'inner', view, 0, this.inner, HIGHLIGHT_INDIRECT);
       this.eachStrand(pass, 'fill', view, -view.outlineWidth / 2, this.ribbon, HIGHLIGHT_INDIRECT);
     }
     this.drawBands(pass, view);

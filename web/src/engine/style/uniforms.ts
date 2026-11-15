@@ -16,6 +16,7 @@ export interface DrawnView extends View {
   linkAlpha: number;
   linkColor: Rgba;
   outline: Rgba;
+  outlineInner: Rgba;
   hoverOutline: Rgba;
   /** Width of the selection outline in world units. */
   outlineWidth: number;
@@ -32,14 +33,15 @@ export function drawnView(view: View, style: Style, hover: number | undefined): 
     linkAlpha: linkFade(screenZoom, style.display.linkFullPx),
     linkColor: palette.link,
     outline: palette.selection,
+    outlineInner: palette.selectionInner,
     hoverOutline: palette.hover,
     outlineWidth: outlineWidth(screenZoom),
     hover,
   };
 }
 
-/** `View` in graph.wgsl and the graph shaders: 23 words, padded to 24. */
-export const VIEW_BYTES = 96;
+/** `View` in graph.wgsl and the graph shaders: 27 words, padded to 28. */
+export const VIEW_BYTES = 112;
 const NO_SEGMENT = 0xffffffff;
 
 /** `grow` widens ribbons for the outline pass; `strand` is 0 in single mode, 1 or -1 per strand in double mode. */
@@ -58,10 +60,11 @@ export function packView(out: ArrayBuffer, view: DrawnView, grow: number, strand
     ...view.linkColor,
     ...view.outline,
     ...view.hoverOutline,
+    ...view.outlineInner,
     grow,
   ]);
-  new Uint32Array(out)[21] = view.hover ?? NO_SEGMENT;
-  f[22] = strand;
+  new Uint32Array(out)[25] = view.hover ?? NO_SEGMENT;
+  f[26] = strand;
 }
 
 export interface StyledGraph {

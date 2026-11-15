@@ -12,6 +12,8 @@ struct View {
   link_color: vec4f,
   outline: vec4f,
   hover_outline: vec4f,
+  // The ring inside `outline`: selected segments get a pair, hovered ones one tone.
+  outline_inner: vec4f,
   // Added to the ribbon's half width: the highlight passes draw an outline
   // capsule this much wider, then the fill this much narrower.
   grow: f32,
@@ -306,7 +308,16 @@ fn ribbon_fragment(in: Ribbon) -> @location(0) vec4f {
 
 @fragment
 fn ribbon_outline_fragment(in: Ribbon) -> @location(0) vec4f {
-  let color = select(view.outline, view.hover_outline, in.segment == view.hover);
+  return ring_fragment(in, view.outline);
+}
+
+@fragment
+fn ribbon_inner_fragment(in: Ribbon) -> @location(0) vec4f {
+  return ring_fragment(in, view.outline_inner);
+}
+
+fn ring_fragment(in: Ribbon, selected: vec4f) -> vec4f {
+  let color = select(selected, view.hover_outline, in.segment == view.hover);
   let alpha = coverage(inside(in)) * color.a;
   if alpha <= 0.0 {
     discard;

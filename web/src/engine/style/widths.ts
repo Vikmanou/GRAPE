@@ -33,9 +33,9 @@ export function depthWidth(depth: number, meanDepth: number): number {
 
 /**
  * Bandage outlines a selected node with a 1-unit pen (`selectionThickness`
- * in program/settings.cpp); it is kept at least 2 pixels wide so a selection
- * shows when zoomed out.
+ * in program/settings.cpp); it is kept at least 3 pixels wide, a ring of 1.5
+ * in each of two tones, so a selection shows when zoomed out.
  */
 export function outlineWidth(zoom: number): number {
-  return Math.max(1, 2 / zoom);
+  return Math.max(1, 3 / zoom);
 }

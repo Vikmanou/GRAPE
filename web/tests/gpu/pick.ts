@@ -34,6 +34,7 @@ export async function picking(device: GPUDevice, kernels: Kernels): Promise<void
     linkAlpha: 0,
     linkColor: [0, 0, 0, 1],
     outline: [0, 0, 1, 1],
+    outlineInner: [1, 1, 1, 1],
     hoverOutline: [0, 0, 1, 0.5],
     outlineWidth: 1,
     hover: undefined,

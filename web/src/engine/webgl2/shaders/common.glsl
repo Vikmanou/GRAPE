@@ -14,6 +14,8 @@ layout(std140) uniform ViewBlock {
   vec4 link_color;
   vec4 outline;
   vec4 hover_outline;
+  // The ring inside `outline`: selected segments get a pair, hovered ones one tone.
+  vec4 outline_inner;
   // Added to the ribbon's half width by the highlight passes.
   float grow;
   uint hover;

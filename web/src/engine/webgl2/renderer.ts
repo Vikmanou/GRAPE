@@ -214,10 +214,11 @@ export class Renderer {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // Links first, so ribbons cover their ends, as in Bandage.
     if (lists.links) this.eachStrand(this.link, view, 0, lists.links, LINK_STEPS * 6, graph.linkCount);
-    this.eachStrand(this.ribbon, view, 0, lists.pieces, 6, graph.pieceCount, false);
+    this.eachStrand(this.ribbon, view, 0, lists.pieces, 6, graph.pieceCount, 0);
     if (lists.lit) {
-      this.eachStrand(this.ribbon, view, view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, true);
-      this.eachStrand(this.ribbon, view, -view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, false);
+      this.eachStrand(this.ribbon, view, view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, 1);
+      this.eachStrand(this.ribbon, view, 0, lists.lit, 6, graph.pieceCount, 2);
+      this.eachStrand(this.ribbon, view, -view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, 0);
     }
     this.drawBands(view);
     gl.disable(gl.BLEND);
@@ -275,7 +276,8 @@ export class Renderer {
     list: ItemList,
     vertices: number,
     total: number,
-    outlined?: boolean,
+    /** The ribbon program's `ring`: 0 fill, 1 outer outline, 2 inner outline. */
+    ring?: 0 | 1 | 2,
   ): void {
     const gl = this.res.gl;
     const graph = this.graph;
@@ -287,7 +289,7 @@ export class Renderer {
       gl.bindTexture(gl.TEXTURE_2D, texture);
     });
     gl.uniform1i(program.uniform('every_item'), list.every ? 1 : 0);
-    if (outlined !== undefined) gl.uniform1i(program.uniform('outlined'), outlined ? 1 : 0);
+    if (ring !== undefined) gl.uniform1i(program.uniform('ring'), ring);
     gl.bindVertexArray(this.vao);
     if (list.every) {
       gl.disableVertexAttribArray(0);
