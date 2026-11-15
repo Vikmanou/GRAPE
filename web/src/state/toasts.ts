@@ -19,6 +19,8 @@ export interface ToastSlice {
 const MAX_TOASTS = 4;
 /** A toast without details is a confirmation and goes away by itself. */
 const CONFIRMATION_MS = 4000;
+/** A toast with a button waits longer, then goes too, so old file names do not pile up. */
+const ACTION_MS = 15_000;
 
 export function createToastSlice({ set, get }: Context): ToastSlice {
   let nextId = 1;
@@ -27,10 +29,13 @@ export function createToastSlice({ set, get }: Context): ToastSlice {
     toast(message, details, action) {
       const id = nextId++;
       set({ toasts: [...get().toasts, { id, message, details, action }].slice(-MAX_TOASTS) });
-      if (details === undefined && action === undefined) {
-        setTimeout(() => {
-          get().dismissToast(id);
-        }, CONFIRMATION_MS);
+      if (details === undefined) {
+        setTimeout(
+          () => {
+            get().dismissToast(id);
+          },
+          action === undefined ? CONFIRMATION_MS : ACTION_MS,
+        );
       }
     },
     dismissToast(id) {

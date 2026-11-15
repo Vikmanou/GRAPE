@@ -1193,3 +1193,50 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Measured**: GPU time per frame while zooming on the mitochondrion and lpa
   examples, WebGPU, was 0.5 to 0.6 ms with and without smoothing. The 200k
   and 1M graphs were not measured.
+
+## 2026-11-15: Shell redesign (release stage 11.2)
+
+- **Decision**: the owner approved the audit's four fix groups, the **Bench**
+  direction (a cool grey-blue instrument panel with a cobalt accent) and five
+  sidebar tabs.
+  - **Tokens** (`ui/styles/tokens.css`): canvas `#fbfcfd` / `#171c23`, chrome and
+    panel, ink, muted, accent `#2457d6` / `#7da2ff`, warning `#9a4f00` /
+    `#e8b45a`, a hairline `--border` for panels and a `--control-border` of 3:1 or
+    better for every control. `palettes` in engine/style/palette.ts clears the canvas
+    to the same background. `tests/unit/tokens.test.ts` checks every text pair
+    at 4.5:1 and every control border at 3:1 on panel, chrome and canvas, in both
+    themes (WCAG 1.4.3 and 1.4.11); no axe dependency was added. System UI
+    fonts, JetBrains Mono for sequences.
+  - **Tabs**: Overview, Display, Find, Paths, Layout. Filters live in Find ("Limit
+    the view"), seed, quality, pause and pins in Layout, and the thresholds
+    (labels shown, link and dot widths) under a collapsed "Detail" group in Display
+    with plain wording. Find switches between "By name" and "By sequence"; the
+    mode is in the store so the `/` shortcut returns to names.
+  - **Top bar**: one split Open button (the button opens the file picker, the arrow
+    opens Open from URL and Examples), Export, Share, then theme and help
+    icons (SVG, 32 px targets). The empty state has one primary "Open a file".
+  - **Progress**: a strip under the top bar with a native `<progress>` and a chip
+    per task. Loading and sequence indexing can be cancelled; the layout can be
+    paused and resumed. There is no Stop for the layout because the engine has no
+    such action; adding one would leave a half-refined picture. Level and energy
+    moved to a tooltip.
+  - **Info panel**: Zoom to and Copy sequence up front, Whole component, Invert and
+    Download FASTA under "More actions"; neighbours are chips; toasts sit
+    bottom-centre (top on narrow windows). A load with warnings toasts
+    "N lines were skipped or repaired" with a Review button.
+  - **Narrow windows**: below 900 px the sidebar and the info panel are bottom
+    sheets (46% of the height, one at a time: a selection's details replace the
+    sidebar until cleared) and the camera fit uses a bottom inset; below 720 px the
+    top bar drops its brand and menus open across the window. Every action stays on
+    screen down to 390 px, so the planned "⋯" menu was not needed.
+  - **Onboarding**: a first-run card at the top of the Overview, dismissed once
+    (`welcomed` in the saved settings), and a help overlay with a "Coming from
+    Bandage" table. Its Bandage terms are from ui/mainwindow.ui in rrwick/Bandage
+    (Load graph, Draw graph, Graph scope, Colour by, Node labels, Find nodes,
+    BLAST, Save image).
+- **Reason**: the audit of 114 screenshots (docs/shell/before and after): at 390 px
+  the top bar overflowed and the sidebar hid the graph; the Display tab held six
+  groups of unrelated controls; control borders were 1.4:1; the empty state and the
+  Examples menu repeated each other.
+- **Alternatives**: the Stain and Console directions; four tabs with disclosures; a
+  menu-only Open button; a Stop for the layout; an axe dependency for contrast.
