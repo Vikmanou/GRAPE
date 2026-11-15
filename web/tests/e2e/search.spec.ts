@@ -5,7 +5,17 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
 import { pathColor } from '../../src/engine/style/colors';
-import { appState, near, openSettled, repo, ribbonColor, segmentsOnScreen, showTab, storeAction } from './helpers';
+import {
+  appState,
+  near,
+  openSettled,
+  repo,
+  ribbonColor,
+  segmentsOnScreen,
+  showsColors,
+  showTab,
+  storeAction,
+} from './helpers';
 
 const GRAPH = repo('testdata/search.gfa');
 const sequences = new Map(
@@ -44,6 +54,11 @@ function idOf(name: string): number {
 }
 
 /** Where a segment is on screen, away from its ends. */
+/** Whether `rgb` shows near `at`; a hit's band has a dark edge, which a single colour read could land on. */
+async function shows(page: Page, at: { x: number; y: number }, rgb: number[]): Promise<boolean> {
+  return (await showsColors(page, at.x, at.y, [rgb], 2))[0] ?? false;
+}
+
 async function spot(page: Page, name: string): Promise<{ x: number; y: number }> {
   const found = (await segmentsOnScreen(page, sequences.size)).get(idOf(name));
   if (!found) throw new Error(`${name} is not on screen`);
@@ -81,29 +96,31 @@ test('a walk through a short segment takes the base the query has', async ({ pag
 test('hits colour exactly their part of the ribbon and go when asked', async ({ page }) => {
   await openFind(page);
   const whole = await spot(page, 'd');
-  const before = await ribbonColor(page, whole.x, whole.y, 1);
+  const before = await ribbonColor(page, whole.x, whole.y);
   await search(page, bases('d'));
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => shows(page, whole, hitRgb)).toBe(true);
   await page.getByTestId('search-show').uncheck();
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, before))).toBe(true);
+  await expect.poll(() => shows(page, whole, hitRgb)).toBe(false);
+  await expect.poll(() => shows(page, whole, before)).toBe(true);
   await page.getByTestId('search-show').check();
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => shows(page, whole, hitRgb)).toBe(true);
   // The first third of h leaves the middle of its ribbon as it was.
   const middle = await spot(page, 'h');
-  const unhit = await ribbonColor(page, middle.x, middle.y, 1);
+  const unhit = await ribbonColor(page, middle.x, middle.y);
   await search(page, bases('h').slice(0, 30));
   await expect(page.getByTestId('search-hit-0')).toContainText('h+');
-  await expect.poll(() => ribbonColor(page, whole.x, whole.y, 1).then((c) => near(c, before))).toBe(true);
-  expect(near(await ribbonColor(page, middle.x, middle.y, 1), unhit)).toBe(true);
+  await expect.poll(() => shows(page, whole, hitRgb)).toBe(false);
+  expect(await shows(page, middle, unhit)).toBe(true);
+  expect(await shows(page, middle, hitRgb)).toBe(false);
 });
 
 test('a filter hides the hits of the segments it hides', async ({ page }) => {
   await openFind(page);
   const at = await spot(page, 'd');
   await search(page, bases('d'));
-  await expect.poll(() => ribbonColor(page, at.x, at.y, 1).then((c) => near(c, hitRgb))).toBe(true);
+  await expect.poll(() => shows(page, at, hitRgb)).toBe(true);
   await storeAction(page, 'setFilters', { minComponentLength: 100000 });
-  await expect.poll(() => ribbonColor(page, at.x, at.y, 1).then((c) => near(c, hitRgb))).toBe(false);
+  await expect.poll(() => shows(page, at, hitRgb)).toBe(false);
 });
 
 test('a FASTA file searches every record, which the table can pick between', async ({ page }) => {
