@@ -355,8 +355,10 @@ fn controls(link: vec4u) -> array<vec2f, 4> {
   let p0 = positions[link.x] + left_of(out_a) * shift;
   let p3 = positions[link.z] - left_of(out_b) * shift;
   let gap = length(p3 - p0);
-  let reach = max(gap * 0.4, view.ribbon_half * 6.0);
-  if gap < view.ribbon_half * 4.0 {
+  // Capped at half the gap past the loop case: a longer handle overshoots into a squiggle between close ends.
+  let loops = gap < view.ribbon_half * 4.0;
+  let reach = select(min(max(gap * 0.4, view.ribbon_half * 6.0), gap * 0.5), max(gap * 0.4, view.ribbon_half * 6.0), loops);
+  if loops {
     let side = vec2f(-out_a.y, out_a.x);
     return array<vec2f, 4>(p0, p0 + (out_a + side) * reach, p3 + (out_b - side) * reach, p3);
   }
@@ -385,7 +387,7 @@ fn link_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -
   let corner = QUAD[v % 6u];
   let t = (f32(v / 6u) + corner.x) / f32(LINK_STEPS);
   let tangent = normalize_or(bezier_tangent(c, t), c[3] - c[0]);
-  let half = max(view.link_half, view.world_per_pixel * 0.5);
+  let half = max(view.link_half, view.world_per_pixel * 0.75);
   let across = corner.y * (half + view.world_per_pixel);
   var out: Link;
   out.clip = to_clip(bezier(c, t) + vec2f(-tangent.y, tangent.x) * across);

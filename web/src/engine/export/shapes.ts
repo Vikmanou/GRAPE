@@ -75,8 +75,10 @@ export function linkControls(c: Chains, link: number, strand: number, shift: num
   const p0: Point = [a[0] + la[0] * s, a[1] + la[1] * s];
   const p3: Point = [b[0] - lb[0] * s, b[1] - lb[1] * s];
   const gap = Math.hypot(p3[0] - p0[0], p3[1] - p0[1]);
-  const reach = Math.max(gap * 0.4, ribbonHalf * 6);
-  if (gap < ribbonHalf * 4) {
+  const loops = gap < ribbonHalf * 4;
+  const open = Math.max(gap * 0.4, ribbonHalf * 6);
+  const reach = loops ? open : Math.min(open, gap * 0.5);
+  if (loops) {
     const side: Point = [-outA[1], outA[0]];
     return [
       p0,

@@ -14,9 +14,16 @@ export const STRAND_SHIFT = 2;
 /** Ribbons this many pixels wide or wider show their links fully. */
 export const LINK_FULL_PX = 3;
 
-/** Links fade out as ribbons shrink from `fullPx` to 1 pixel wide. */
+/** The share of full strength links keep at ribbons 1 pixel wide, so they stay followable. */
+export const LINK_FLOOR = 0.4;
+/** Links are gone once ribbons are this many pixels wide. */
+const LINK_GONE_PX = 0.2;
+
+/** Links fade from full at `fullPx` to `LINK_FLOOR` at 1 pixel wide, then out by `LINK_GONE_PX`. */
 export function linkFade(zoom: number, fullPx = LINK_FULL_PX): number {
-  return Math.min(1, Math.max(0, (RIBBON_WIDTH * zoom - 1) / Math.max(fullPx - 1, 1e-6)));
+  const px = RIBBON_WIDTH * zoom;
+  if (px >= 1) return LINK_FLOOR + ((1 - LINK_FLOOR) * Math.min(px - 1, fullPx - 1)) / Math.max(fullPx - 1, 1e-6);
+  return LINK_FLOOR * Math.min(1, Math.max(0, (px - LINK_GONE_PX) / (1 - LINK_GONE_PX)));
 }
 
 /**

@@ -75,10 +75,12 @@ describe('widths', () => {
     expect(depthWidth(5, NaN)).toBe(RIBBON_WIDTH);
   });
 
-  it('fades links between one pixel and the full width', () => {
+  it('fades links from the full width to a floor at one pixel, then out', () => {
     expect(linkFade(3 / RIBBON_WIDTH)).toBe(1);
-    expect(linkFade(1 / RIBBON_WIDTH)).toBe(0);
-    expect(linkFade(5 / RIBBON_WIDTH, 9)).toBe(0.5);
+    expect(linkFade(1 / RIBBON_WIDTH)).toBe(0.4);
+    expect(linkFade(5 / RIBBON_WIDTH, 9)).toBeCloseTo(0.7);
+    expect(linkFade(0.6 / RIBBON_WIDTH)).toBeCloseTo(0.2);
+    expect(linkFade(0.2 / RIBBON_WIDTH)).toBe(0);
   });
 });
 

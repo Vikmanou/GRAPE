@@ -52,7 +52,7 @@ describe('SVG export', () => {
     expect(attributes(text, 'svg', 'viewBox')).toEqual(['-15 -25 100 50']);
     expect(attributes(text, 'path', 'd', 'stroke-width="5"')).toEqual(['M0 0L20 0L40 0', 'M50 0L70 0']);
     expect(attributes(text, 'path', 'stroke', 'stroke-width="5"')[0]).toBe(cssColor(hueColor(goldenHue(mix(1), 0))));
-    expect(attributes(text, 'path', 'd', 'C')).toEqual(['M40 0C55 0 35 0 50 0', 'M70 0C2042 0 3028 0 5000 0']);
+    expect(attributes(text, 'path', 'd', 'C')).toEqual(['M40 0C45 0 45 0 50 0', 'M70 0C2042 0 3028 0 5000 0']);
     expect(text).toContain('>b&lt;1&gt;</tspan>');
     expect(text).toContain('>20 bp</tspan>');
   });

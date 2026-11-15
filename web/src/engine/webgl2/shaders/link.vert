@@ -19,10 +19,12 @@ void controls(uvec4 link, out vec2 c0, out vec2 c1, out vec2 c2, out vec2 c3) {
   vec2 p0 = position(link.x) + left_of(out_a) * shift;
   vec2 p3 = position(link.z) - left_of(out_b) * shift;
   float gap = length(p3 - p0);
+  bool loops = gap < view.ribbon_half * 4.0;
   float reach = max(gap * 0.4, view.ribbon_half * 6.0);
+  if (!loops) reach = min(reach, gap * 0.5);
   c0 = p0;
   c3 = p3;
-  if (gap < view.ribbon_half * 4.0) {
+  if (loops) {
     vec2 side = vec2(-out_a.y, out_a.x);
     c1 = p0 + (out_a + side) * reach;
     c2 = p3 + (out_b - side) * reach;
@@ -45,7 +47,7 @@ void main() {
   float u = 1.0 - t;
   vec2 point = u * u * u * c0 + 3.0 * u * u * t * c1 + 3.0 * u * t * t * c2 + t * t * t * c3;
   vec2 tangent = normalize_or(3.0 * u * u * (c1 - c0) + 6.0 * u * t * (c2 - c1) + 3.0 * t * t * (c3 - c2), c3 - c0);
-  half_width = max(view.link_half, view.world_per_pixel * 0.5);
+  half_width = max(view.link_half, view.world_per_pixel * 0.75);
   across_link = corner.y * (half_width + view.world_per_pixel);
   gl_Position = to_clip(point + vec2(-tangent.y, tangent.x) * across_link);
 }

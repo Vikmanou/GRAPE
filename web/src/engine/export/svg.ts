@@ -121,7 +121,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
   if (linkAlpha > 0) {
     const link = paint(palette.link);
     out.push(
-      `<g fill="none" stroke="${link.color}" stroke-opacity="${f(link.opacity * linkAlpha)}" stroke-width="${f(Math.max(LINK_WIDTH, pixel))}">\n`,
+      `<g fill="none" stroke="${link.color}" stroke-opacity="${f(link.opacity * linkAlpha)}" stroke-width="${f(Math.max(LINK_WIDTH, 1.5 * pixel))}">\n`,
     );
     const links = geometry.links.length / 4;
     for (let l = 0; l < links; l++) {
