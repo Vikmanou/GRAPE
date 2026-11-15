@@ -1,3 +1,4 @@
+import { Script } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { workerSource } from '../../build/offline';
 
@@ -11,6 +12,6 @@ describe('the offline worker', () => {
   });
 
   it('is a script that parses', () => {
-    expect(() => new Function(source)).not.toThrow();
+    expect(() => new Script(source)).not.toThrow();
   });
 });
