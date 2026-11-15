@@ -1,7 +1,7 @@
 .sidebar {
   left: 8px;
-  width: min(320px, calc(100% - 16px));
-  padding-top: 8px;
+  width: min(340px, calc(100% - 16px));
+  padding: 8px 12px 12px;
 }
 
 .sidebar > header {
@@ -29,6 +29,8 @@
   border-color: transparent;
   border-radius: 4px 4px 0 0;
   border-bottom: 2px solid transparent;
+  padding: 2px 7px;
+  font-size: 13px;
 }
 
 .tabs [role='tab'][aria-selected='true'] {
@@ -204,7 +206,14 @@
 }
 
 .controls input.number {
-  width: 6em;
+  width: 4.5em;
+}
+
+.disclosure-body label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 
 .legend {
@@ -358,4 +367,68 @@
   background: var(--accent);
   color: var(--panel);
   font-weight: 600;
+}
+
+/* A path is two lines, name then size, so the table never outgrows the sidebar. */
+.path-table {
+  display: block;
+}
+
+.path-table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.path-table tbody {
+  display: block;
+}
+
+.path-table tr {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'toggle name step'
+    'toggle size step';
+  column-gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.path-table td {
+  display: block;
+  padding: 0;
+  min-width: 0;
+  text-align: left;
+}
+
+.path-table td:nth-child(1) {
+  grid-area: toggle;
+}
+
+.path-table td:nth-child(2) {
+  grid-area: name;
+  overflow-wrap: anywhere;
+}
+
+.path-table td:nth-child(3) {
+  grid-area: size;
+  font-size: 12px;
+}
+
+.path-table td:nth-child(4) {
+  grid-area: step;
+}
+
+button.path-name {
+  text-align: left;
+  text-decoration: none;
+  color: var(--accent);
+}
+
+button.path-name:hover {
+  text-decoration: underline;
 }

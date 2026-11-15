@@ -72,8 +72,7 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
             <span className="visually-hidden">Highlight</span>
           </th>
           <th scope="col">Name</th>
-          <th scope="col">Steps</th>
-          <th scope="col">Length</th>
+          <th scope="col">Size</th>
           <th scope="col">
             <span className="visually-hidden">Step through</span>
           </th>
@@ -99,7 +98,7 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
             <td>
               <button
                 type="button"
-                className="link mono"
+                className="link mono path-name"
                 title="Select and zoom to this path's segments"
                 onClick={() => {
                   selectPath(i);
@@ -109,8 +108,9 @@ function PathTable({ list, rows, highlighted }: { list: PathList; rows: number[]
               </button>
               {list.walks[i] ? <span className="muted"> W</span> : null}
             </td>
-            <td>{formatCount(list.steps[i] ?? 0)}</td>
-            <td>{formatBases(list.lengths[i] ?? 0)}</td>
+            <td className="path-size muted">
+              {formatCount(list.steps[i] ?? 0)} steps · {formatBases(list.lengths[i] ?? 0)}
+            </td>
             <td>
               <button
                 type="button"
