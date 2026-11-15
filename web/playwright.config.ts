@@ -13,7 +13,7 @@ const chromium = (['webgl2', 'webgpu'] as const).map((renderer) => ({
   testIgnore:
     renderer === 'webgl2'
       ? ['**/gpu.spec.ts', '**/*bench.spec.ts']
-      : ['**/smoke.spec.ts', '**/parse.spec.ts', '**/layout.spec.ts'],
+      : ['**/smoke.spec.ts', '**/parse.spec.ts', '**/layout.spec.ts', '**/offline.spec.ts'],
   use: {
     ...devices['Desktop Chrome'],
     // GRAPE_GPU_HEADLESS=1 runs full Chromium headless on the real GPU

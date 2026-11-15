@@ -12,9 +12,10 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "*.config.ts"]
+  "include": ["src", "tests", "build", "*.config.ts"]
 }
