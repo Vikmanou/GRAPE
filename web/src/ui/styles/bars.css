@@ -189,3 +189,19 @@ button.icon[data-testid='theme'] {
   width: auto;
   padding: 0 8px;
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-bar .pulse {
+    animation: pulse 1.2s ease-out 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  60% {
+    background: color-mix(in srgb, var(--warn) 30%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}

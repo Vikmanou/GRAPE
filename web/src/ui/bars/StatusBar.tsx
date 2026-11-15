@@ -75,7 +75,13 @@ export function StatusBar({ onToggleWarnings }: Props) {
         </span>
       )}
       {warnings && warnings.total > 0 && (
-        <button type="button" className="link warn" data-testid="status-warnings" onClick={onToggleWarnings}>
+        <button
+          type="button"
+          className="link warn pulse"
+          title="Lines the parser skipped or repaired; click to list them"
+          data-testid="status-warnings"
+          onClick={onToggleWarnings}
+        >
           {formatCount(warnings.total)} {warnings.total === 1 ? 'warning' : 'warnings'}
         </button>
       )}
