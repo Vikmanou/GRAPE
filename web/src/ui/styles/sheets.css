@@ -9,10 +9,25 @@
     top: auto;
     bottom: 28px;
     width: auto;
-    height: 46%;
+    height: 40%;
     z-index: 3;
     border-radius: 12px 12px 0 0;
     border-width: 1px 0 0;
+  }
+
+  .sidebar::before,
+  .info-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 6px auto 0;
+    border-radius: 2px;
+    background: var(--control-border);
+  }
+
+  .welcome ul {
+    display: none;
   }
 
   .sidebar-open {
