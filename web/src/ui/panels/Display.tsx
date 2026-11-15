@@ -1,4 +1,5 @@
 import { ColorControls } from './ColorControls';
+import { FilterControls } from './FilterControls';
 import { DetailControls } from './DetailControls';
 import { LabelControls } from './LabelControls';
 
@@ -7,6 +8,7 @@ export function Display() {
     <>
       <ColorControls />
       <LabelControls />
+      <FilterControls />
       <DetailControls />
     </>
   );

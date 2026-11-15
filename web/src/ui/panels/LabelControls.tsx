@@ -6,7 +6,7 @@ const LINES: [keyof LabelContent, string][] = [
   ['name', 'Name'],
   ['length', 'Length'],
   ['depth', 'Depth'],
-  ['custom', 'LB tag'],
+  ['custom', 'Label tag (LB)'],
 ];
 
 export function LabelControls() {

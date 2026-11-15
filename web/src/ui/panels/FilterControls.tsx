@@ -18,12 +18,16 @@ export function FilterControls() {
   const clearFilters = useApp((s) => s.clearFilters);
   const { neighbourhood, components, minComponentLength, depth, drawn } = filters;
   const steps = neighbourhood?.steps ?? DEFAULT_STEPS;
-  const depthRange = depth ?? { min: stats?.depthMin ?? 0, max: stats?.depthMax ?? 0 };
+  const depthRange = depth ?? {
+    min: Math.floor((stats?.depthMin ?? 0) * 100) / 100,
+    max: Math.ceil((stats?.depthMax ?? 0) * 100) / 100,
+  };
   const hasDepth = Number.isFinite(stats?.depthMin);
+  const needsSelection = selected === 0 && neighbourhood === undefined && components === undefined;
 
   return (
     <section className="controls" aria-label="Filters">
-      <h3>Limit the view</h3>
+      <h3>Show only</h3>
       {drawn && (
         <div className="row">
           <label title="A loaded layout file leaves the other segments out, as BandageNG does">
@@ -94,6 +98,7 @@ export function FilterControls() {
           Only the selected components
         </label>
       </div>
+      {needsSelection && <p className="muted small">Select a segment first to use the two options above.</p>}
       <div className="row">
         <label>
           Hide components under{' '}
