@@ -96,6 +96,7 @@ export function packStyle(out: ArrayBuffer, style: Style, graph: StyledGraph, di
   f[12] = display.spritePx;
   f[13] = STRAND_SHIFT;
   u[14] = UNIFORM_REVERSE_COLOR;
+  u[15] = packRgba(palettes[style.theme].background);
   u.set(ramp, HEADER_WORDS);
 }
 

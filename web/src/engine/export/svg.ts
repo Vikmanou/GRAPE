@@ -9,7 +9,7 @@ import { anchor, chain, type Chains, linkControls, type Point, point, spriteCent
 export const SVG_MAX_SEGMENTS = 50_000;
 /** Segments written between yields to the event loop. */
 const SLICE = 2_000;
-/** `DIMMED` in graph.wgsl. */
+/** `DIMMED` in graph.wgsl: dimmed segments keep this much of their colour and fade into the background. */
 const DIMMED = 0.35;
 
 export interface SvgLabels {
@@ -50,6 +50,13 @@ function escape(text: string): string {
 function paint(color: Rgba | number): { color: string; opacity: number } {
   if (typeof color === 'number') return { color: cssColor(color), opacity: (color >>> 24) / 255 };
   return { color: cssColor(packRgba(color)), opacity: color[3] };
+}
+
+/** `color` (RGBA8, red low) mixed toward `into` by `1 - keep`, as the shaders fade a segment. */
+function fadeInto(color: number, into: number, keep: number): number {
+  const channel = (shift: number) =>
+    Math.round(((into >>> shift) & 0xff) * (1 - keep) + ((color >>> shift) & 0xff) * keep) << shift;
+  return (channel(0) | channel(8) | channel(16) | (color & 0xff000000)) >>> 0;
 }
 
 const yieldToEvents = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -104,6 +111,7 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
 
   const out: string[] = [];
   const bg = paint(palette.background);
+  const background = packRgba(palette.background);
   out.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${String(view.width)}" height="${String(view.height)}" viewBox="${f(view.x - half.x)} ${f(view.y - half.y)} ${f(half.x * 2)} ${f(half.y * 2)}">\n`,
     `<rect x="${f(view.x - half.x)}" y="${f(view.y - half.y)}" width="${f(half.x * 2)}" height="${f(half.y * 2)}" fill="${bg.color}"/>\n`,
@@ -131,19 +139,17 @@ export async function viewToSvg(scene: SvgScene): Promise<Blob> {
 
   out.push('<g fill="none" stroke-linecap="round" stroke-linejoin="round">\n');
   for (const [i, s] of shown.entries()) {
-    const faded = dim && !bit(scene.selection, s) ? DIMMED : 1;
+    const faded = dim && !bit(scene.selection, s);
     const dot = spriteCenter(scene, s, display.spritePx * pixel);
     for (const [name, strand] of strands) {
-      const color = cssColor(segmentColor(colors, data, s, name));
+      const packed = segmentColor(colors, data, s, name);
+      const color = cssColor(faded ? fadeInto(packed, background, DIMMED) : packed);
       if (dot) {
-        out.push(
-          `<circle cx="${f(dot[0])}" cy="${f(dot[1])}" r="${f(halfWidth(s))}" fill="${color}" fill-opacity="${String(faded)}"/>\n`,
-        );
+        out.push(`<circle cx="${f(dot[0])}" cy="${f(dot[1])}" r="${f(halfWidth(s))}" fill="${color}"/>\n`);
         continue;
       }
       const d = path(chain(scene, s, strand, STRAND_SHIFT));
-      const opacity = faded < 1 ? ` stroke-opacity="${String(faded)}"` : '';
-      out.push(`<path d="${d}" stroke="${color}" stroke-width="${f(halfWidth(s) * 2)}"${opacity}/>\n`);
+      out.push(`<path d="${d}" stroke="${color}" stroke-width="${f(halfWidth(s) * 2)}"/>\n`);
     }
     if (i % SLICE === SLICE - 1) await yieldToEvents();
   }

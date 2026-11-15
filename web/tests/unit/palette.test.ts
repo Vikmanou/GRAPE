@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { goldenHue, hsl, hueColor, mix } from '../../src/engine/style/colors';
+import { palettes } from '../../src/engine/style/palette';
 
 /** What the random colour mode gives each segment. */
 function randomColors(segments: number, seed: number): Uint32Array {
@@ -43,5 +44,10 @@ describe('palette', () => {
         expect(distance).toBeGreaterThan(60);
       }
     }
+  });
+
+  it('draws the hover outline opaque, so overlapping outline pieces leave no seams', () => {
+    expect(palettes.light.hover[3]).toBe(1);
+    expect(palettes.dark.hover[3]).toBe(1);
   });
 });

@@ -42,6 +42,8 @@ struct Style {
   strand_shift: f32,
   // The uniform colour of double mode's reverse strand.
   uniform_reverse_color: u32,
+  // What dimmed segments fade into.
+  dim_background: u32,
   // 256 RGBA8 colours, four to an entry.
   ramp: array<vec4u, 64>,
 }
@@ -268,7 +270,7 @@ fn ribbon_piece(v: u32, piece: vec2u) -> Ribbon {
   out.size = vec2f(length_ab, half);
   var color = segment_color(piece.y, view.strand);
   if style.dim == 1u && !is_selected(piece.y) {
-    color.a *= DIMMED;
+    color = vec4f(mix(unpack4x8unorm(style.dim_background).rgb, color.rgb, DIMMED), color.a);
   }
   out.color = color;
   out.segment = piece.y;

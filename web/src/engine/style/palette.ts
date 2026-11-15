@@ -23,8 +23,9 @@ function hex(value: string): Rgba {
   return [((n >> 16) & 0xff) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255, 1];
 }
 
-function faded([r, g, b]: Rgba, alpha: number): Rgba {
-  return [r, g, b, alpha];
+/** `color` mixed toward `into` by `1 - keep`; opaque, so overlapping outline pieces show no seams. */
+function mixed([r, g, b]: Rgba, [br, bg, bb]: Rgba, keep: number): Rgba {
+  return [br + (r - br) * keep, bg + (g - bg) * keep, bb + (b - bb) * keep, 1];
 }
 
 // Light uses Bandage's `selectionColour` (0, 0, 255, program/settings.cpp);
@@ -32,20 +33,23 @@ function faded([r, g, b]: Rgba, alpha: number): Rgba {
 const LIGHT_SELECTION = hex('#0000ff');
 const DARK_SELECTION = hex('#7aa2ff');
 
+const LIGHT_BACKGROUND = hex('#f7f7f5');
+const DARK_BACKGROUND = hex('#17161a');
+
 export const palettes: Record<Theme, Palette> = {
   light: {
-    background: hex('#f7f7f5'),
+    background: LIGHT_BACKGROUND,
     link: hex('#3d3d3a'),
     selection: LIGHT_SELECTION,
-    hover: faded(LIGHT_SELECTION, 0.45),
+    hover: mixed(LIGHT_SELECTION, LIGHT_BACKGROUND, 0.45),
     unknown: hex('#a3a3a0'),
     label: hex('#1f1f1d'),
   },
   dark: {
-    background: hex('#17161a'),
+    background: DARK_BACKGROUND,
     link: hex('#c9c7d1'),
     selection: DARK_SELECTION,
-    hover: faded(DARK_SELECTION, 0.5),
+    hover: mixed(DARK_SELECTION, DARK_BACKGROUND, 0.5),
     unknown: hex('#6b6a72'),
     label: hex('#ececf1'),
   },

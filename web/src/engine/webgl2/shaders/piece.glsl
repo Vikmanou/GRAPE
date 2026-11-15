@@ -45,7 +45,7 @@ void place_piece(uvec2 piece) {
   size = vec2(length_ab, half_width);
   vec4 c = segment_color(piece.y, view.strand);
   if (style.dim == 1u && !is_selected(piece.y)) {
-    c.a *= DIMMED;
+    c.rgb = mix(unpack_rgba(style.dim_background).rgb, c.rgb, DIMMED);
   }
   color = c;
   segment = piece.y;

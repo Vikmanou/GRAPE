@@ -38,6 +38,8 @@ layout(std140) uniform StyleBlock {
   float sprite_px;
   float strand_shift;
   uint uniform_reverse_color;
+  // What dimmed segments fade into.
+  uint dim_background;
   // 256 RGBA8 colours, four to an entry.
   uvec4 ramp[64];
 } style;
