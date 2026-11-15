@@ -14,7 +14,15 @@ interface Item {
   /** What the saved file's name adds to the graph's. */
   suffix: string;
   save: () => Promise<Blob>;
+  /** Replaces saving a file, for items that do something else with the blob. */
+  act?: (blob: Blob) => Promise<void>;
   disabled?: boolean;
+}
+
+/** The engine canvas size in pixels, which a PNG at scale 1 matches. */
+function canvasPixels(): [number, number] | undefined {
+  const canvas = document.querySelector('canvas');
+  return canvas ? [canvas.width, canvas.height] : undefined;
 }
 
 /** "Export" in the top bar: files made from the graph on screen, saved through the browser. */
@@ -50,11 +58,16 @@ export function ExportMenu() {
     save: () => (kind === 'gfa' ? exportGfa(scope) : exportFasta(scope)),
     disabled: scope === 'selection' && selected === 0,
   });
+  const pixels = canvasPixels();
   const png = (scale: number): Item => ({
     id: `export-png-${String(scale)}`,
     label: scale === 1 ? 'PNG, screen size' : `PNG, ${String(scale)}× screen size`,
     title: 'The current view as a picture, drawn larger for print when asked',
-    hint: scale === 1 ? 'The view as it is in the window' : 'Larger, for print',
+    hint: pixels
+      ? `${String(pixels[0] * scale)} × ${String(pixels[1] * scale)} px`
+      : scale === 1
+        ? 'The view as it is in the window'
+        : 'Larger, for print',
     suffix: scale === 1 ? '.png' : `.${String(scale)}x.png`,
     save: () => exportPng(scale),
   });
@@ -65,6 +78,22 @@ export function ExportMenu() {
         png(1),
         png(2),
         png(4),
+        ...(typeof ClipboardItem === 'undefined'
+          ? []
+          : [
+              {
+                id: 'export-copy-image',
+                label: 'Copy image',
+                title: 'Put the current view on the clipboard as a picture',
+                hint: 'The view as it is in the window, to paste elsewhere',
+                suffix: '',
+                save: () => exportPng(1),
+                act: async (blob: Blob) => {
+                  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                  toast('Image copied');
+                },
+              },
+            ]),
         {
           id: 'export-svg',
           label: 'SVG',
@@ -119,8 +148,9 @@ export function ExportMenu() {
     setBusy(true);
     item
       .save()
-      .then((blob) => {
-        download(blob, `${stem}${item.suffix}`);
+      .then(async (blob) => {
+        if (item.act) await item.act(blob);
+        else download(blob, `${stem}${item.suffix}`);
       })
       .catch((error: unknown) => {
         toast('The file could not be saved', error instanceof Error ? error.message : String(error));
