@@ -2,6 +2,7 @@ import { useApp } from '../../state/store';
 import { copyText, download } from '../files';
 import { formatBases, formatCount, formatDepth } from '../format';
 import { Disclosure } from '../controls/Disclosure';
+import { SHEET_QUERY, useMedia } from '../useMedia';
 import { SegmentDetails } from './SegmentDetails';
 
 /** Bandage's default name for saved sequences (ui/mainwindow.cpp, `saveSelectedSequencesToFile`). */
@@ -18,13 +19,19 @@ export function Info() {
   const fasta = useApp((s) => s.selectedFasta);
   const toast = useApp((s) => s.toast);
   const open = useApp((s) => s.infoOpen);
+  const sheet = useMedia(SHEET_QUERY);
   if (selection.count === 0 || !open) return null;
   const plural = selection.count > 1;
   const failed = (what: string) => (error: unknown) => {
     toast(`Could not ${what}`, error instanceof Error ? error.message : String(error));
   };
   return (
-    <aside className="info-panel floating-panel" aria-label="Selection" data-inset="right" data-testid="info-panel">
+    <aside
+      className="info-panel floating-panel"
+      aria-label="Selection"
+      data-inset={sheet ? 'bottom' : 'right'}
+      data-testid="info-panel"
+    >
       <header>
         <h2 data-testid="info-title">{plural ? `${formatCount(selection.count)} segments` : 'Segment'}</h2>
         <button type="button" className="icon" aria-label="Clear the selection" onClick={clear}>

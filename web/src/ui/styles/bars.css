@@ -16,6 +16,7 @@
 
 .top-bar {
   top: 0;
+  z-index: 5;
   height: 40px;
   border-bottom-width: 1px;
 }

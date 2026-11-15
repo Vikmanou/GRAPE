@@ -10,6 +10,7 @@ import { ProgressStrip } from './bars/ProgressStrip';
 import { StatusBar } from './bars/StatusBar';
 import { TopBar } from './bars/TopBar';
 import { Unsupported } from './overlays/Unsupported';
+import { SHEET_QUERY, useMedia } from './useMedia';
 import { Shortcuts } from './overlays/Shortcuts';
 import { Toasts } from './overlays/Toasts';
 import { Warnings } from './overlays/Warnings';
@@ -32,7 +33,8 @@ export function App() {
   const dragging = useFileDrop(openFile);
   const sidebarOpen = useApp((s) => s.sidebar.open);
   const infoOpen = useApp((s) => s.infoOpen && s.selection.count > 0);
-  usePanelInsets(`${load.state}:${String(sidebarOpen)}:${String(infoOpen)}`);
+  const sheet = useMedia(SHEET_QUERY);
+  usePanelInsets(`${load.state}:${String(sidebarOpen)}:${String(infoOpen)}:${String(sheet)}`);
 
   const themeChoice = useApp((s) => s.themeChoice);
   useEffect(() => {

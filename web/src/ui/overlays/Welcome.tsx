@@ -17,7 +17,7 @@ export function Welcome() {
           <strong>Find:</strong> the Find tab selects segments by name or by sequence.
         </li>
         <li>
-          <strong>Select:</strong> click a segment, or Shift and drag a box. Its details open on the right.
+          <strong>Select:</strong> click a segment, or Shift and drag a box. Its details open beside the graph.
         </li>
         <li>
           <strong>Save:</strong> Export writes a picture, GFA, FASTA or a layout that Bandage can open.

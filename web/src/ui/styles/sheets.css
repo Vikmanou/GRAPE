@@ -1,0 +1,79 @@
+/* Narrow windows. Below 900 px the sidebar and the info panel are bottom sheets over a graph that
+   stays in view (one at a time, see Sidebar.tsx); below 720 px the top bar drops its labels so
+   every action stays on screen. */
+@media (max-width: 899px) {
+  .sidebar,
+  .info-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 28px;
+    width: auto;
+    height: 46%;
+    z-index: 3;
+    border-radius: 12px 12px 0 0;
+    border-width: 1px 0 0;
+  }
+
+  .sidebar-open {
+    top: auto;
+    bottom: 36px;
+  }
+
+  .toasts {
+    top: 48px;
+    bottom: auto;
+  }
+
+  .shortcuts {
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}
+
+@media (max-width: 719px) {
+  .top-bar {
+    gap: 6px;
+    padding: 4px 8px;
+  }
+
+  .brand {
+    display: none;
+  }
+
+  .top-bar button.icon {
+    width: 28px;
+  }
+
+  .top-bar .open-url,
+  .top-bar .share {
+    width: auto;
+  }
+
+  /* Menus open across the window, whichever button they hang from. */
+  .top-bar .menu-popup {
+    position: fixed;
+    top: 46px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100% - 90px);
+    overflow: auto;
+  }
+
+  .progress-tasks {
+    flex-wrap: wrap;
+    padding: 8px 8px 0;
+  }
+
+  .status-bar {
+    gap: 8px;
+    padding: 4px 8px;
+  }
+
+  .status-bar [data-testid='status-core'] {
+    display: none;
+  }
+}
