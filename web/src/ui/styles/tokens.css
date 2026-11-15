@@ -1,15 +1,15 @@
-/* Bench palette. Text pairs are 4.5:1 or better and control borders 3:1 or better
+/* Lab bench palette: warm paper canvas, ink-blue accent. Text pairs are 4.5:1 or better and control borders 3:1 or better
    against the panel and the chrome (WCAG 1.4.3, 1.4.11); tests/unit/tokens.test.ts
    checks both. --bg is the canvas and must match `palettes` in engine/style/palette.ts. */
 :root {
-  --bg: #fbfcfd;
-  --chrome: #e9edf1;
-  --panel: #ffffff;
-  --fg: #14202b;
-  --muted: #4a5866;
-  --border: #d3dae1;
-  --control-border: #76828f;
-  --accent: #2457d6;
+  --bg: #f6f2e9;
+  --chrome: #ebe6da;
+  --panel: #fffdf8;
+  --fg: #1d2229;
+  --muted: #4f5560;
+  --border: #d9d2c3;
+  --control-border: #7d776b;
+  --accent: #1f4fb4;
   --warn: #9a4f00;
   color-scheme: light;
   font-family:
@@ -21,28 +21,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #171c23;
-    --chrome: #1f2630;
-    --panel: #1f2630;
-    --fg: #e6ebf1;
-    --muted: #9fb0c2;
-    --border: #323c49;
-    --control-border: #7b8a9b;
-    --accent: #7da2ff;
+    --bg: #14181e;
+    --chrome: #1c2128;
+    --panel: #1c2128;
+    --fg: #e8e6df;
+    --muted: #a7b0ba;
+    --border: #2f363f;
+    --control-border: #7f8a96;
+    --accent: #8fb0ff;
     --warn: #e8b45a;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #171c23;
-  --chrome: #1f2630;
-  --panel: #1f2630;
-  --fg: #e6ebf1;
-  --muted: #9fb0c2;
-  --border: #323c49;
-  --control-border: #7b8a9b;
-  --accent: #7da2ff;
+  --bg: #14181e;
+  --chrome: #1c2128;
+  --panel: #1c2128;
+  --fg: #e8e6df;
+  --muted: #a7b0ba;
+  --border: #2f363f;
+  --control-border: #7f8a96;
+  --accent: #8fb0ff;
   --warn: #e8b45a;
   color-scheme: dark;
 }

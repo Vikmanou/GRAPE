@@ -34,8 +34,8 @@ function mixed([r, g, b]: Rgba, [br, bg, bb]: Rgba, keep: number): Rgba {
 const LIGHT_SELECTION = hex('#0000ff');
 const DARK_SELECTION = hex('#7aa2ff');
 
-const LIGHT_BACKGROUND = hex('#fbfcfd');
-const DARK_BACKGROUND = hex('#171c23');
+const LIGHT_BACKGROUND = hex('#f6f2e9');
+const DARK_BACKGROUND = hex('#14181e');
 
 export const palettes: Record<Theme, Palette> = {
   light: {
