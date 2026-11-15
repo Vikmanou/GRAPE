@@ -21,6 +21,8 @@ layout(std140) uniform ViewBlock {
   uint hover;
   // 0 in single mode; 1 or -1 for the strand double mode draws.
   float strand;
+  // Sub-capsules each ribbon piece is drawn as along a smooth curve; 1 draws the straight piece.
+  uint smooth_steps;
 } view;
 
 layout(std140) uniform StyleBlock {

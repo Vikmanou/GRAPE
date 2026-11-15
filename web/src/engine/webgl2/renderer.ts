@@ -214,11 +214,11 @@ export class Renderer {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // Links first, so ribbons cover their ends, as in Bandage.
     if (lists.links) this.eachStrand(this.link, view, 0, lists.links, LINK_STEPS * 6, graph.linkCount);
-    this.eachStrand(this.ribbon, view, 0, lists.pieces, 6, graph.pieceCount, 0);
+    this.eachStrand(this.ribbon, view, 0, lists.pieces, 6 * view.smoothSteps, graph.pieceCount, 0);
     if (lists.lit) {
-      this.eachStrand(this.ribbon, view, view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, 1);
-      this.eachStrand(this.ribbon, view, 0, lists.lit, 6, graph.pieceCount, 2);
-      this.eachStrand(this.ribbon, view, -view.outlineWidth / 2, lists.lit, 6, graph.pieceCount, 0);
+      this.eachStrand(this.ribbon, view, view.outlineWidth / 2, lists.lit, 6 * view.smoothSteps, graph.pieceCount, 1);
+      this.eachStrand(this.ribbon, view, 0, lists.lit, 6 * view.smoothSteps, graph.pieceCount, 2);
+      this.eachStrand(this.ribbon, view, -view.outlineWidth / 2, lists.lit, 6 * view.smoothSteps, graph.pieceCount, 0);
     }
     this.drawBands(view);
     gl.disable(gl.BLEND);
@@ -254,7 +254,14 @@ export class Renderer {
     const graph = this.graph;
     if (!graph) return;
     const area = Visible.area(view, this.style.display);
-    this.eachStrand(this.ribbonIds, view, 0, graph.visible.pieces(graph.grid, area), 6, graph.pieceCount);
+    this.eachStrand(
+      this.ribbonIds,
+      view,
+      0,
+      graph.visible.pieces(graph.grid, area),
+      6 * view.smoothSteps,
+      graph.pieceCount,
+    );
   }
 
   private lists(graph: Graph, view: DrawnView): Lists {

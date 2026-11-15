@@ -20,6 +20,8 @@ struct View {
   hover: u32,
   // 0 in single mode; 1 or -1 for the strand double mode draws.
   strand: f32,
+  // Sub-capsules each ribbon piece is drawn as along a smooth curve; 1 draws the straight piece.
+  smooth_steps: u32,
 }
 
 struct Style {
@@ -251,10 +253,16 @@ fn faded(color: vec4f, segment: u32) -> vec4f {
 // round joins and caps.
 @vertex
 fn ribbon_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> Ribbon {
-  return ribbon_piece(v, pieces[visible_pieces[i]]);
+  return ribbon_piece(v % 6u, v / 6u, view.smooth_steps, pieces[visible_pieces[i]]);
 }
 
-fn ribbon_piece(v: u32, piece: vec2u) -> Ribbon {
+// Uniform Catmull-Rom through `p1` and `p2`: it passes through the chain's points, so ends and links stay put.
+fn catmull(p0: vec2f, p1: vec2f, p2: vec2f, p3: vec2f, t: f32) -> vec2f {
+  return 0.5 * (2.0 * p1 + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t * t * t);
+}
+
+// Sub-capsule `sub` of `steps` along the curve through the piece, or the whole straight piece when `steps` is 1.
+fn ribbon_piece(v: u32, sub: u32, steps: u32, piece: vec2u) -> Ribbon {
   var a = positions[piece.x];
   var b = positions[piece.x + 1u];
   let sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);
@@ -273,6 +281,41 @@ fn ribbon_piece(v: u32, piece: vec2u) -> Ribbon {
     } else if view.strand < 0.0 && piece.x == start {
       arrow = -1.0;
     }
+  }
+  if steps > 1u {
+    if sprite.z > 0.0 {
+      // A dot draws once.
+      var gone: Ribbon;
+      gone.clip = vec4f(2.0, 2.0, 0.0, 1.0);
+      return gone;
+    }
+    let start = field(START, piece.y);
+    let last = start + field(PIECES, piece.y);
+    var p0 = a - (b - a);
+    var p3 = b + (b - a);
+    if view.strand != 0.0 {
+      if piece.x > start {
+        p0 = strand_point(piece.x - 1u, start, last);
+      }
+      if piece.x + 1u < last {
+        p3 = strand_point(piece.x + 2u, start, last);
+      }
+    } else {
+      if piece.x > start {
+        p0 = positions[piece.x - 1u];
+      }
+      if piece.x + 1u < last {
+        p3 = positions[piece.x + 2u];
+      }
+    }
+    let curve_a = catmull(p0, a, b, p3, f32(sub) / f32(steps));
+    let curve_b = catmull(p0, a, b, p3, f32(sub + 1u) / f32(steps));
+    // Only the sub-capsule at the end an arrow points to keeps the arrowhead.
+    if (arrow > 0.0 && sub + 1u < steps) || (arrow < 0.0 && sub > 0u) {
+      arrow = 0.0;
+    }
+    a = curve_a;
+    b = curve_b;
   }
   let length_ab = length(b - a);
   let along = select(vec2f(1.0, 0.0), (b - a) / length_ab, length_ab > 1e-6);

@@ -75,6 +75,8 @@ export class Renderer {
   private readonly viewData = new ArrayBuffer(VIEW_BYTES);
   private graph: Graph | undefined;
   private selectedCount = 0;
+  /** The vertex count of the ribbon draws, in sub-capsules per piece, as last written to the draw arguments. */
+  private steps = 1;
   /** Search hit instances, replaced whole; their own buffer outlives a layout, not a graph. */
   private bands: { buffer: GPUBuffer; groups: GPUBindGroup[]; count: number } | undefined;
   private style: Style = { theme: 'light', display: DEFAULT_DISPLAY };
@@ -136,6 +138,7 @@ export class Renderer {
   setGeometry(geometry: Geometry, data: SegmentData, seed: number): void {
     this.graph?.buffers.destroy();
     this.dropBands();
+    this.steps = 1;
     const b = new Buffers(this.device);
     const table = uploadSegments(b, geometry, data);
     const styleUniform = new StyleUniform(b);
@@ -311,9 +314,20 @@ export class Renderer {
     pass.end();
   }
 
-  draw(pass: GPURenderPassEncoder, view: View): void {
+  /** Ribbon draws take six vertices a sub-capsule; the cull fills in the instance counts. */
+  private useSteps(steps: number): void {
+    const graph = this.graph;
+    if (!graph || this.steps === steps) return;
+    this.steps = steps;
+    const count = Uint32Array.of(6 * steps);
+    this.device.queue.writeBuffer(graph.indirect, PIECES_INDIRECT, count);
+    this.device.queue.writeBuffer(graph.indirect, HIGHLIGHT_INDIRECT, count);
+  }
+
+  draw(pass: GPURenderPassEncoder, view: DrawnView): void {
     const graph = this.graph;
     if (!graph) return;
+    this.useSteps(view.smoothSteps);
     // Links first, so ribbons cover their ends, as in Bandage.
     if (view.linkAlpha > 0 && graph.links) {
       this.eachStrand(pass, 'graph', view, 0, this.link, 0);
@@ -343,8 +357,9 @@ export class Renderer {
   }
 
   /** Segment ids of the ribbons in view, into an `ID_FORMAT` target; reuses the last cull. */
-  drawIds(pass: GPURenderPassEncoder, view: View): void {
+  drawIds(pass: GPURenderPassEncoder, view: DrawnView): void {
     if (!this.graph?.pieceCull) return;
+    this.useSteps(view.smoothSteps);
     this.eachStrand(pass, 'ids', view, 0, this.ribbonIds, PIECES_INDIRECT);
   }
 

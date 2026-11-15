@@ -9,6 +9,10 @@ import { LINK_WIDTH, linkFade, outlineWidth, RIBBON_WIDTH, STRAND_SHIFT } from '
 // The blocks below are laid out for both shader languages: WGSL's uniform
 // rules and std140 give these fields the same offsets.
 
+/** Ribbons are smoothed from this many pixels wide, in this many steps per piece. */
+const SMOOTH_MIN_PX = 2;
+export const SMOOTH_STEPS = 4;
+
 /** What a backend draws with: the camera and the colours and widths of this frame. */
 export interface DrawnView extends View {
   ribbonHalf: number;
@@ -21,6 +25,13 @@ export interface DrawnView extends View {
   /** Width of the selection outline in world units. */
   outlineWidth: number;
   hover: number | undefined;
+  /** Sub-capsules each ribbon piece is drawn as, along a smooth curve; 1 for the straight pieces exports draw. */
+  smoothSteps: number;
+}
+
+/** The smoothing steps per piece: only on screen, and once ribbons are wide enough for the corners to show. */
+function smoothSteps(view: View, screenZoom: number): number {
+  return view.pixelScale === undefined && RIBBON_WIDTH * screenZoom >= SMOOTH_MIN_PX ? SMOOTH_STEPS : 1;
 }
 
 export function drawnView(view: View, style: Style, hover: number | undefined): DrawnView {
@@ -37,10 +48,11 @@ export function drawnView(view: View, style: Style, hover: number | undefined): 
     hoverOutline: palette.hover,
     outlineWidth: outlineWidth(screenZoom),
     hover,
+    smoothSteps: smoothSteps(view, screenZoom),
   };
 }
 
-/** `View` in graph.wgsl and the graph shaders: 27 words, padded to 28. */
+/** `View` in graph.wgsl and the graph shaders: 28 words. */
 export const VIEW_BYTES = 112;
 const NO_SEGMENT = 0xffffffff;
 
@@ -65,6 +77,7 @@ export function packView(out: ArrayBuffer, view: DrawnView, grow: number, strand
   ]);
   new Uint32Array(out)[25] = view.hover ?? NO_SEGMENT;
   f[26] = strand;
+  new Uint32Array(out)[27] = view.smoothSteps;
 }
 
 export interface StyledGraph {

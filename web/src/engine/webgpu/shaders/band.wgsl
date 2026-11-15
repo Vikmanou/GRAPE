@@ -32,7 +32,7 @@ fn band_vertex(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -
     out.clip = vec4f(2.0, 2.0, 0.0, 1.0);
     return out;
   }
-  let piece = ribbon_piece(v, vec2u(point, segment));
+  let piece = ribbon_piece(v, 0u, 1u, vec2u(point, segment));
   out.clip = piece.clip;
   out.local = piece.local;
   out.size = piece.size;

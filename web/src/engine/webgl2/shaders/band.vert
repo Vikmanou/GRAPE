@@ -17,7 +17,7 @@ void main() {
     gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
     return;
   }
-  place_piece(piece);
+  place_piece(piece, 0u, 1u);
   band_color = unpack_rgba(second.x);
   float from_t = uintBitsToFloat(first.z);
   float to_t = uintBitsToFloat(first.w);

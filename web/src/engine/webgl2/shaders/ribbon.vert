@@ -12,5 +12,5 @@ void main() {
     gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
     return;
   }
-  place_piece(piece);
+  place_piece(piece, uint(gl_VertexID / 6), view.smooth_steps);
 }

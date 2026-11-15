@@ -32,7 +32,13 @@ bool repeats_dot(uvec2 piece) {
 
 // Each piece is a capsule cut from a quad by a signed distance, as
 // `ribbon_piece` in graph.wgsl.
-void place_piece(uvec2 piece) {
+// Uniform Catmull-Rom through p1 and p2, as `catmull` in graph.wgsl.
+vec2 catmull(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
+  return 0.5 * (2.0 * p1 + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t * t * t);
+}
+
+// Sub-capsule `sub` of `steps` along the curve through the piece, as `ribbon_piece` in graph.wgsl.
+void place_piece(uvec2 piece, uint sub, uint steps) {
   vec2 a = position(piece.x);
   vec2 b = position(piece.x + 1u);
   vec3 sprite = sprite_center(piece.y, style.sprite_px * view.world_per_pixel);
@@ -50,6 +56,30 @@ void place_piece(uvec2 piece) {
     } else if (view.strand < 0.0 && piece.x == start) {
       tip = -1.0;
     }
+  }
+  if (steps > 1u) {
+    if (sprite.z > 0.0) {
+      gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
+      return;
+    }
+    uint start = field(START, piece.y);
+    uint last = start + field(PIECES, piece.y);
+    vec2 p0 = a - (b - a);
+    vec2 p3 = b + (b - a);
+    if (view.strand != 0.0) {
+      if (piece.x > start) p0 = strand_point(piece.x - 1u, start, last);
+      if (piece.x + 1u < last) p3 = strand_point(piece.x + 2u, start, last);
+    } else {
+      if (piece.x > start) p0 = position(piece.x - 1u);
+      if (piece.x + 1u < last) p3 = position(piece.x + 2u);
+    }
+    vec2 from = catmull(p0, a, b, p3, float(sub) / float(steps));
+    vec2 to = catmull(p0, a, b, p3, float(sub + 1u) / float(steps));
+    if ((tip > 0.0 && sub + 1u < steps) || (tip < 0.0 && sub > 0u)) {
+      tip = 0.0;
+    }
+    a = from;
+    b = to;
   }
   float length_ab = length(b - a);
   vec2 along = length_ab > 1e-6 ? (b - a) / length_ab : vec2(1.0, 0.0);
