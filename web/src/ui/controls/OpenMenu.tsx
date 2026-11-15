@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/store';
 import { ExampleList } from './ExampleList';
+import { ChevronDownIcon } from './Icons';
 
 /**
  * "Open" in the top bar: the button opens the file picker, the arrow beside it
@@ -21,7 +22,7 @@ export function OpenMenu({ onPickFile }: { onPickFile: () => void }) {
       </button>
       <details className="menu split-menu" ref={menu} data-testid="open-menu">
         <summary aria-label="More ways to open" title="Open from a URL or load an example">
-          ▾
+          <ChevronDownIcon />
         </summary>
         <div className="menu-popup open-popup">
           <form

@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { FileInfo } from '../../state/load';
 import { useApp } from '../../state/store';
 import type { ThemeChoice } from '../../state/theme';
 import { ExportMenu } from '../controls/ExportMenu';
 import { OpenMenu } from '../controls/OpenMenu';
+import { HelpIcon, MoonIcon, SunIcon, SystemIcon } from '../controls/Icons';
 import { ShareMenu } from '../controls/ShareMenu';
 import { useMenuGroup } from '../controls/menus';
 import { ACCEPTED_FILES } from '../files';
@@ -36,13 +37,13 @@ export function TopBar({ file, onOpen }: Props) {
         type="button"
         className="icon"
         data-testid="help"
-        aria-label="Keyboard shortcuts"
-        title="Keyboard shortcuts (?)"
+        aria-label="Help and keyboard shortcuts"
+        title="Help and keyboard shortcuts (?)"
         onClick={() => {
           setShortcutsOpen(!shortcutsOpen);
         }}
       >
-        ?
+        <HelpIcon />
       </button>
       <input
         ref={input}
@@ -62,7 +63,11 @@ export function TopBar({ file, onOpen }: Props) {
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
 const THEME_NAMES: Record<ThemeChoice, string> = { system: 'System theme', light: 'Light theme', dark: 'Dark theme' };
-const THEME_ICONS: Record<ThemeChoice, string> = { system: '◐', light: '☀', dark: '☾' };
+const THEME_ICONS: Record<ThemeChoice, () => ReactNode> = {
+  system: SystemIcon,
+  light: SunIcon,
+  dark: MoonIcon,
+};
 
 function ThemeButton() {
   const choice = useApp((s) => s.themeChoice);
@@ -80,7 +85,7 @@ function ThemeButton() {
         setChoice(next);
       }}
     >
-      {THEME_ICONS[choice]}
+      {THEME_ICONS[choice]()}
     </button>
   );
 }

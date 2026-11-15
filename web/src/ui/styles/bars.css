@@ -84,7 +84,8 @@
 }
 
 .menu-heading {
-  margin: 6px 0 2px;
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
 }
 
 .open-url {

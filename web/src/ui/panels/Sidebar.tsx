@@ -1,6 +1,7 @@
 import type { SidebarTab } from '../../state/display';
 import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
+import { ChevronLeftIcon, ChevronRightIcon } from '../controls/Icons';
 import { Tabs } from '../controls/Tabs';
 import { Display } from './Display';
 import { Find } from './Find';
@@ -30,7 +31,7 @@ export function Sidebar({ result }: { result: ParseResult }) {
         aria-label="Show the sidebar"
         onClick={toggleSidebar}
       >
-        ›
+        <ChevronRightIcon />
       </button>
     );
   }
@@ -39,7 +40,7 @@ export function Sidebar({ result }: { result: ParseResult }) {
       <header>
         <Tabs label="Sidebar" tabs={TABS} selected={tab} onSelect={showSidebar} />
         <button type="button" className="icon" aria-label="Hide the sidebar" onClick={toggleSidebar}>
-          ‹
+          <ChevronLeftIcon />
         </button>
       </header>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tab-panel">
