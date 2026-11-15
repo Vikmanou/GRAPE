@@ -1303,3 +1303,33 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   machine, so a 1% limit cannot hold on both.
 - **Alternatives**: keeping 1% with CI's images (fails on the owner's machine);
   dropping the baselines (loses the regression check).
+
+## 2026-11-15: Shell polish with the Lab bench look (release stage 11.5)
+
+- **Decision**: fourteen fixes from a second `ux-review`, in the Lab bench
+  direction: a warm paper canvas (`#f6f2e9` light, `#14181e` dark, in
+  `tokens.css` and `engine/style/palette.ts`), an ink-blue accent, stats in
+  monospace. The warning toast is gone; the status bar count pulses once. Zoom,
+  zoom out and Fit buttons sit on the canvas, kept clear of the panels by the
+  insets, and a tooltip shows name, length and depth of the hovered segment. The
+  filters moved from Find to Display ("Show only"). The Layout tab folded into
+  Display as "Layout (advanced)". The segment panel is titled "Segment <name>",
+  shows Whole component in the open and can copy the raw line. Export shows
+  each PNG's pixel size and a Copy image item where `ClipboardItem` exists. The
+  phone sheet is 40% high with a grip, and the getting started list is hidden
+  there. The empty state takes a URL and shows file sizes. The status bar shows
+  the selection and "Ready"; core version and round trip live under Help, About.
+- **Reason**: a first-time user on a phone saw a thumbnail of the graph, the
+  warning toast covered the canvas and the info panel, the view had no controls
+  without a keyboard, and the status bar showed developer details.
+- **Not done, and why**: no scale bar, because layout units are not bases, so a
+  bar would claim a length that is not true. The multi-selection panel adds mean
+  length only; N50, GC and a name list need a change to the graph worker's
+  `SelectionSummary`, which the owner has not approved. The Paths tab already
+  had swatches and a clear button, so it only got a clearer "Step through".
+- **Baselines**: the four WebGL2 screenshot baselines still pass with the new
+  backdrop (the per-pixel threshold hides a colour change this small), so they
+  were not replaced; CI's next run confirms.
+- **Alternatives**: a new web font for the monospace numbers (a third party
+  request, refused by the privacy rules); keeping the toast and moving it;
+  dropping the Layout tab content instead of folding it.
