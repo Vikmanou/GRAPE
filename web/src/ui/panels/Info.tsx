@@ -33,7 +33,20 @@ export function Info() {
       data-testid="info-panel"
     >
       <header>
-        <h2 data-testid="info-title">{plural ? `${formatCount(selection.count)} segments` : 'Segment'}</h2>
+        <h2 data-testid="info-title">
+          {plural ? (
+            `${formatCount(selection.count)} segments`
+          ) : (
+            <>
+              Segment{' '}
+              {details.state === 'segment' && (
+                <span className="mono" data-testid="info-name">
+                  {details.info.name}
+                </span>
+              )}
+            </>
+          )}
+        </h2>
         <button type="button" className="icon" aria-label="Clear the selection" onClick={clear}>
           ×
         </button>
@@ -53,12 +66,12 @@ export function Info() {
         >
           {plural ? 'Copy sequences' : 'Copy sequence'}
         </button>
+        <button type="button" data-testid="select-components" onClick={selectComponents}>
+          Whole component
+        </button>
       </div>
       <Disclosure title="More actions" testId="info-more">
         <div className="row actions">
-          <button type="button" data-testid="select-components" onClick={selectComponents}>
-            Whole component
-          </button>
           <button type="button" data-testid="invert-selection" onClick={invert}>
             Invert
           </button>
@@ -83,6 +96,10 @@ export function Info() {
           <div>
             <dt>Total length</dt>
             <dd data-testid="info-total-length">{formatBases(details.summary.totalLength)}</dd>
+          </div>
+          <div>
+            <dt>Mean length</dt>
+            <dd data-testid="info-mean-length">{formatBases(details.summary.totalLength / details.summary.count)}</dd>
           </div>
           <div>
             <dt>Mean depth (length-weighted)</dt>

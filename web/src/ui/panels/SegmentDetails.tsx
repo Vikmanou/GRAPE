@@ -1,5 +1,6 @@
 import type { Details } from '../../state/details';
 import { useApp } from '../../state/store';
+import { copyText } from '../files';
 import type { SegmentLink } from '../../workers/protocol/graph';
 import { formatBases, formatCount, formatDepth, formatPercent } from '../format';
 
@@ -54,9 +55,6 @@ export function SegmentDetails({ details }: { details: Segment }) {
   ];
   return (
     <>
-      <p className="segment-name mono" data-testid="info-name">
-        {info.name}
-      </p>
       <dl className="stats">
         {rows.map(([id, label, value]) => (
           <div key={id}>
@@ -98,6 +96,16 @@ export function SegmentDetails({ details }: { details: Segment }) {
       {rawLine ? (
         <>
           <h3>Line in the file</h3>
+          <button
+            type="button"
+            className="small"
+            data-testid="copy-raw-line"
+            onClick={() => {
+              void copyText(Promise.resolve(rawLine.text));
+            }}
+          >
+            Copy line
+          </button>
           <pre className="raw-line" data-testid="info-raw-line">
             {rawLine.text}
           </pre>
