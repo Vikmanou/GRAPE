@@ -1,6 +1,5 @@
 import { useApp } from '../../state/store';
 import type { LabelContent } from '../../workers/protocol/graph';
-import { NumberField } from '../controls/NumberField';
 import { formatCount } from '../format';
 
 const LINES: [keyof LabelContent, string][] = [
@@ -9,8 +8,6 @@ const LINES: [keyof LabelContent, string][] = [
   ['depth', 'Depth'],
   ['custom', 'LB tag'],
 ];
-
-const MAX_LABELS = 20_000;
 
 export function LabelControls() {
   const labels = useApp((s) => s.labels);
@@ -56,33 +53,6 @@ export function LabelControls() {
             {title}
           </label>
         ))}
-      </div>
-      <div className="row">
-        <label>
-          At most{' '}
-          <NumberField
-            label="At most"
-            testId="labels-max"
-            value={labels.max}
-            valid={(v) => Number.isInteger(v) && v >= 0 && v <= MAX_LABELS}
-            onValue={(max) => {
-              setLabels({ max });
-            }}
-          />
-        </label>
-        <label>
-          from ribbons{' '}
-          <NumberField
-            label="Labels from ribbons this wide"
-            testId="labels-min-px"
-            value={labels.minRibbonPx}
-            valid={(v) => Number.isFinite(v) && v >= 0 && v <= 50}
-            onValue={(minRibbonPx) => {
-              setLabels({ minRibbonPx });
-            }}
-          />{' '}
-          px
-        </label>
       </div>
     </section>
   );

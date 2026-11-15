@@ -40,6 +40,13 @@ export async function showTab(page: Page, tab: 'overview' | 'display' | 'find' |
   await page.getByTestId(`tab-${tab}`).click();
 }
 
+/** Opens the Display tab's Detail group, which folds the thresholds away. */
+export async function showDetail(page: Page): Promise<void> {
+  await showTab(page, 'display');
+  const detail = page.getByTestId('detail');
+  if ((await detail.getAttribute('open')) === null) await detail.locator('summary').click();
+}
+
 export interface AppSnapshot {
   selection: { count: number; single: number | undefined };
   hovered: number | undefined;
