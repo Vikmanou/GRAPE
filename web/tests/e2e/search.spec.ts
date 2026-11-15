@@ -7,7 +7,6 @@ import { expect, type Page, test } from '@playwright/test';
 import { pathColor } from '../../src/engine/style/colors';
 import {
   appState,
-  near,
   openSettled,
   repo,
   ribbonColor,
