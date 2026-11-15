@@ -5,6 +5,8 @@ import { appState, openSettled, repo, segmentsOnScreen } from './helpers';
 
 test('zoom and fit buttons change the view', async ({ page }) => {
   await openSettled(page, repo('testdata/linear.gfa'));
+  await page.getByTestId('fit').click();
+  await page.waitForTimeout(600);
   const before = (await appState(page)).zoom ?? 0;
   await page.getByTestId('zoom-in').click();
   await expect.poll(async () => (await appState(page)).zoom ?? 0).toBeGreaterThan(before * 1.2);
