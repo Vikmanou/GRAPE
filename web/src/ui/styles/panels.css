@@ -437,3 +437,21 @@ button.path-name {
 button.path-name:hover {
   text-decoration: underline;
 }
+
+.chip {
+  padding: 0 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--panel);
+  font-weight: 600;
+}
+
+button.primary:hover {
+  filter: brightness(1.1);
+}

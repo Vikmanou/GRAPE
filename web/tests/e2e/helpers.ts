@@ -40,6 +40,12 @@ export async function showTab(page: Page, tab: 'overview' | 'display' | 'find' |
   await page.getByTestId(`tab-${tab}`).click();
 }
 
+/** Opens the info panel's "More actions" group, which folds Whole component, Invert and Download FASTA away. */
+export async function showMoreActions(page: Page): Promise<void> {
+  const more = page.getByTestId('info-more');
+  if ((await more.getAttribute('open')) === null) await more.locator('summary').click();
+}
+
 /** Opens the Display tab's Detail group, which folds the thresholds away. */
 export async function showDetail(page: Page): Promise<void> {
   await showTab(page, 'display');

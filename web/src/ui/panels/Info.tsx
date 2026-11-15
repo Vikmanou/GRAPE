@@ -1,6 +1,7 @@
 import { useApp } from '../../state/store';
 import { copyText, download } from '../files';
 import { formatBases, formatCount, formatDepth } from '../format';
+import { Disclosure } from '../controls/Disclosure';
 import { SegmentDetails } from './SegmentDetails';
 
 /** Bandage's default name for saved sequences (ui/mainwindow.cpp, `saveSelectedSequencesToFile`). */
@@ -31,17 +32,9 @@ export function Info() {
         </button>
       </header>
       <div className="row actions">
-        <button type="button" data-testid="zoom-selection" onClick={zoom}>
+        <button type="button" className="primary" data-testid="zoom-selection" onClick={zoom}>
           Zoom to
         </button>
-        <button type="button" data-testid="select-components" onClick={selectComponents}>
-          Whole component
-        </button>
-        <button type="button" data-testid="invert-selection" onClick={invert}>
-          Invert
-        </button>
-      </div>
-      <div className="row actions">
         <button
           type="button"
           data-testid="copy-sequence"
@@ -53,18 +46,28 @@ export function Info() {
         >
           {plural ? 'Copy sequences' : 'Copy sequence'}
         </button>
-        <button
-          type="button"
-          data-testid="download-fasta"
-          onClick={() => {
-            fasta().then((blob) => {
-              download(blob, FASTA_NAME);
-            }, failed('save the FASTA file'));
-          }}
-        >
-          Download FASTA
-        </button>
       </div>
+      <Disclosure title="More actions" testId="info-more">
+        <div className="row actions">
+          <button type="button" data-testid="select-components" onClick={selectComponents}>
+            Whole component
+          </button>
+          <button type="button" data-testid="invert-selection" onClick={invert}>
+            Invert
+          </button>
+          <button
+            type="button"
+            data-testid="download-fasta"
+            onClick={() => {
+              fasta().then((blob) => {
+                download(blob, FASTA_NAME);
+              }, failed('save the FASTA file'));
+            }}
+          >
+            Download FASTA
+          </button>
+        </div>
+      </Disclosure>
       {details.state === 'loading' && <p className="muted">Loading…</p>}
       {details.state === 'failed' && <p className="notice">{details.message}</p>}
       {details.state === 'segment' && <SegmentDetails details={details} />}

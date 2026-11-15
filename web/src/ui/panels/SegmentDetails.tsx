@@ -10,23 +10,29 @@ const sign = (reverse: boolean) => (reverse ? '-' : '+');
 function LinkRow({ link, name, onShow }: { link: SegmentLink; name: string; onShow: (segment: number) => void }) {
   const [from, to] =
     link.from === link.to ? [name, name] : link.from === link.other ? [link.otherName, name] : [name, link.otherName];
-  return (
-    <li>
+  // The neighbour is a chip that selects it; the segment itself stays plain.
+  const part = (shown: string, reverse: boolean) =>
+    shown === link.otherName && link.from !== link.to ? (
       <button
         type="button"
-        className="link"
+        className="chip mono"
         data-testid="neighbour"
         onClick={() => {
           onShow(link.other);
         }}
       >
-        {link.otherName}
-      </button>{' '}
+        {shown}
+        {sign(reverse)}
+      </button>
+    ) : (
       <span className="muted mono">
-        {from}
-        {sign(link.fromReverse)} → {to}
-        {sign(link.toReverse)}
+        {shown}
+        {sign(reverse)}
       </span>
+    );
+  return (
+    <li>
+      {part(from, link.fromReverse)} <span className="muted">→</span> {part(to, link.toReverse)}
     </li>
   );
 }
@@ -89,13 +95,15 @@ export function SegmentDetails({ details }: { details: Segment }) {
           )}
         </p>
       )}
-      <h3>Line in the file</h3>
       {rawLine ? (
-        <pre className="raw-line" data-testid="info-raw-line">
-          {rawLine.text}
-        </pre>
+        <>
+          <h3>Line in the file</h3>
+          <pre className="raw-line" data-testid="info-raw-line">
+            {rawLine.text}
+          </pre>
+        </>
       ) : (
-        <p className="muted">Gzipped files cannot be read at an offset, so the line is not shown.</p>
+        <p className="muted small">The line in the file is not shown for gzipped files.</p>
       )}
       {rawLine && rawLine.elided > 0 && (
         <p className="muted small">{formatBases(rawLine.elided)} of sequence cut from the middle.</p>

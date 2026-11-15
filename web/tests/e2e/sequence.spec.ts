@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { expect, type Page, test } from '@playwright/test';
-import { openSettled, repo } from './helpers';
+import { openSettled, repo, showMoreActions } from './helpers';
 
 const fasta = (records: [string, number, string, string][]) =>
   records
@@ -50,6 +50,7 @@ async function selectAll(page: Page): Promise<void> {
 }
 
 async function downloadedFasta(page: Page): Promise<string> {
+  await showMoreActions(page);
   const [file] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-fasta').click()]);
   expect(file.suggestedFilename()).toBe('selected_sequences.fasta');
   return readFileSync(await file.path(), 'utf8');

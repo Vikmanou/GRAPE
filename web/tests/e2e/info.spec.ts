@@ -53,7 +53,7 @@ test('a gzipped file shows its sequence but not its line', async ({ page }) => {
   await select(page, [2]);
   const panel = page.getByTestId('info-panel');
   await expect(panel.getByTestId('info-sequence')).toHaveText('TTTTAAAACCCC');
-  await expect(panel).toContainText('Gzipped files cannot be read at an offset');
+  await expect(panel).toContainText('The line in the file is not shown for gzipped files');
 });
 
 test('a long sequence shows its two ends', async ({ page }) => {

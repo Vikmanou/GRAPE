@@ -122,13 +122,14 @@
 
 .toasts {
   position: absolute;
-  right: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 36px;
   z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: min(360px, calc(100% - 16px));
+  width: min(420px, calc(100% - 16px));
   margin: 0;
   padding: 0;
   list-style: none;

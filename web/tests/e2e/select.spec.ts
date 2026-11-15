@@ -1,7 +1,7 @@
 // Selecting with the pointer.
 
 import { expect, test } from '@playwright/test';
-import { appState, openSettled, repo, segmentsOnScreen } from './helpers';
+import { appState, openSettled, repo, segmentsOnScreen, showMoreActions } from './helpers';
 
 test('click selects, shift-click adds and removes, a click on nothing clears', async ({ page }) => {
   await openSettled(page, repo('testdata/two_components.gfa'));
@@ -48,6 +48,7 @@ test('components select and frame, the selection grows to its components and inv
   await expect.poll(async () => (await appState(page)).selection.count).toBe(second);
   await expect.poll(async () => (await appState(page)).zoom).toBeGreaterThan(fitted);
 
+  await showMoreActions(page);
   await page.getByTestId('invert-selection').click();
   await expect.poll(async () => (await appState(page)).selection.count).toBe(segments - second);
 
@@ -61,6 +62,7 @@ test('components select and frame, the selection grows to its components and inv
       .select(Uint32Array.of(segment), 'replace');
   }, one);
   await expect.poll(async () => (await appState(page)).selection.count).toBe(1);
+  await showMoreActions(page);
   await page.getByTestId('select-components').click();
   await expect.poll(async () => (await appState(page)).selection.count).toBeGreaterThan(1);
 
