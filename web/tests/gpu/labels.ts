@@ -19,6 +19,7 @@ export async function labelPlacement(device: GPUDevice, kernels: Kernels): Promi
     advance: 8,
     lineHeight: 16,
     cell: 8,
+    fit: false,
   };
   // Pixels 400, 300 off the world, with some anchors off screen.
   const px = Float64Array.from({ length: segments }, () => Math.floor(next() * 120 - 10) * 8 + 2.5);

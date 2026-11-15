@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { anchor, placeLabels, type Chains } from '../../src/engine/webgl2/labels';
 
-const at = { centerX: 0, centerY: 0, zoom: 1, width: 200, height: 100, advance: 6, lineHeight: 10, cell: 4 };
+const at = {
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  width: 200,
+  height: 100,
+  advance: 6,
+  lineHeight: 10,
+  cell: 4,
+  fit: false,
+};
 
 /** Segments of one point pair each, at `xy`, with labels `chars` wide on one line, ranked in order. */
 function chains(xy: [number, number][]): { c: Chains; sizes: Uint32Array } {
@@ -66,5 +76,16 @@ describe('CPU label placement', () => {
     ]);
     sizes[3] = 0;
     expect(placeLabels(c, sizes, [0, 1], at).segments.length).toBe(0);
+  });
+
+  it('with thin ribbons labels only chains as long as the label is wide', () => {
+    const { c, sizes } = chains([
+      [0, 0],
+      [0, 1],
+    ]);
+    // A chain is 2 world units long and a 5 character label is 30 pixels wide.
+    expect(placeLabels(c, sizes, [0, 1], { ...at, fit: false }).segments.length).toBe(1);
+    expect(placeLabels(c, sizes, [0, 1], { ...at, fit: true }).segments.length).toBe(0);
+    expect(placeLabels(c, sizes, [0, 1], { ...at, zoom: 15, fit: true }).segments.length).toBe(2);
   });
 });

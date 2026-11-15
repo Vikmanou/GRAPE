@@ -24,6 +24,18 @@ export function anchor(c: Chains, segment: number): [number, number] {
   ];
 }
 
+/** Mirrors `chain_pixels` in labels.wgsl. */
+function chainPixels(c: Chains, segment: number, zoom: number): number {
+  const start = c.starts[segment] ?? 0;
+  const end = start + (c.pieces[segment] ?? 0);
+  return (
+    Math.hypot(
+      (c.positions[end * 2] ?? 0) - (c.positions[start * 2] ?? 0),
+      (c.positions[end * 2 + 1] ?? 0) - (c.positions[start * 2 + 1] ?? 0),
+    ) * zoom
+  );
+}
+
 interface Claim {
   segment: number;
   key: number;
@@ -57,6 +69,7 @@ export function placeLabels(
     const sx = (x - at.centerX) * at.zoom + at.width * 0.5;
     const sy = (y - at.centerY) * at.zoom + at.height * 0.5;
     const hx = (size & 0xffff) * at.advance * 0.5;
+    if (at.fit && chainPixels(chains, segment, at.zoom) < hx * 2) continue;
     const hy = (size >>> 16) * at.lineHeight * 0.5;
     if (sx + hx < 0 || sy + hy < 0 || sx - hx >= at.width || sy - hy >= at.height) continue;
     const col = (v: number) => Math.min(columns - 1, Math.max(0, Math.floor(v / at.cell)));

@@ -19,12 +19,19 @@ test('labels show every segment of a small graph and hide again', async ({ page 
   await expect(page.getByTestId('labels-count')).toBeHidden();
 });
 
-test('labels wait until ribbons are wide enough', async ({ page }) => {
+test('thin ribbons label only segments long enough to hold their label, and tell when none fit', async ({ page }) => {
   await openSettled(page, repo('testdata/bubble.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('labels-show').check();
   await expect(page.getByTestId('labels-count')).toHaveText('4 shown');
+  // Ribbons now count as thin, but the segments are long on screen.
   await page.getByTestId('labels-min-px').fill('50');
   await page.getByTestId('labels-min-px').press('Enter');
+  await expect(page.getByTestId('labels-count')).toHaveText('4 shown');
+  await expect(page.getByTestId('labels-hint')).toBeHidden();
+  // Zoomed far out nothing fits.
+  await page.mouse.move(700, 400);
+  for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 400);
   await expect(page.getByTestId('labels-count')).toHaveText('0 shown');
+  await expect(page.getByTestId('labels-hint')).toBeVisible();
 });

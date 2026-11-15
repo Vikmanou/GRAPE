@@ -127,6 +127,8 @@ export interface LabelMetrics {
   advance: number;
   lineHeight: number;
   cell: number;
+  /** Ribbons are thin: a segment is labelled only if its chain is on screen at least as long as its label is wide. */
+  fit: boolean;
 }
 
 /** Everything that touches the GPU. The engine above it never does. */

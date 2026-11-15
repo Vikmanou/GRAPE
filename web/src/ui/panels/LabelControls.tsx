@@ -37,6 +37,11 @@ export function LabelControls() {
           </span>
         )}
       </div>
+      {labels.show && count === 0 && (
+        <p className="muted small" data-testid="labels-hint">
+          No label fits at this zoom. Zoom in to see them.
+        </p>
+      )}
       <div className="row">
         {LINES.map(([line, title]) => (
           <label key={line}>

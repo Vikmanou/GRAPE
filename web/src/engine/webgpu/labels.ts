@@ -2,7 +2,7 @@ import type { PlacedLabels } from '../core/backend';
 import { bind, Buffers, groups } from './layout/gpu';
 import type { Kernels } from './layout/kernels';
 
-/** Matches `Place` in labels.wgsl: 13 words, padded to 16. */
+/** Matches `Place` in labels.wgsl: 14 words, padded to 16. */
 const PLACE_BYTES = 64;
 
 export interface Placement {
@@ -17,6 +17,8 @@ export interface Placement {
   lineHeight: number;
   /** Side of a grid cell, in pixels. */
   cell: number;
+  /** Label only chains at least as long on screen as the label is wide. */
+  fit: boolean;
 }
 
 /** What placement reads per segment: the segment table, positions and label sizes. */
@@ -60,7 +62,7 @@ export class LabelPlacer {
     const { cells, winners, capacity } = this.gridFor(columns * rows);
     const f = new Float32Array(this.data);
     f.set([at.centerX, at.centerY, at.zoom, at.zoom, at.width, at.height, at.advance, at.lineHeight, at.cell]);
-    new Uint32Array(this.data).set([columns, rows, source.segments, capacity], 9);
+    new Uint32Array(this.data).set([columns, rows, source.segments, capacity, at.fit ? 1 : 0], 9);
     this.device.queue.writeBuffer(this.uniform, 0, this.data);
 
     const claim = { 0: this.uniform, 1: source.positions, 2: source.table, 3: sizes, 4: cells };

@@ -16,6 +16,8 @@ struct Place {
   rows: u32,
   segments: u32,
   capacity: u32,
+  // 1 when a label shows only on a chain at least as long as the label is wide.
+  fit: u32,
 }
 
 @group(0) @binding(0) var<uniform> place: Place;
@@ -41,6 +43,13 @@ fn anchor(segment: u32) -> vec2f {
   return 0.5 * (positions[mid] + positions[mid + pieces % 2u]);
 }
 
+// The straight-line length of a segment's chain on screen.
+fn chain_pixels(segment: u32) -> f32 {
+  let start = segment_table[START * place.segments + segment];
+  let pieces = segment_table[PIECES * place.segments + segment];
+  return length(positions[start + pieces] - positions[start]) * place.scale.x;
+}
+
 struct Cells {
   lo: vec2u,
   hi: vec2u,
@@ -57,6 +66,9 @@ fn cells_of(segment: u32) -> Cells {
   }
   let at = (anchor(segment) - place.center) * place.scale + place.canvas * 0.5;
   let half = vec2f(f32(size & 0xffffu) * place.advance, f32(size >> 16u) * place.line_height) * 0.5;
+  if place.fit == 1u && chain_pixels(segment) < half.x * 2.0 {
+    return out;
+  }
   let lo = at - half;
   let hi = at + half;
   if any(hi < vec2f(0.0)) || any(lo >= place.canvas) {

@@ -8,7 +8,7 @@ import { labelMetrics, layoutLabels } from './layoutLabels';
 export interface LabelOptions {
   /** At most this many labels show. */
   max: number;
-  /** Labels show once ribbons are this many pixels wide. */
+  /** Every label shows once ribbons are this many pixels wide; thinner ones label only the segments long enough to hold theirs. */
   minRibbonPx: number;
   /** In CSS pixels. */
   fontPx: number;
@@ -21,6 +21,8 @@ const REST_MS = 150;
 const MOVING_MS = 600;
 /** Screen grid cells, in CSS pixels. */
 const CELL_PX = 6;
+/** Below this ribbon width in pixels no label is tried: nothing could fit, and a huge graph at fit is not worth placing. */
+const MIN_LABEL_RIBBON_PX = 0.1;
 /** Texts kept for labels that may show again. */
 const CACHE = 20_000;
 
@@ -127,14 +129,17 @@ export class Labels {
     this.lastPlaced = performance.now();
     const { max, minRibbonPx } = this.options;
     try {
-      if (RIBBON_WIDTH * (this.view?.zoom ?? 0) < minRibbonPx * devicePixelRatio) {
+      const ribbonPx = RIBBON_WIDTH * (this.view?.zoom ?? 0);
+      if (ribbonPx < MIN_LABEL_RIBBON_PX * devicePixelRatio) {
         this.show(new Uint32Array(0));
         return;
       }
+      const fit = ribbonPx < minRibbonPx * devicePixelRatio;
       const generation = this.generation;
       const placed = await this.backend.placeLabels({
         ...labelMetrics(atlas, this.fontPx),
         cell: Math.max(2, Math.round(CELL_PX * devicePixelRatio)),
+        fit,
       });
       if (generation !== this.generation) return;
       const best = placed.segments.slice(0, max);
