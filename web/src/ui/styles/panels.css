@@ -112,6 +112,11 @@
   padding: 1px 4px;
 }
 
+select option {
+  color: var(--fg);
+  background: var(--panel);
+}
+
 .info-panel {
   right: 8px;
   width: min(340px, calc(100% - 16px));
