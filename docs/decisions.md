@@ -1358,3 +1358,8 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   ancestors, so a layout halted at a coarse level still draws every segment;
   dragging or refining needs level 0 and starts the refinement again.
   Alternative: discard the run (the graph would not draw until a restart).
+- **Sheet focus**: below 900 px, Tab wraps inside the open sidebar or info
+  sheet and Escape closes it. Focus goes back to the Show sidebar button (or the
+  selected tab when the details close). A sheet open from the start does not
+  take focus; one the user opens does. Alternative: make the rest of the page
+  inert, which would hide the top bar from Tab until Escape.

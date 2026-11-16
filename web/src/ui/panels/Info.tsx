@@ -3,6 +3,7 @@ import { copyText, download } from '../files';
 import { formatBases, formatCount, formatDepth, formatPercent } from '../format';
 import { Disclosure } from '../controls/Disclosure';
 import { SHEET_QUERY, useMedia } from '../useMedia';
+import { sheetKeys, sidebarControl } from '../useSheetFocus';
 import { SegmentDetails } from './SegmentDetails';
 
 /** Bandage's default name for saved sequences (ui/mainwindow.cpp, `saveSelectedSequencesToFile`). */
@@ -32,6 +33,7 @@ export function Info() {
       aria-label="Selection"
       data-inset={sheet ? 'bottom' : 'right'}
       data-testid="info-panel"
+      onKeyDown={sheet ? sheetKeys(clear, sidebarControl) : undefined}
     >
       <header>
         <h2 data-testid="info-title">

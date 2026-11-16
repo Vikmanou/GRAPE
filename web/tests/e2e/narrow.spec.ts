@@ -53,3 +53,25 @@ test('at 1024 px the sidebar stays docked beside the graph', async ({ page }) =>
   expect(box?.x).toBeLessThan(20);
   expect(box?.width).toBeLessThan(400);
 });
+
+test('at 390 px Tab stays inside the sheet and Escape closes it and gives focus back', async ({ page }) => {
+  await open(page, 390, 844);
+  const sidebar = page.getByTestId('sidebar');
+  await page.getByTestId('tab-overview').focus();
+  const inside = () => sidebar.evaluate((el) => el.contains(document.activeElement));
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab');
+    expect(await inside(), `after ${String(i + 1)} Tab presses`).toBe(true);
+  }
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Shift+Tab');
+    expect(await inside(), `after ${String(i + 1)} Shift+Tab presses`).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(sidebar).toBeHidden();
+  await expect(page.getByTestId('sidebar-open')).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(page.getByTestId('tab-overview')).toBeFocused();
+});

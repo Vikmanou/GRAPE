@@ -1,9 +1,11 @@
+import { useEffect, useRef } from 'react';
 import type { SidebarTab } from '../../state/display';
 import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { ChevronLeftIcon, ChevronRightIcon } from '../controls/Icons';
 import { Tabs } from '../controls/Tabs';
 import { SHEET_QUERY, useMedia } from '../useMedia';
+import { sheetKeys, sidebarControl } from '../useSheetFocus';
 import { Display } from './Display';
 import { Find } from './Find';
 import { Overview } from './Overview';
@@ -22,6 +24,14 @@ export function Sidebar({ result }: { result: ParseResult }) {
   const toggleSidebar = useApp((s) => s.toggleSidebar);
   const sheet = useMedia(SHEET_QUERY);
   const infoShown = useApp((s) => s.infoOpen && s.selection.count > 0);
+  const aside = useRef<HTMLElement>(null);
+  const userOpened = useRef(false);
+  // A sheet the user opens takes focus; one that is open from the start leaves it alone.
+  useEffect(() => {
+    if (!open || !sheet || !userOpened.current) return;
+    userOpened.current = false;
+    aside.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
+  }, [open, sheet]);
   // One sheet at a time: a selection's details take the place of the sidebar until it is cleared.
   if (sheet && infoShown) return null;
   if (!open) {
@@ -32,7 +42,10 @@ export function Sidebar({ result }: { result: ParseResult }) {
         data-testid="sidebar-open"
         data-inset="left"
         aria-label="Show the sidebar"
-        onClick={toggleSidebar}
+        onClick={() => {
+          userOpened.current = true;
+          toggleSidebar();
+        }}
       >
         <ChevronRightIcon />
       </button>
@@ -44,10 +57,20 @@ export function Sidebar({ result }: { result: ParseResult }) {
       aria-label="Sidebar"
       data-inset={sheet ? 'bottom' : 'left'}
       data-testid="sidebar"
+      ref={aside}
+      onKeyDown={sheet ? sheetKeys(toggleSidebar, sidebarControl) : undefined}
     >
       <header>
         <Tabs label="Sidebar" tabs={TABS} selected={tab} onSelect={showSidebar} />
-        <button type="button" className="icon" aria-label="Hide the sidebar" onClick={toggleSidebar}>
+        <button
+          type="button"
+          className="icon"
+          aria-label="Hide the sidebar"
+          onClick={() => {
+            toggleSidebar();
+            if (sheet) requestAnimationFrame(() => sidebarControl()?.focus());
+          }}
+        >
           <ChevronLeftIcon />
         </button>
       </header>
