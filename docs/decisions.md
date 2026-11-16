@@ -1363,3 +1363,16 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   selected tab when the details close). A sheet open from the start does not
   take focus; one the user opens does. Alternative: make the rest of the page
   inert, which would hide the top bar from Tab until Escape.
+- **The dots at the bottom left of the canvas**: they are data, not an overlay.
+  With the acacia mitochondrion example open, a row of 11 dots sits at the
+  bottom of the packed layout; the Overview counts 11 isolated segments, and
+  each is a short segment drawn as a dot under the Detail threshold. Hovering
+  one shows its name, length and depth, so nothing is added or removed. Seen
+  in a 1440 px screenshot of all four examples with one segment selected.
+- **No scale bar**: layout units are not bases, so a bar would show a false
+  length. Chosen by the owner; no length is defined for layout units.
+- **Baseline limit unchanged**: the spec's 2.0% against a 1% limit mixed two
+  checks. The WebGL2 baseline comparison already allows 2% (2026-11-15, CI's
+  rendering as the baseline); all four pass on this machine's real GPU, headed.
+  The WebGL2 against WebGPU comparison keeps 1% and measures 0.000% on all four
+  examples. No per-backend limit is needed.
