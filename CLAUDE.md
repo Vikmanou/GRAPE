@@ -5,7 +5,7 @@ GRAPE (GPU-Rendered Assembly Path Explorer) = browser viewer for genome assembly
 ## The spec
 
 Spec = Claude Doc "GRAPE: Build Spec"
-(https://claude.ai/artifact/UnoFj61L4Ttvx8G8KhBDiX), read with docs tools. Source of truth: status, architecture, code organisation, features, targets, twenty milestones (0 to 19). Read sections relevant to milestone every time; no working from memory of old copy. Spec and code disagree → say so. Milestone ends → update doc's Status table + any section milestone changed.
+(https://claude.ai/artifact/UnoFj61L4Ttvx8G8KhBDiX), read with docs tools. Source of truth: status, architecture, code organisation, features, targets, twenty-one milestones (0 to 20). Read sections relevant to milestone every time; no working from memory of old copy. Spec and code disagree → say so. Milestone ends → update doc's Status table + any section milestone changed.
 
 ## Milestone loop
 
