@@ -40,8 +40,8 @@ export function segmentInfo(loaded: Loaded, segment: number): SegmentInfo | unde
 }
 
 export function summary(loaded: Loaded, bits: Uint32Array): SelectionSummary {
-  const [count = 0, totalLength = 0, meanDepth = NaN] = loaded.selectionSummary(bits);
-  return { count, totalLength, meanDepth };
+  const [count = 0, totalLength = 0, meanDepth = NaN, n50 = 0, gc = NaN] = loaded.selectionSummary(bits);
+  return { count, totalLength, meanDepth, n50, gc };
 }
 
 export function find(loaded: Loaded, query: FindQuery): { segments: Uint32Array<ArrayBuffer>; missing: string[] } {

@@ -98,11 +98,17 @@ impl Loaded {
             .collect()
     }
 
-    /// `count, total length, length-weighted depth` of the set bits.
+    /// `count, total length, length-weighted depth, N50, length-weighted GC` of the set bits.
     #[wasm_bindgen(js_name = selectionSummary)]
     pub fn selection_summary(&self, bits: &[u32]) -> Vec<f64> {
         let s = query::selection_summary(self.graph(), bits);
-        vec![s.count as f64, s.total_length as f64, s.mean_depth]
+        vec![
+            s.count as f64,
+            s.total_length as f64,
+            s.mean_depth,
+            f64::from(s.n50),
+            s.gc,
+        ]
     }
 
     /// Steps from the nearest set bit's segment, 255 beyond 254.

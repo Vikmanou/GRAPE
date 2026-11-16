@@ -1,5 +1,6 @@
 //! Questions the info panel, find and export ask about loaded segments.
 
+use crate::analysis::stats::nx;
 use crate::store::csr::end;
 use crate::store::graph::Graph;
 use crate::write::fasta::bandage_order;
@@ -84,25 +85,44 @@ pub struct SelectionSummary {
     pub total_length: u64,
     /// Weighted by length over segments with a known depth; NaN when none has one.
     pub mean_depth: f64,
+    /// The Overview's N50 over the selected segments' lengths.
+    pub n50: u32,
+    /// Weighted by length over segments with a sequence; NaN when none has one.
+    pub gc: f64,
 }
 
 pub fn selection_summary(g: &Graph, bits: &[u32]) -> SelectionSummary {
     let (mut count, mut total_length) = (0, 0);
     let (mut depth_sum, mut depth_weight) = (0.0f64, 0.0f64);
+    let (mut gc_sum, mut gc_weight) = (0.0f64, 0.0f64);
+    let mut lengths = Vec::new();
     for id in set_bits(bits).filter(|&id| (id as usize) < g.segments.len()) {
         let i = id as usize;
         let length = g.segments.length[i];
         count += 1;
         total_length += u64::from(length);
+        lengths.push(length);
+        let gc = f64::from(g.segments.gc[i]);
+        if !gc.is_nan() {
+            gc_sum += gc * f64::from(length);
+            gc_weight += f64::from(length);
+        }
         let depth = f64::from(g.segments.depth[i]);
         if !depth.is_nan() {
             depth_sum += depth * f64::from(length);
             depth_weight += f64::from(length);
         }
     }
+    lengths.sort_unstable_by(|a, b| b.cmp(a));
     SelectionSummary {
         count,
         total_length,
+        n50: nx(&lengths, total_length, 1, 2),
+        gc: if gc_weight > 0.0 {
+            gc_sum / gc_weight
+        } else {
+            f64::NAN
+        },
         mean_depth: if depth_weight > 0.0 {
             depth_sum / depth_weight
         } else {
@@ -183,6 +203,13 @@ mod tests {
         assert_eq!((s.count, s.total_length), (3, 12));
         assert!((s.mean_depth - (2.0 * 4.0 + 4.0 * 6.0) / 10.0).abs() < 1e-9);
         assert!(selection_summary(&g, &[0]).mean_depth.is_nan());
+        // Lengths 6, 4, 2: the longest alone reaches half of 12.
+        assert_eq!(s.n50, 6);
+        // (4 x 0.5 + 2 x 0 + 6 x 1) / 12
+        assert!((s.gc - 8.0 / 12.0).abs() < 1e-6);
+        let empty = selection_summary(&g, &[0]);
+        assert_eq!(empty.n50, 0);
+        assert!(empty.gc.is_nan());
     }
 
     #[test]

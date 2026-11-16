@@ -114,7 +114,7 @@ pub(crate) fn compute(
 }
 
 /// The length at which the running total, longest first, reaches `num/den`.
-fn nx(sorted_desc: &[u32], total: u64, num: u64, den: u64) -> u32 {
+pub(crate) fn nx(sorted_desc: &[u32], total: u64, num: u64, den: u64) -> u32 {
     let mut sum = 0u64;
     for &l in sorted_desc {
         sum += u64::from(l);

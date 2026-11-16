@@ -127,6 +127,10 @@ export interface SelectionSummary {
   totalLength: number;
   /** Length-weighted over segments with a depth; NaN when none has one. */
   meanDepth: number;
+  /** As in the Overview, over the selected segments. */
+  n50: number;
+  /** Length-weighted over segments with a sequence, as a fraction; NaN when none has one. */
+  gc: number;
 }
 
 export interface GraphStats {
