@@ -64,6 +64,10 @@ export class CpuLayoutDriver implements LayoutDriver {
     this.control({ type: 'pause', paused });
   }
 
+  halt(): void {
+    this.control({ type: 'halt' });
+  }
+
   setOffsets(): void {
     // The worker packs components itself.
   }

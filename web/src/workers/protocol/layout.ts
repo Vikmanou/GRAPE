@@ -25,6 +25,8 @@ export type LayoutRequest =
   /** Moves a segment by `dx, dy` layout units and pins it. */
   | { type: 'drag'; id: number; segment: number; dx: number; dy: number }
   | { type: 'unpin'; id: number }
+  /** Stops stepping and posts the positions as done. */
+  | { type: 'halt'; id: number }
   /** Refines level 0 again, moving only the segments whose bit is set when `selected` is given. */
   | { type: 'refine'; id: number; selected: Uint32Array<ArrayBuffer> | undefined }
   /** Geometry and a grid around a layout file's lines, with no layout run; ends with `ok`. */
@@ -36,7 +38,7 @@ export type LayoutRequest =
   | { type: 'memory'; id: number };
 
 /** Requests that steer a running CPU layout. */
-export type LayoutControl = Extract<LayoutRequest, { type: 'pause' | 'drag' | 'unpin' | 'refine' }>;
+export type LayoutControl = Extract<LayoutRequest, { type: 'pause' | 'halt' | 'drag' | 'unpin' | 'refine' }>;
 
 export interface Geometry {
   segments: number;

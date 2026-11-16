@@ -37,6 +37,8 @@ export type EngineCommand =
   /** `dx, dy` per component, packing the boxes of the last `layout-measured`. */
   | { type: 'set-offsets'; offsets: Float32Array }
   | { type: 'pause-layout'; paused: boolean }
+  /** Leaves the layout where it is and reports it done. */
+  | { type: 'halt-layout' }
   /** Answered by a `positions` event. */
   | { type: 'read-positions' }
   /** Answered by a `memory` event. */

@@ -42,6 +42,8 @@ export function gridBuffers(grid: PositionGrid): ArrayBuffer[] {
  */
 export class CpuRun {
   private paused = false;
+  /** Stopped by the user: reported done wherever the layout stands. */
+  private halted = false;
   private wake: (() => void) | undefined;
   private lastPost = -Infinity;
   private postedDone = false;
@@ -78,7 +80,7 @@ export class CpuRun {
 
   /** Settled, with no refinement running; `step(0)` only reports it. */
   private get finished(): boolean {
-    return this.layout.step(0);
+    return this.halted || this.layout.step(0);
   }
 
   setPaused(paused: boolean): void {
@@ -86,8 +88,14 @@ export class CpuRun {
     this.poke();
   }
 
+  halt(): void {
+    this.halted = true;
+    this.paused = false;
+    this.poke();
+  }
+
   drag(segment: number, dx: number, dy: number): void {
-    if (this.layout.drag(segment, dx, dy)) this.poke();
+    if (this.layout.drag(segment, dx, dy)) this.resumeFrom();
   }
 
   unpinAll(): void {
@@ -96,7 +104,13 @@ export class CpuRun {
   }
 
   refine(selected: Uint32Array | undefined): void {
-    if (this.layout.refine(selected)) this.poke();
+    if (this.layout.refine(selected)) this.resumeFrom();
+  }
+
+  /** A change after a halt runs its refinement. */
+  private resumeFrom(): void {
+    this.halted = false;
+    this.poke();
   }
 
   private poke(): void {

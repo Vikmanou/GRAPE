@@ -114,7 +114,7 @@ export class GpuLayoutDriver implements LayoutDriver {
   }
 
   get usable(): boolean {
-    return !this.layout || this.layout.currentLevel <= USABLE_LEVEL;
+    return !this.layout || this.layout.done || this.layout.currentLevel <= USABLE_LEVEL;
   }
 
   get busy(): boolean {
@@ -145,6 +145,11 @@ export class GpuLayoutDriver implements LayoutDriver {
 
   setPaused(paused: boolean): void {
     this.paused = paused;
+  }
+
+  halt(): void {
+    this.layout?.halt();
+    this.paused = false;
   }
 
   setOffsets(offsets: Float32Array): void {

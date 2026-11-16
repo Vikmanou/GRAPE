@@ -34,6 +34,8 @@ export interface LayoutSlice {
   setLayoutOptions: (options: LayoutOptions) => void;
   /** Pauses or resumes the layout. */
   setLayoutPaused: (paused: boolean) => void;
+  /** Stops a running layout where it stands and marks it settled. */
+  haltLayout: () => void;
   /**
    * Lays out the loaded graph from the start, when it and its renderer are
    * ready; with `lines` from a layout file, draws them instead.
@@ -179,6 +181,12 @@ export function createLayoutSlice(ctx: Context): LayoutSlice {
       if (get().layoutStatus.state !== 'running') return;
       ctx.bridge.send({ type: 'pause-layout', paused });
       set({ layoutPaused: paused });
+    },
+
+    haltLayout() {
+      if (get().layoutStatus.state !== 'running') return;
+      ctx.bridge.send({ type: 'halt-layout' });
+      set({ layoutPaused: false });
     },
 
     restartLayout(lines) {

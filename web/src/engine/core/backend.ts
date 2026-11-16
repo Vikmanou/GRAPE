@@ -74,6 +74,8 @@ export interface LayoutDriver {
   start(hierarchy: Hierarchy, seed: number): void;
   stop(): void;
   setPaused(paused: boolean): void;
+  /** Stops iterating and settles where the layout stands; a drag or a refinement may start it again. */
+  halt(): void;
   /** `dx, dy` per component, packing the boxes of the last `measured` event. */
   setOffsets(offsets: Float32Array): void;
   /** The packed graph's extent, once a pack has arrived. */

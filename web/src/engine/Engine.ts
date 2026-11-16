@@ -237,6 +237,9 @@ export class Engine {
       case 'pause-layout':
         layout.setPaused(command.paused);
         break;
+      case 'halt-layout':
+        layout.halt();
+        break;
       case 'read-positions':
         void this.readPositions();
         return;

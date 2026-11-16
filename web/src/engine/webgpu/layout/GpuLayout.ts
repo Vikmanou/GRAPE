@@ -32,6 +32,7 @@ function unordered(u: number): number {
 export class GpuLayout {
   readonly total: number;
   private iterationCount = 0;
+  private halted = false;
   private level: GpuLevel;
   private levelIndex: number;
   private levelIteration = 0;
@@ -121,14 +122,20 @@ export class GpuLayout {
    */
   refineAgain(): boolean {
     if (this.levelIndex !== 0) return false;
+    this.halted = false;
     const from = Math.floor(this.budget(0) / 2);
     this.levelIteration = from;
     this.level.restart(from);
     return true;
   }
 
+  /** Stops the iterations where they stand; `done` holds until a refinement runs. */
+  halt(): void {
+    this.halted = true;
+  }
+
   get done(): boolean {
-    return this.levelIndex === 0 && this.levelIteration >= this.budget(0);
+    return this.halted || (this.levelIndex === 0 && this.levelIteration >= this.budget(0));
   }
 
   /** Moves to the next finer level once this one has run its budget. */

@@ -69,6 +69,9 @@ function control(request: LayoutControl): void {
     case 'pause':
       cpu?.setPaused(request.paused);
       break;
+    case 'halt':
+      cpu?.halt();
+      break;
     case 'drag':
       cpu?.drag(request.segment, request.dx, request.dy);
       break;
@@ -100,7 +103,13 @@ function fixed(id: number, t: Topology, lines: LayoutLines): void {
 
 async function handle(request: LayoutRequest): Promise<void> {
   await ready;
-  if (request.type === 'pause' || request.type === 'drag' || request.type === 'unpin' || request.type === 'refine') {
+  if (
+    request.type === 'pause' ||
+    request.type === 'halt' ||
+    request.type === 'drag' ||
+    request.type === 'unpin' ||
+    request.type === 'refine'
+  ) {
     control(request);
     return;
   }
