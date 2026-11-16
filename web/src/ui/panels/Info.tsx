@@ -1,6 +1,6 @@
 import { useApp } from '../../state/store';
 import { copyText, download } from '../files';
-import { formatBases, formatCount, formatDepth } from '../format';
+import { formatBases, formatCount, formatDepth, formatPercent } from '../format';
 import { Disclosure } from '../controls/Disclosure';
 import { SHEET_QUERY, useMedia } from '../useMedia';
 import { SegmentDetails } from './SegmentDetails';
@@ -16,6 +16,7 @@ export function Info() {
   const selectComponents = useApp((s) => s.selectComponents);
   const zoom = useApp((s) => s.zoomToSelection);
   const sequences = useApp((s) => s.selectedSequences);
+  const names = useApp((s) => s.selectedNames);
   const fasta = useApp((s) => s.selectedFasta);
   const toast = useApp((s) => s.toast);
   const open = useApp((s) => s.infoOpen);
@@ -75,6 +76,19 @@ export function Info() {
           <button type="button" data-testid="invert-selection" onClick={invert}>
             Invert
           </button>
+          {plural && (
+            <button
+              type="button"
+              data-testid="copy-names"
+              onClick={() => {
+                copyText(names()).then(() => {
+                  toast('Names copied');
+                }, failed('copy the names'));
+              }}
+            >
+              Copy names
+            </button>
+          )}
           <button
             type="button"
             data-testid="download-fasta"
@@ -105,7 +119,24 @@ export function Info() {
             <dt>Mean depth (length-weighted)</dt>
             <dd data-testid="info-mean-depth">{formatDepth(details.summary.meanDepth)}</dd>
           </div>
+          <div>
+            <dt>N50</dt>
+            <dd data-testid="info-n50">{formatBases(details.summary.n50)}</dd>
+          </div>
+          <div>
+            <dt>GC content (length-weighted)</dt>
+            <dd data-testid="info-gc">{formatPercent(details.summary.gc)}</dd>
+          </div>
         </dl>
+      )}
+      {details.state === 'many' && (
+        <Disclosure title="Names" testId="info-names">
+          <p className="mono small" data-testid="info-name-list">
+            {details.names.join(', ')}
+            {selection.count > details.names.length &&
+              ` … and ${formatCount(selection.count - details.names.length)} more`}
+          </p>
+        </Disclosure>
       )}
     </aside>
   );

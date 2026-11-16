@@ -5,6 +5,8 @@ import type { Context } from './store';
 
 /** Bases shown at each end of a sequence and of a raw line. */
 const PREVIEW_BASES = 100;
+/** Names listed in the info panel for several segments; Copy names has them all. */
+const LISTED_NAMES = 200;
 
 export type Details =
   | { state: 'none' }
@@ -18,7 +20,7 @@ export type Details =
       rawLine: { text: string; elided: number } | undefined;
       sequenceError: string | undefined;
     }
-  | { state: 'many'; summary: SelectionSummary }
+  | { state: 'many'; summary: SelectionSummary; names: string[] }
   | { state: 'failed'; message: string };
 
 export interface DetailsSlice {
@@ -29,6 +31,8 @@ export interface DetailsSlice {
   describeSegment: (segment: number) => Promise<SegmentInfo | undefined>;
   /** The selected sequences, joined by newlines as Bandage copies them, in Bandage's order. */
   selectedSequences: () => Promise<string>;
+  /** The selected names, one per line, in Bandage's order. */
+  selectedNames: () => Promise<string>;
   /** FASTA of the selection exactly as Bandage saves it. */
   selectedFasta: () => Promise<Blob>;
 }
@@ -62,9 +66,10 @@ export function createDetailsSlice(ctx: Context): DetailsSlice {
       }
       settle({ state: 'loading' });
       if (single === undefined) {
-        services.graph.summary(bits.slice()).then(
-          (summary) => {
-            settle({ state: 'many', summary });
+        const listed = setBits(bits).slice(0, LISTED_NAMES);
+        Promise.all([services.graph.summary(bits.slice()), services.graph.names(listed)]).then(
+          ([summary, names]) => {
+            settle({ state: 'many', summary, names });
           },
           (error: unknown) => {
             settle({ state: 'failed', message: message(error) });
@@ -96,6 +101,10 @@ export function createDetailsSlice(ctx: Context): DetailsSlice {
     async selectedSequences() {
       const { segments } = await ordered();
       return services.sequence.sequence(segments);
+    },
+
+    async selectedNames() {
+      return (await ordered()).names.join('\n');
     },
 
     async selectedFasta() {

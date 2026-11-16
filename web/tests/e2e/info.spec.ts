@@ -42,6 +42,23 @@ test('several segments: count, total length and weighted depth', async ({ page }
   await expect(panel.getByTestId('info-total-length')).toHaveText('30 bp');
   // (10 × 10 + 8 × 20 + 12 × 10) / 30
   await expect(panel.getByTestId('info-mean-depth')).toHaveText('12.7×');
+  // Lengths 12, 10, 8 of 30: the running total passes 15 at 10, which the Overview calls N50 too.
+  await expect(panel.getByTestId('info-n50')).toHaveText('10 bp');
+  await expect(page.getByTestId('stat-n50')).toHaveText('10 bp');
+  // (10 x 0.5 + 8 x 0.75 + 12 x 1/3) / 30
+  await expect(panel.getByTestId('info-gc')).toHaveText('50.0%');
+});
+
+test('several segments list their names and copy them all', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await openSettled(page, repo('testdata/linear.gfa'));
+  await select(page, [0, 1, 2]);
+  const panel = page.getByTestId('info-panel');
+  await panel.getByTestId('info-more').locator('summary').click();
+  await panel.getByTestId('info-names').locator('summary').click();
+  await expect(panel.getByTestId('info-name-list')).toHaveText('1, 2, 3');
+  await panel.getByTestId('copy-names').click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('1\n2\n3');
 });
 
 test('a gzipped file shows its sequence but not its line', async ({ page }) => {
