@@ -23,5 +23,5 @@ Open the live site, then do this in each browser. Tick it off when it works.
 - [ ] Safari 26 on macOS (WebGPU) and Safari 15 to 18 (WebGL2): the same list.
 - [ ] Firefox on Windows (WebGPU) and on Linux (WebGL2): the same list, then open a share link.
 - [ ] Offline: open the site, turn off the network, reload, open a file from the disk.
-- [ ] Screen reader (VoiceOver or NVDA): open a file, move through the five tabs, hear a selection's details.
+- [ ] Screen reader (VoiceOver or NVDA): open a file, move through the four tabs, hear a selection's details.
 - [ ] 200% zoom and a 390 px wide window: nothing is cut off and every action is reachable.
