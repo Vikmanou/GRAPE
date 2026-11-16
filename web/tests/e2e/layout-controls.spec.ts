@@ -2,7 +2,7 @@
 
 import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { failOnPageError, gotoApp, repo, showTab, skipUnlessBackend } from './helpers';
+import { failOnPageError, gotoApp, repo, segmentsOnScreen, showTab, skipUnlessBackend } from './helpers';
 
 const PANGENOME = repo('samples/brca2-cactus.gfa');
 
@@ -26,6 +26,21 @@ test('pauses and resumes the layout', async ({ page }) => {
   await page.waitForTimeout(1000);
   expect(await status.textContent()).toBe(text);
   await page.getByTestId('layout-pause').click();
+  await expect(status).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
+});
+
+test('stops the layout where it is and the graph stays drawn', async ({ page }) => {
+  await open(page);
+  await page.getByTestId('layout-quality').selectOption('best');
+  const status = page.getByTestId('status-layout');
+  await expect(status).toHaveAttribute('data-state', 'running');
+  await page.getByTestId('layout-stop').click();
+  await expect(status).toHaveAttribute('data-state', 'done');
+  await expect(page.getByTestId('progress')).toBeHidden();
+  await expect(page.getByTestId('layout-stop')).toBeDisabled();
+  expect((await segmentsOnScreen(page, 3)).size).toBeGreaterThan(0);
+  // A new seed lays it out again to the end.
+  await page.getByTestId('layout-restart').click();
   await expect(status).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
 });
 

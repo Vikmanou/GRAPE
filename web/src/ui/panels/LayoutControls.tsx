@@ -18,6 +18,7 @@ export function LayoutControls() {
   const running = useApp((s) => s.layoutStatus.state === 'running');
   const paused = useApp((s) => s.layoutPaused);
   const onOptions = useApp((s) => s.setLayoutOptions);
+  const onStop = useApp((s) => s.haltLayout);
   const onPause = useApp((s) => s.setLayoutPaused);
   return (
     <section className="controls" aria-label="Layout">
@@ -32,6 +33,9 @@ export function LayoutControls() {
           }}
         >
           {paused ? 'Resume' : 'Pause'}
+        </button>
+        <button type="button" data-testid="layout-stop" disabled={!running} onClick={onStop}>
+          Stop
         </button>
         <button
           type="button"

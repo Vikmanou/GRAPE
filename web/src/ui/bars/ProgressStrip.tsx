@@ -7,7 +7,7 @@ interface Task {
   /** 0 to 1; undefined while the length of the task is not known. */
   fraction: number | undefined;
   title?: string;
-  action?: { label: string; run: () => void; testId?: string };
+  actions?: { label: string; run: () => void; testId?: string }[];
 }
 
 /** What is running now, under the top bar: a bar for the first task and a chip with its action for each. */
@@ -16,6 +16,7 @@ export function ProgressStrip() {
   const layout = useApp((s) => s.layoutStatus);
   const paused = useApp((s) => s.layoutPaused);
   const setPaused = useApp((s) => s.setLayoutPaused);
+  const halt = useApp((s) => s.haltLayout);
   const refining = useApp((s) => s.refining);
   const search = useApp((s) => s.searchRun);
   const cancelLoad = useApp((s) => s.cancelLoad);
@@ -23,16 +24,16 @@ export function ProgressStrip() {
   const tasks: Task[] = [];
   const cancel = (run: () => void) => ({ label: 'Cancel', run });
   if (load.state === 'fetching') {
-    tasks.push({ testId: 'status-task', label: 'Downloading', fraction: load.fraction, action: cancel(cancelLoad) });
+    tasks.push({ testId: 'status-task', label: 'Downloading', fraction: load.fraction, actions: [cancel(cancelLoad)] });
   } else if (load.state === 'unpacking') {
     tasks.push({
       testId: 'status-task',
       label: 'Unpacking the graph from the link',
       fraction: undefined,
-      action: cancel(cancelLoad),
+      actions: [cancel(cancelLoad)],
     });
   } else if (load.state === 'parsing') {
-    tasks.push({ testId: 'status-task', label: 'Parsing', fraction: load.fraction, action: cancel(cancelLoad) });
+    tasks.push({ testId: 'status-task', label: 'Parsing', fraction: load.fraction, actions: [cancel(cancelLoad)] });
   }
   if (layout.state === 'running') {
     const detail =
@@ -44,13 +45,16 @@ export function ProgressStrip() {
       label: paused ? 'Layout paused' : 'Laying out',
       fraction: layout.total > 0 ? layout.iteration / layout.total : 0,
       ...(detail && { title: detail }),
-      action: {
-        label: paused ? 'Resume' : 'Pause',
-        run: () => {
-          setPaused(!paused);
+      actions: [
+        {
+          label: paused ? 'Resume' : 'Pause',
+          run: () => {
+            setPaused(!paused);
+          },
+          testId: 'progress-pause',
         },
-        testId: 'progress-pause',
-      },
+        { label: 'Stop', run: halt, testId: 'progress-stop' },
+      ],
     });
   }
   if (search.state === 'indexing') {
@@ -58,7 +62,7 @@ export function ProgressStrip() {
       testId: 'status-indexing',
       label: 'Indexing sequences',
       fraction: search.fraction,
-      action: cancel(cancelSearch),
+      actions: [cancel(cancelSearch)],
     });
   }
   if (refining) tasks.push({ testId: 'status-refining', label: 'Refining the layout', fraction: undefined });
@@ -77,11 +81,11 @@ export function ProgressStrip() {
           <span key={task.testId} className="progress-task" data-testid={task.testId} title={task.title}>
             {task.label}
             {task.fraction !== undefined && ` · ${formatPercent(task.fraction)}`}
-            {task.action && (
-              <button type="button" data-testid={task.action.testId} onClick={task.action.run}>
-                {task.action.label}
+            {task.actions?.map((action) => (
+              <button key={action.label} type="button" data-testid={action.testId} onClick={action.run}>
+                {action.label}
               </button>
-            )}
+            ))}
           </span>
         ))}
       </div>

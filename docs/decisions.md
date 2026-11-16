@@ -1344,3 +1344,17 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   never reaches the site.
 - **Alternatives**: keeping both; deleting `pages.yml` and adding
   `workflow_dispatch` to `ci.yml` for a manual redeploy (not wanted).
+
+## 2026-11-16: Small gaps (milestone 13)
+
+- **Selection summary**: several selected segments show N50 (the Overview's
+  rule over the selected lengths), GC weighted by length over segments with a
+  sequence, and the first 200 names with the true count; Copy names writes all
+  of them in Bandage's export order. Chosen by the owner. The summary crosses
+  the worker as five numbers (`SelectionSummary` gains `n50` and `gc`).
+- **Stop**: Stop leaves the layout where it stands, marks it done and keeps
+  pins; it is in the layout group and on the progress chip, on both backends.
+  Chosen by the owner. The GPU `present` kernel shows any level through its
+  ancestors, so a layout halted at a coarse level still draws every segment;
+  dragging or refining needs level 0 and starts the refinement again.
+  Alternative: discard the run (the graph would not draw until a restart).
