@@ -116,7 +116,7 @@ draws it) and `compare_layout` measures a GPU layout against it.
 Design decisions are recorded in [docs/decisions.md](docs/decisions.md). The
 browsers and assistive tools the site was checked in are listed in
 [docs/browser-checks.md](docs/browser-checks.md). Pushing to `main` publishes the
-site to GitHub Pages (`.github/workflows/pages.yml`).
+site to GitHub Pages once the CI gate passes (`.github/workflows/ci.yml`).
 
 ## About AI
 

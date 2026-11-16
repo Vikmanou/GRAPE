@@ -1274,7 +1274,7 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   hash of the build, and a new worker waits until the old tabs close, so a
   running page never loses files it still has to load. Cross-origin requests,
   which include Open from URL, are not touched. The site deploys to GitHub
-  Pages from `.github/workflows/pages.yml` on every push to `main`. The
+  Pages from the `Pages deploy` job of `.github/workflows/ci.yml` on every push to `main`. The
   accessibility audit is `tests/e2e/a11y.spec.ts` (every control has a name, ids
   are unique, the focus is outlined) plus the contrast tests of 11.2. The README
   carries one captioned GIF of a full walk through (about 1 MB, 1280 px wide), made
@@ -1333,3 +1333,14 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: a new web font for the monospace numbers (a third party
   request, refused by the privacy rules); keeping the toast and moving it;
   dropping the Layout tab content instead of folding it.
+
+## 2026-11-16: One Pages deploy, after the gate
+
+- **Decision**: `.github/workflows/pages.yml` is deleted. The site deploys only
+  from the `Pages deploy` job of `ci.yml`, which needs the gate to pass.
+- **Reason**: both workflows deployed on every push to `main`, racing for the
+  same Pages environment, and `pages.yml` ran without waiting for the gate, so a
+  red gate could still publish. The 2026-10-27 decision says a broken `main`
+  never reaches the site.
+- **Alternatives**: keeping both; deleting `pages.yml` and adding
+  `workflow_dispatch` to `ci.yml` for a manual redeploy (not wanted).
