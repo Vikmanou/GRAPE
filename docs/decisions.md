@@ -1580,3 +1580,25 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   and the browser's "open these file types?" prompt, which need a person to
   click Install and allow; Claude Code declined to drive those dialogs with
   UI Automation.
+
+## 2026-11-17: Browser and assistive checks (milestone 16), how they run
+
+- **Owner's answers**: the owner has an iPhone or iPad but no Mac, so Safari
+  on macOS (26 and 15 to 18) is a recorded gap and iOS Safari is checked by
+  the owner from a short list. Claude installs NVDA and reads what it spoke
+  from its log instead of the owner listening. Playwright's WebKit on Windows
+  stands in for Safari's engine, recorded as WebKit and never as Safari.
+- **The spec's "WebKit does not run on Fedora"** no longer applies: the build
+  machine is Windows 11, where Playwright's WebKit runs.
+- **200% zoom is a spec, not a hand check**: `tests/e2e/zoom.spec.ts` lays the
+  page out at half of a 1280 by 800 and a 1920 by 1080 window with two device
+  pixels per CSS pixel, which is what 200% browser zoom does, and checks that
+  every control in the sidebar tabs, the menus and the info panel can be
+  scrolled to by a person and is the element under its own centre. A script
+  can scroll an `overflow: hidden` box that a person cannot, so a control that
+  only a script could reach fails too. The 390 px window stays with
+  `narrow.spec.ts`.
+- **Found by it**: at 200% of 1920 by 1080 (960 by 540) the Export menu ran
+  past the bottom of the window and its last items could not be reached. The
+  desktop menu popup is now capped at the window height less the top bar and
+  scrolls, as the narrow layout's already did.

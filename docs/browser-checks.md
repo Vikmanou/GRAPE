@@ -6,15 +6,16 @@ hand on a real machine.
 
 ## Automated
 
-| Browser          | What runs                                                           | Where                                 |
-| ---------------- | ------------------------------------------------------------------- | ------------------------------------- |
-| Chromium, WebGL2 | every flow and the screenshot baselines                             | `npm run check`, CI                   |
-| Chromium, WebGPU | every flow, GPU kernels and layout                                  | `npm run check:headed`, on a real GPU |
-| Firefox          | the packed share link                                               | `npm run check`                       |
-| Chromium         | the site opens and opens a file with no network after one visit     | `tests/e2e/offline.spec.ts`           |
-| Chromium         | every control has a name, ids are unique, focus is outlined         | `tests/e2e/a11y.spec.ts`              |
-| Chromium         | the build is installable; manifest images have their sizes, offline | `tests/e2e/install.spec.ts`           |
-| Chromium         | text contrast 4.5:1 and control borders 3:1 in both themes          | `tests/unit/tokens.test.ts`           |
+| Browser          | What runs                                                            | Where                                 |
+| ---------------- | -------------------------------------------------------------------- | ------------------------------------- |
+| Chromium, WebGL2 | every flow and the screenshot baselines                              | `npm run check`, CI                   |
+| Chromium, WebGPU | every flow, GPU kernels and layout                                   | `npm run check:headed`, on a real GPU |
+| Firefox          | the packed share link                                                | `npm run check`                       |
+| Chromium         | the site opens and opens a file with no network after one visit      | `tests/e2e/offline.spec.ts`           |
+| Chromium         | every control has a name, ids are unique, focus is outlined          | `tests/e2e/a11y.spec.ts`              |
+| Chromium         | the build is installable; manifest images have their sizes, offline  | `tests/e2e/install.spec.ts`           |
+| Chromium         | text contrast 4.5:1 and control borders 3:1 in both themes           | `tests/unit/tokens.test.ts`           |
+| Chromium         | 200% zoom: every control in the tabs, menus and info panel reachable | `tests/e2e/zoom.spec.ts`              |
 
 ## By hand
 
