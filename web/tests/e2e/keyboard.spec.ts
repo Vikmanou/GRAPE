@@ -47,7 +47,7 @@ test('the top bar is reachable in order and every stop shows a focus ring', asyn
   expect(seen).toEqual(wanted);
 });
 
-test('the sidebar tabs move with the arrow keys, wrapping at the ends', async ({ page }) => {
+test('the sidebar tabs move with the arrow keys, wrapping at the ends, and Home and End', async ({ page }) => {
   await open(page);
   await page.getByTestId('tab-overview').focus();
   const order = ['display', 'find', 'paths', 'overview'];
@@ -57,5 +57,10 @@ test('the sidebar tabs move with the arrow keys, wrapping at the ends', async ({
     await expect(page.getByTestId(`tab-${tab}`)).toBeFocused();
   }
   await page.keyboard.press('ArrowLeft');
+  await expect(page.getByTestId('tab-paths')).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Home');
+  await expect(page.getByTestId('tab-overview')).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(page.getByTestId('tab-paths')).toBeFocused();
   await expect(page.getByTestId('tab-paths')).toHaveAttribute('aria-selected', 'true');
 });

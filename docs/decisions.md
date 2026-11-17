@@ -1602,3 +1602,26 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   past the bottom of the window and its last items could not be reached. The
   desktop menu popup is now capped at the window height less the top bar and
   scrolls, as the narrow layout's already did.
+- **Screen reader, NVDA 2026.3.1 with Edge 157**: Claude ran a portable NVDA
+  from the scratchpad with the silent synth and read its I/O log. NVDA
+  follows whatever window has system focus, so it runs only while the owner
+  is away from the PC; the first try caught the owner's other windows, and
+  that log was deleted at once. The tabs were heard as "Overview, tab,
+  selected, 1 of 4" and so on, but two gaps were found and fixed:
+  - Home and End did nothing on the tab list. They now move to the first and
+    last tab, as the WAI-ARIA tabs pattern describes.
+  - A selection was silent: the info panel appears with no announcement, and
+    a live region mounted together with its text is often not read. An
+    always-mounted polite region in the info panel now says "Segment 53
+    selected" or "2 segments selected" however the selection was made. With
+    Find, NVDA reads Find's own "Selected 1 segment." first, then the name;
+    the repetition was kept because the second line carries the name.
+- **WebKit on Windows draws WebGL2 wrongly**: in Playwright's WebKit 27.2 on
+  Windows the WebGL2 picture is wrong (straight segments, far-flung links,
+  clicks select nothing), while Chromium on WebGL2 is right. The layout
+  positions hash the same in both, a standalone page shows WebKit uploads
+  and samples the same RG32F and RG32UI textures correctly, the canvas size
+  matches, and every program's uniform offsets match. The owner opened the
+  live site on an iPad with `?renderer=webgl2` and Safari draws it
+  correctly, so this is recorded as a bug of WebKit's Windows port and GRAPE
+  is not changed for it.

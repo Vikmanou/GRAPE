@@ -80,3 +80,16 @@ test('the focused control is outlined while tabbing through the shell', async ({
   }
   expect(unseen).toEqual([]);
 });
+
+test('a selection is announced through a live region that is there before it', async ({ page }) => {
+  await openSettled(page, repo('testdata/linear.gfa'));
+  const heard = page.getByTestId('selection-heard');
+  await expect(heard).toHaveAttribute('aria-live', 'polite');
+  await expect(heard).toHaveText('');
+  await showTab(page, 'find');
+  await page.getByTestId('find-input').fill('2');
+  await page.getByTestId('find-input').press('Enter');
+  await expect(heard).toHaveText('Segment 2 selected');
+  await page.getByRole('button', { name: 'Clear the selection' }).click();
+  await expect(heard).toHaveText('');
+});

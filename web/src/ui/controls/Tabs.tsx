@@ -12,14 +12,14 @@ interface Props<Id extends string> {
   onSelect: (id: Id) => void;
 }
 
-/** A tab list with arrow-key focus moves, as the WAI-ARIA tabs pattern describes. */
+/** A tab list with arrow, Home and End focus moves, as the WAI-ARIA tabs pattern describes. */
 export function Tabs<Id extends string>({ label, tabs, selected, onSelect }: Props<Id>) {
   const list = useRef<HTMLDivElement>(null);
   const move = (event: KeyboardEvent, index: number) => {
-    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
-    if (step === undefined) return;
+    const to = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }[event.key];
+    if (to === undefined) return;
     event.preventDefault();
-    const next = tabs[(index + step + tabs.length) % tabs.length];
+    const next = tabs[(to + tabs.length) % tabs.length];
     if (!next) return;
     onSelect(next.id);
     list.current?.querySelector<HTMLButtonElement>(`[data-tab="${next.id}"]`)?.focus();
