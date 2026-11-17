@@ -101,7 +101,14 @@ test.describe('interaction benchmark', () => {
       if (!anchor) throw new Error('no segment on screen');
       await zoomIn(page, 30, anchor);
       await page.waitForTimeout(500);
-      const targets = [...(await segmentsOnScreen(page, CLICKS)).values()];
+      // A first click opens the info panel, which then covers part of the
+      // canvas: targets are chosen with it open, so none lies under it.
+      const [opened] = [...(await segmentsOnScreen(page, 1)).entries()];
+      if (opened) await page.mouse.click(opened[1].x, opened[1].y);
+      await page.waitForTimeout(500);
+      const onScreen = await segmentsOnScreen(page, CLICKS + 1);
+      if (opened) onScreen.delete(opened[0]);
+      const targets = [...onScreen.values()].slice(0, CLICKS);
       if (targets.length === 0) throw new Error('no segment on screen once zoomed in');
       result.segmentsClicked = targets.length;
 
