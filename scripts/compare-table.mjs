@@ -65,8 +65,14 @@ function exportRow() {
       if (image.pending || layout.pending) return { pending: true };
       if (image.value === undefined || layout.value === undefined)
         return { text: image.text, machines: image.machines };
-      const value = Math.max(0, image.value - layout.value);
-      return { value, text: `${seconds(value)} s`, machines: [...image.machines, ...layout.machines] };
+      // `image` lays out the same way as `layout` and then draws; when the two
+      // spreads overlap, drawing is lost in the noise and has no time of its own.
+      const times = (list) => list.filter((r) => r.status === 'ok').map((r) => r.ms);
+      const machines = [...image.machines, ...layout.machines];
+      if (Math.min(...times(of(tool, graph))) <= Math.max(...times(of(tool, graph, 'layout'))))
+        return { text: `within noise (image ${image.text}, layout ${layout.text})`, machines };
+      const value = image.value - layout.value;
+      return { value, text: `${seconds(value)} s`, machines };
     }),
   };
 }
@@ -88,21 +94,25 @@ function largestRow() {
   };
 }
 
+const peakRow = (graph, label) => ({
+  label,
+  cells: TOOLS.map(([tool]) =>
+    measured(
+      of(tool, graph),
+      (r) => r.peakMb,
+      'MB',
+      (v) => Math.round(v).toLocaleString('en'),
+    ),
+  ),
+});
+
 const rows = [
   openRow('10000.gfa', 'Open to a laid-out picture, 10k segments (s)'),
   openRow('50000.gfa', 'Open to a laid-out picture, 50k segments (s)'),
   openRow('200000.gfa', 'Open to a laid-out picture, 200k segments (s)'),
-  {
-    label: 'Peak memory at 200k segments (MB)',
-    cells: TOOLS.map(([tool]) =>
-      measured(
-        of(tool, '200000.gfa'),
-        (r) => r.peakMb,
-        'MB',
-        (v) => Math.round(v).toLocaleString('en'),
-      ),
-    ),
-  },
+  openRow('1000000.gfa', 'Open to a laid-out picture, 1M segments (s)'),
+  peakRow('200000.gfa', 'Peak memory at 200k segments (MB)'),
+  peakRow('1000000.gfa', 'Peak memory at 1M segments (MB)'),
   largestRow(),
   exportRow(),
 ];
@@ -147,7 +157,7 @@ const footer = [
   `Versions: GRAPE ${grapeVersions || '–'} (WebGPU layout, Balanced quality, seed 1, in Playwright's`,
   'Chromium headless on the real GPU), Bandage 0.9.0 (Linux AppImage under WSL 2, `--iter 2`, the',
   'default) and BandageNG 2026.11.1 (Windows build, default layout, `--iter 2`). Machine:',
-  `${machineList.join('; ') || '–'}. Runs from ${dates[0] ?? '–'} to ${dates.at(-1) ?? '–'}.`,
+  `${machineList.join('; ') || '–'}. Runs from ${dates[0] ?? '–'} to ${dates.at(-1) ?? '–'} (UTC).`,
   '',
   'Open to a laid-out picture: GRAPE from choosing the file to the layout reported done,',
   'timed in the page, with the page already loaded; Bandage and BandageNG the wall time of `image`',
@@ -161,6 +171,9 @@ const footer = [
   'Pan and zoom have no counterpart there either; GRAPE keeps them smooth on the 1M graph',
   '(frame rates in [bench/interaction.md](interaction.md)). The layouts differ (Bandage and',
   'BandageNG lay out on the CPU with OGDF, GRAPE on the GPU), so judge the pictures below.',
+  '',
+  "BandageNG's PNG export is its `image` time minus its `layout` time; at 200k the two overlap run",
+  'to run, so drawing the PNG costs less than their noise and gets no time of its own.',
 ];
 
 /** Draw times of the graphs in the picture pairs, from the same runs as the table. */
@@ -195,6 +208,9 @@ const pictureTable = pairs
           `| ${g.graph} | ${TOOLS.map(([t]) => (g.pictures[t] ? `![${g.graph} in ${t}](${g.pictures[t]})` : 'did not open')).join(' | ')} |`,
       ),
       '',
+      'Where GRAPE draws worse: its PNG keeps the whole canvas, while the fitted view leaves room',
+      'for the sidebar, so the left third of each picture is empty; Bandage and BandageNG fill theirs.',
+      '',
       `The GFA of the same segments, compared byte for byte with GRAPE's: the first ${pairs.selected}`,
       "segments selected in GRAPE against each tool's `reduce --scope aroundnodes --distance 0`",
       'over their names, and the whole graph against `reduce` with no scope.',
@@ -205,6 +221,14 @@ const pictureTable = pairs
         (g) =>
           `| ${g.graph} | ${g.exports.bandage.selection} | ${g.exports.bandageng.selection} | ${g.exports.bandage.whole} | ${g.exports.bandageng.whole} |`,
       ),
+      '',
+      'Why they differ. Bandage: on bacterial-spades one pair of links that its `compareEdgePointers`',
+      'ranks equal (same start and end numbers, other signs) comes out in the other order; Bandage',
+      'leaves such ties to an unstable sort over its node pointers, and GRAPE orders them by the signed',
+      'end name (docs/decisions.md). BandageNG writes its own GFA: segments in hash order, P lines,',
+      'links that are not in the input (173 more on lpa-13-haplotypes), and on the mitochondrion no',
+      "sequences or depths after it rejects Bandage's lowercase `z` tags. It cannot open",
+      'bacterial-spades at all: SPAdes P lines step over scaffold gaps, which it calls malformed.',
     ]
   : [];
 
