@@ -1499,11 +1499,14 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   central 80% circle that a maskable crop keeps, so the maskable icon is the
   same art scaled down until its farthest opaque pixel lies inside that circle,
   on the backdrop colour. Scaled, not redrawn.
-- **File handler** (left to Claude, "do what's best"): yes, for every extension
-  the file picker accepts (`.gfa`, `.gfa.gz`, `.fastg`, `.fastg.gz`, `.gz`,
-  `.layout`), so a file opened with GRAPE from the operating system lands where
-  one opened from the picker does. Chromium only; elsewhere nothing changes.
-  The file still never leaves the browser.
+- **File handler** (left to Claude, "do what's best"): yes, for the extensions
+  the file picker accepts except a bare `.gz` (`.gfa`, `.gfa.gz`, `.fastg`,
+  `.fastg.gz`, `.layout`), so a file opened with GRAPE from the operating system
+  goes where one opened from the picker does. A bare `.gz` would offer GRAPE for
+  every gzip file on the machine. Where the operating system keys on the last
+  extension only, the two-part ones may not register; that costs nothing.
+  Chromium only; elsewhere nothing changes. The file still never leaves the
+  browser: `launchQueue` hands the page a local file handle.
 - **Screenshots** (left to Claude): yes, one wide (1280 by 720) and one narrow
   (390 by 844), taken fresh of an example graph, so Chrome shows the larger
   install dialog.

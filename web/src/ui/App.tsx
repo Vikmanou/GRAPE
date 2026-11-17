@@ -33,6 +33,7 @@ export function App() {
     [open, setShowWarnings],
   );
   const dragging = useFileDrop(openFile);
+  useLaunchedFile(openFile);
   const sidebarOpen = useApp((s) => s.sidebar.open);
   const infoOpen = useApp((s) => s.infoOpen && s.selection.count > 0);
   const sheet = useMedia(SHEET_QUERY);
@@ -116,4 +117,20 @@ function useFileDrop(onDrop: (file: File) => void): boolean {
     };
   }, [onDrop]);
   return dragging;
+}
+
+// The File Handling API, Chromium only (https://wicg.github.io/manifest-incubations/#launchqueue-interface).
+interface LaunchQueue {
+  setConsumer(consumer: (params: { files: readonly FileSystemHandle[] }) => void): void;
+}
+
+/** Opens a file the operating system handed to the installed app (the manifest's file_handlers). */
+function useLaunchedFile(onOpen: (file: File) => void): void {
+  useEffect(() => {
+    const queue = (window as { launchQueue?: LaunchQueue }).launchQueue;
+    queue?.setConsumer(({ files }) => {
+      const [handle] = files;
+      if (handle instanceof FileSystemFileHandle) void handle.getFile().then(onOpen);
+    });
+  }, [onOpen]);
 }
