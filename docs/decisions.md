@@ -1552,3 +1552,31 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   `npx` without a shell, which fails on Windows (ENOENT), one of the seven
   Windows failures noted in milestone 14. The shared `tests/e2e/serveBuild.ts`
   runs Vite's own script with the running node instead, which needs no shell.
+- **Checked by Claude, not left to the hand list** (2026-11-17, owner: "find a way"):
+  - Android, on the Android Studio emulator (Pixel, API 34, Chrome 113, whose
+    install criteria are still the strict ones): no installability errors;
+    the menu offers Install app; the install sheet shows the icon, the
+    description and the narrow screenshot; the home screen icon is whole;
+    launched from it, the app runs standalone (`display-mode: standalone`,
+    no address bar, the cream theme colour in the status bar); with Wi-Fi and
+    data off, the server unreachable and Chrome stopped, it starts from the
+    icon and opens an example. From `localhost` Chrome makes a shortcut, not a
+    WebAPK, so the full-bleed maskable icon itself shows only from the live
+    https site.
+  - Edge on Windows, installed through the DevTools `PWA` domain: a cold
+    start with no server and the browser offline opens an example; a new
+    build (another cache name) is in use from the first launch after the
+    app's windows close, as for a tab; the window is standalone once the
+    user display mode is standalone (a DevTools install defaults it to a
+    browser tab, a click on Install does not).
+  - Icons, by pixels: the maskable and iOS icons have no transparent pixel,
+    the cream backdrop, and all art inside the central 80% circle. The first
+    render missed by 0.3 px of softened edge; `scripts/app-icons.mjs` now
+    keeps 2 px to spare.
+  - The page's side of a file launch: `tests/e2e/launch-file.spec.ts` hands
+    the app a real file handle through a stand-in `launchQueue`, and the file
+    opens. Chromium's own `launchQueue` is a read-only property of window.
+- **Still by hand**: Safari (no Mac here); and the desktop's Open with list
+  and the browser's "open these file types?" prompt, which need a person to
+  click Install and allow; Claude Code declined to drive those dialogs with
+  UI Automation.
