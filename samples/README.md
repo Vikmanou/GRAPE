@@ -6,7 +6,7 @@ in this repository.
 
 ```sh
 npm run samples                 # small set, about 16 MB
-npm run samples -- --large      # plus two graphs of about 100 MB each
+npm run samples -- --large      # plus three graphs of 100-180 MB
 npm run samples -- --huge       # plus 0.85 GB and 3.6 GB stress graphs
 npm run samples -- --check      # parse every downloaded sample and print counts
 ```
@@ -36,6 +36,7 @@ Zenodo record). A `#member` fragment picks a file out of a zip archive.
 
 | File | What it shows | Source | License |
 |---|---|---|---|
+| `barracuda-hifiasm-contigs.gfa.gz` | Great barracuda (*Sphyraena barracuda*, fSphBar1) hifiasm haplotype 2 contig graph with sequences: 84 near-chromosome contigs in 80 components, big in bytes but sparse in links | [OceanOmics on AWS Open Data](https://github.com/MinderooFoundation/OceanOmics-OpenData) | CC-BY-4.0 |
 | `myxococcus-10-assemblies.gfa.gz` | Ten *Myxococcus xanthus* assemblies: 595k short unitigs, the densest graph here | [Zenodo 23217792](https://doi.org/10.5281/zenodo.23217792) | CC-BY-4.0 |
 | `potato-hifiasm-unitigs-noseq.gfa` | Potato hifiasm unitig graph without sequences: 20k segments, 910 components | [Zenodo 17599056](https://doi.org/10.5281/zenodo.17599056) | CC-BY-4.0 |
 

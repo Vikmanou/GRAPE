@@ -25,6 +25,7 @@
     "mitochondrion-acacia-unicycler.gfa": "https://zenodo.org/records/5722622/files/gfas-mitome.zip#gfas-mitome/unicycler.gfa"
   },
   "large": {
+    "barracuda-hifiasm-contigs.gfa.gz": "https://minderoo-oceanomics.s3.us-west-2.amazonaws.com/species/Sphyraena_barracuda/fSphBar1/assembly_oceangenomes_v1/intermediates/hifiasm/fSphBar1_hap2_contig_graph.gfa.gz",
     "myxococcus-10-assemblies.gfa.gz": "https://zenodo.org/records/23217792/files/m_xanthus_10_assemblies.unitigs_blunt.gfa.gz",
     "potato-hifiasm-unitigs-noseq.gfa": "https://zenodo.org/records/17599056/files/spud_altus_hifiasm.r_utg.noseq.gfa"
   },
