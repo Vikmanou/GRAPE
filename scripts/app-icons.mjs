@@ -46,8 +46,9 @@ const rendered = await page.evaluate(
 
     const results = [];
     for (const { file, size, padded } of icons) {
-      // Art the size of the icon, or scaled so its farthest opaque pixel lies on the 80% circle.
-      const drawn = padded ? Math.floor((size * 0.4 * full.width) / farthest) : size;
+      // Art the size of the icon, or scaled so its farthest opaque pixel lies inside the
+      // 80% circle, with 2 px to spare for the edge the resampling softens.
+      const drawn = padded ? Math.floor(((size * 0.4 - 2) * full.width) / farthest) : size;
       const scaled = await createImageBitmap(art, { resizeWidth: drawn, resizeHeight: drawn, resizeQuality: 'high' });
       const canvas = new OffscreenCanvas(size, size);
       const context = canvas.getContext('2d');
