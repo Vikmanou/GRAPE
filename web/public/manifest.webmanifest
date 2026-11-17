@@ -35,5 +35,21 @@
         "application/octet-stream": [".gfa", ".gfa.gz", ".fastg", ".fastg.gz", ".layout"]
       }
     }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "An Acacia mitochondrion assembly graph laid out in GRAPE, beside its statistics"
+    },
+    {
+      "src": "screenshots/narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "An Acacia mitochondrion assembly graph laid out in GRAPE, beside its statistics"
+    }
   ]
 }
