@@ -1,6 +1,7 @@
 // Shared by the benchmark specs, which scripts/bench-*.mjs run.
 
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { Page } from '@playwright/test';
 
 export interface Point {
@@ -8,19 +9,20 @@ export interface Point {
   y: number;
 }
 
-/** Each row is "<memory in KB> <command line>", one per process. */
-function processRows(): string[] {
-  if (process.platform === 'win32') {
-    const script =
-      "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | ForEach-Object { '{0} {1}' -f [int64]($_.WorkingSetSize / 1KB), $_.CommandLine }";
-    return execFileSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' })
-      .split('\n')
-      .map((row) => row.trim());
-  }
-  return execFileSync('ps', ['-eo', 'rss=,args='], { encoding: 'utf8' })
-    .split('\n')
-    .map((row) => row.trim());
+/** Prints "<KB> <command line>" per Chromium process: `kb` is a PowerShell expression of the process `$_`. */
+function processList(kb: string): [string, string[]] {
+  return process.platform === 'win32'
+    ? [
+        'powershell',
+        [
+          '-NoProfile',
+          '-Command',
+          `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | ForEach-Object { '{0} {1}' -f [int64](${kb}), $_.CommandLine }`,
+        ],
+      ]
+    : ['ps', ['-eo', 'rss=,args=']];
 }
+const WORKING_SET = processList('$_.WorkingSetSize / 1KB');
 
 /**
  * Resident memory in MB of the page's renderer process, which holds the page
@@ -28,7 +30,26 @@ function processRows(): string[] {
  * integrated graphics. On Windows this is the working set, the nearest figure.
  */
 export function memoryMb(): { tab: number; gpu: number } {
-  const rows = processRows().filter((row) => /ms-playwright[\\/]chromium/.test(row));
+  return chromiumMemory(execFileSync(...WORKING_SET, { encoding: 'utf8' }));
+}
+
+/** `memoryMb` without blocking the test while the process list is read. */
+export async function memoryMbAsync(): Promise<{ tab: number; gpu: number }> {
+  const { stdout } = await promisify(execFile)(...WORKING_SET, { encoding: 'utf8' });
+  return chromiumMemory(stdout);
+}
+
+/** The largest working set each process has had since it started, which Windows keeps (in KB); elsewhere undefined. */
+export function peakMemoryMb(): { tab: number; gpu: number } | undefined {
+  if (process.platform !== 'win32') return undefined;
+  return chromiumMemory(execFileSync(...processList('$_.PeakWorkingSetSize'), { encoding: 'utf8' }));
+}
+
+function chromiumMemory(list: string): { tab: number; gpu: number } {
+  const rows = list
+    .split('\n')
+    .map((row) => row.trim())
+    .filter((row) => /ms-playwright[\\/]chromium/.test(row));
   const sum = (match: (row: string) => boolean) =>
     Math.round(rows.filter(match).reduce((kb, row) => kb + Number(row.split(/\s+/)[0]), 0) / 1024);
   return {
