@@ -19,8 +19,15 @@ const BANDAGE_DIR = join(root, 'tools', 'bandage', 'squashfs-root');
 const work = join(root, 'target', 'compare');
 mkdirSync(work, { recursive: true });
 
+/**
+ * Runs a command and returns its output. A command that could not start, or
+ * was killed from outside, stops the whole run: its result says nothing
+ * about the tool, so it must not be recorded as one.
+ */
 function capture(cmd, args, options = {}) {
-  return spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 64 << 20, shell: needsShell(cmd), ...options });
+  const r = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 64 << 20, shell: needsShell(cmd), ...options });
+  if (r.error || r.signal) throw new Error(`${cmd} did not run: ${r.error?.message ?? `killed by ${r.signal}`}`);
+  return r;
 }
 
 function wsl(script, timeout) {
@@ -85,6 +92,7 @@ export function bandageNg(command, file, args, out) {
   const list = [command, file, out, ...args].map((a) => `'"${a.replace(/'/g, "''")}"'`).join(',');
   const log = join(work, 'bandageng.log');
   const script = [
+    '$clock = [Diagnostics.Stopwatch]::StartNew()',
     `$p = Start-Process -FilePath '${BANDAGENG}' -ArgumentList ${list} -PassThru -NoNewWindow -RedirectStandardOutput '${log}' -RedirectStandardError '${log}.err'`,
     '$null = $p.Handle; $peak = 0',
     'while (-not $p.HasExited) {',
@@ -92,7 +100,11 @@ export function bandageNg(command, file, args, out) {
     `  if (((Get-Date) - $p.StartTime).TotalMilliseconds -gt ${CAP_MS}) { Stop-Process -Id $p.Id -Force; $p.WaitForExit(); 'GRAPE_DNF {0}' -f $peak; exit }`,
     '  Start-Sleep -Milliseconds 50',
     '}',
-    "'GRAPE_RUN {0} {1} {2}' -f ($p.ExitTime - $p.StartTime).TotalMilliseconds, $peak, $p.ExitCode",
+    // The process's own times, unless Windows returned no exit time (seen once
+    // as a date in year 1); then the stopwatch, which also counts Start-Process.
+    '$ms = ($p.ExitTime - $p.StartTime).TotalMilliseconds',
+    'if ($ms -le 0 -or $ms -gt $clock.Elapsed.TotalMilliseconds + 1000) { $ms = $clock.Elapsed.TotalMilliseconds }',
+    "'GRAPE_RUN {0} {1} {2}' -f $ms, $peak, $p.ExitCode",
   ].join('\n');
   const r = capture('powershell', ['-NoProfile', '-Command', script], { timeout: CAP_MS + 120_000 });
   const done = r.stdout.match(/GRAPE_RUN (\S+) (\d+) (-?\d+)/);
