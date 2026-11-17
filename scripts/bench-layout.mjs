@@ -8,7 +8,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { cpus, platform, release } from 'node:os';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { root, run, syntheticGraph } from './lib.mjs';
@@ -41,8 +41,9 @@ if (missing.length > 0) {
   console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples -- --large\` for the standard set`);
   process.exit(1);
 }
-rmSync(shots, { recursive: true, force: true });
+// Only this benchmark's own pictures: bench/screenshots/bandage belongs to scripts/bench-bandage.mjs.
 mkdirSync(shots, { recursive: true });
+for (const file of readdirSync(shots)) if (file.endsWith('.png')) rmSync(join(shots, file));
 
 run('node', ['scripts/build-wasm.mjs']);
 run('npx', ['playwright', 'install', 'chromium']);
