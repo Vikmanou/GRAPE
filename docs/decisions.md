@@ -1474,3 +1474,40 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   30 min, so the largest-graph row ties; open time and peak memory at 1M
   carry the difference instead. BandageNG's PNG export at 200k is shown as
   within noise, because its `image` and `layout` times overlap from run to run.
+
+
+## 2026-11-17: Installable app (milestone 15), the owner's answers
+
+- **Name**: `GPU-Rendered Assembly Path Explorer`; short name `GRAPE` (owner).
+- **Icon**: the owner's `GRAPE_Icon.png` (1254 by 1254, transparent), and a
+  banner `GRAPE_Banner.png` (2172 by 724) for the README. The owner put both in
+  `web/public`; they move to `web/assets-src/`, where the spec keeps the source,
+  because everything under `web/public` goes into the offline copy and the two
+  files weigh 1.7 MB. The icons the site serves are rendered from them by
+  `scripts/app-icons.mjs` and never redrawn.
+- **Tab and iOS icon**: both use the new icon, and so does the top bar beside
+  the name (owner: "update across the website to use the icon"). `favicon.svg`
+  is removed.
+- **Description**: the page's meta description, reused (owner).
+- **Colours** (left to Claude by the owner, "anything that fits"): the app's own
+  palette, so the installed window's title bar matches the top bar and the
+  splash matches the canvas. Theme colour `#ebe6da` light and `#1c2128` dark
+  (the `--chrome` token); background `#f6f2e9` (the light `--bg`; a manifest has
+  one background colour, and the light theme is the default); behind the
+  maskable icon `#f6f2e9`, where the purple art keeps its contrast.
+- **Maskable icon**: the art reaches the corners (the leaf), outside the
+  central 80% circle that a maskable crop keeps, so the maskable icon is the
+  same art scaled down until its farthest opaque pixel lies inside that circle,
+  on the backdrop colour. Scaled, not redrawn.
+- **File handler** (left to Claude, "do what's best"): yes, for every extension
+  the file picker accepts (`.gfa`, `.gfa.gz`, `.fastg`, `.fastg.gz`, `.gz`,
+  `.layout`), so a file opened with GRAPE from the operating system lands where
+  one opened from the picker does. Chromium only; elsewhere nothing changes.
+  The file still never leaves the browser.
+- **Screenshots** (left to Claude): yes, one wide (1280 by 720) and one narrow
+  (390 by 844), taken fresh of an example graph, so Chrome shows the larger
+  install dialog.
+- **Alternatives**: no file handler (the owner did not mind, and the handler
+  costs a few lines); `.gfa` only (the picker's list is what users already
+  get); reusing `bench/screenshots` (those are benchmark views at 1200 by 800,
+  not the sizes the install dialog wants).
