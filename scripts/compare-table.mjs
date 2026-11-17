@@ -263,17 +263,79 @@ writeFileSync(
   ].join('\n'),
 );
 
+/**
+ * The README's one table: the measures where the tools differ most, as medians
+ * in plain units, with the best in bold; docs/benchmarks.md has the rest.
+ */
+function readmeTable() {
+  const time = (ms) =>
+    ms >= 60_000
+      ? `${Math.floor(ms / 60_000)} min ${Math.round((ms % 60_000) / 1000)} s`
+      : ms >= 1000
+        ? `${(ms / 1000).toFixed(1)} s`
+        : `${Math.round(ms)} ms`;
+  const size = (mb) => (mb >= 1000 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`);
+  const value = (tool, graph, pick) => {
+    const ok = of(tool, graph).filter((r) => r.status === 'ok');
+    return ok.length * 2 > of(tool, graph).length ? median(ok.map(pick)) : undefined;
+  };
+  const measures = [
+    ['Open a 50,000-segment graph', '50000.gfa', (r) => r.ms, time],
+    ['Open a 200,000-segment graph', '200000.gfa', (r) => r.ms, time],
+    ['Open a 1,000,000-segment graph', '1000000.gfa', (r) => r.ms, time],
+    ['Memory with 200,000 segments', '200000.gfa', (r) => r.peakMb, size],
+    ['Memory with 1,000,000 segments', '1000000.gfa', (r) => r.peakMb, size],
+  ];
+  const lines = ['| | GRAPE | Bandage | BandageNG |', '| --- | ---: | ---: | ---: |'];
+  for (const [label, graph, pick, format] of measures) {
+    const values = TOOLS.map(([tool]) => value(tool, graph, pick));
+    const best = Math.min(...values.filter((v) => v !== undefined));
+    const cells = values.map((v) =>
+      v === undefined ? 'did not finish' : v <= best * TIE ? `**${format(v)}**` : format(v),
+    );
+    lines.push(`| ${label} | ${cells.join(' | ')} |`);
+  }
+  const [g, b, n] = TOOLS.map(([tool]) => value(tool, '1000000.gfa', (r) => r.ms));
+  const [gm, , nm] = TOOLS.map(([tool]) => value(tool, '1000000.gfa', (r) => r.peakMb));
+  const [g10, , n10] = TOOLS.map(([tool]) => value(tool, '10000.gfa', (r) => r.ms));
+  const machine = machineList[0]?.split(', ').slice(0, 2).join(' with ') ?? 'one machine';
+  const smallGraphs = [
+    ...new Set(all.filter((r) => !LADDER.includes(r.graph) && r.segments <= 400).map((r) => r.graph)),
+  ];
+  const span = (tool) => {
+    const medians = smallGraphs.map((graph) => value(tool, graph, (r) => r.ms)).filter((v) => v !== undefined);
+    return [Math.min(...medians), Math.max(...medians)];
+  };
+  const small = {
+    segments: Math.max(...smallGraphs.map((graph) => all.find((r) => r.graph === graph).segments)),
+    bandage: span('bandage'),
+    grape: span('grape'),
+  };
+  const ordinal = (k) =>
+    ({ 2: 'half', 3: 'third', 4: 'quarter', 5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth' })[k] ?? `1/${k}`;
+  return [
+    ...lines,
+    '',
+    `On a million segments GRAPE shows the finished layout ${Math.round(n / g)} times sooner than BandageNG and`,
+    `${Math.round(b / g)} times sooner than Bandage, in a ${ordinal(Math.round(nm / gm))} of the memory. Open means from`,
+    'choosing the file to the finished layout on screen; memory is the peak while doing so. Medians of',
+    `five runs of each tool on synthetic graphs, on an ${machine}, ${dates.at(-1) ?? ''}.`,
+    '',
+    `Small graphs are the exception. On sample graphs of up to ${small.segments} segments Bandage`,
+    `opens in ${time(small.bandage[0])} to ${time(small.bandage[1])} and GRAPE in ${time(small.grape[0])} to ${time(small.grape[1])}, and at 10,000 segments BandageNG`,
+    `is still ahead (${time(n10)} against GRAPE's ${time(g10)}).`,
+    '',
+    'Every measure, the pictures each tool draws and the exports compared byte for byte are in',
+    '[docs/benchmarks.md](docs/benchmarks.md); GRAPE on its own against its targets is in',
+    '[bench/results.md](bench/results.md) and [bench/interaction.md](bench/interaction.md).',
+  ];
+}
+
 const readme = join(root, 'README.md');
 const [start, end] = ['<!-- compare:start -->', '<!-- compare:end -->'];
 const text = readFileSync(readme, 'utf8');
 if (text.includes(start)) {
-  const inReadme = [
-    ...table,
-    '',
-    ...footer.map((l) => l.replace('](interaction.md)', '](bench/interaction.md)')),
-    '',
-    'The pictures and the GFA comparison are in [docs/benchmarks.md](docs/benchmarks.md).',
-  ];
+  const inReadme = readmeTable();
   writeFileSync(
     readme,
     text.replace(new RegExp(`${start}[\\s\\S]*${end}`), `${start}\n\n${inReadme.join('\n')}\n\n${end}`),
