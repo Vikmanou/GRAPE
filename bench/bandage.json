@@ -1,0 +1,78 @@
+{
+  "width": 1200,
+  "height": 800,
+  "selected": 20,
+  "graphs": [
+    {
+      "graph": "bacterial-spades.gfa",
+      "pictures": {
+        "grape": "screenshots/bandage/bacterial-spades-grape.png",
+        "bandage": "screenshots/bandage/bacterial-spades-bandage.png"
+      },
+      "exports": {
+        "bandage": {
+          "selection": "identical",
+          "whole": "same lines in another order (789 lines)"
+        },
+        "bandageng": {
+          "selection": "did not open",
+          "whole": "did not open"
+        }
+      }
+    },
+    {
+      "graph": "mitochondrion-acacia-spades.gfa",
+      "pictures": {
+        "grape": "screenshots/bandage/mitochondrion-acacia-spades-grape.png",
+        "bandage": "screenshots/bandage/mitochondrion-acacia-spades-bandage.png",
+        "bandageng": "screenshots/bandage/mitochondrion-acacia-spades-bandageng.png"
+      },
+      "exports": {
+        "bandage": {
+          "selection": "identical",
+          "whole": "identical"
+        },
+        "bandageng": {
+          "selection": "differs (53 of 55 lines unmatched)",
+          "whole": "differs (711 of 713 lines unmatched)"
+        }
+      }
+    },
+    {
+      "graph": "lpa-13-haplotypes.gfa",
+      "pictures": {
+        "grape": "screenshots/bandage/lpa-13-haplotypes-grape.png",
+        "bandage": "screenshots/bandage/lpa-13-haplotypes-bandage.png",
+        "bandageng": "screenshots/bandage/lpa-13-haplotypes-bandageng.png"
+      },
+      "exports": {
+        "bandage": {
+          "selection": "identical",
+          "whole": "identical"
+        },
+        "bandageng": {
+          "selection": "differs (103 of 105 lines unmatched)",
+          "whole": "differs (18078 of 18080 lines unmatched)"
+        }
+      }
+    },
+    {
+      "graph": "200000.gfa",
+      "pictures": {
+        "grape": "screenshots/bandage/200000-grape.png",
+        "bandage": "screenshots/bandage/200000-bandage.png",
+        "bandageng": "screenshots/bandage/200000-bandageng.png"
+      },
+      "exports": {
+        "bandage": {
+          "selection": "identical",
+          "whole": "identical"
+        },
+        "bandageng": {
+          "selection": "differs (78 of 80 lines unmatched)",
+          "whole": "differs (840203 of 840205 lines unmatched)"
+        }
+      }
+    }
+  ]
+}

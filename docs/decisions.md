@@ -1438,3 +1438,39 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Alternatives**: keeping the depth's text from the file (no help for KC,
   RC and FC depths, which are divided by the length); rounding the `f32` to
   six digits first (wrong whenever the `f32` crosses the boundary).
+
+## 2026-11-16: What the milestone 14 run found and how it was measured
+
+- **Click targets in the interaction benchmark**: on the 1M graph the 9th of
+  20 clicks found no segment, because the first click opens the info panel
+  and later targets, chosen before it opened, lay under it. The benchmark now
+  opens the panel with one untimed click, then chooses targets, leaving out
+  the segment that click selected. Measurements are unchanged in kind.
+- **Runs the runner cannot trust are not recorded**: when Claude Code stopped
+  the first run for low memory during Bandage's 1M run, every later process
+  failed to start and 14 such runs were written as failures. They were removed
+  from `bench/compare.json`, and the runner now stops instead of recording a
+  run whose process did not start or was killed from outside.
+- **Load while measuring**: League of Legends, Roblox and Discord were open on
+  the machine through the run, at the owner's call ("just run it");
+  `target/bench-logs/load.log` sampled CPU and memory every minute. CPU stayed
+  at 2 to 18% between runs, with one 54% sample during the parse benchmark,
+  whose numbers are far inside their targets.
+- **Missed: 200k with the search index**: the tab reaches 1,453 MB against the
+  1 GB target, because the sequence worker's index takes 1,080 MB. At 1M the
+  index is past 1 GB and keeps only minimizers (957 MB), so the 1M tab stays
+  at 1,619 of 2,048 MB. Not changed here; for the owner to decide.
+- **Missed: 1M layout quality**: overlaps GPU 57,984 against CPU 10,744, as on
+  2026-11-13; 11.3 did not change the layout. Not changed here.
+- **GRAPE's exported PNG leaves the left third empty** at 1200 by 800: the
+  export takes the whole canvas, while the fitted view leaves room for the
+  sidebar (bench/screenshots/bandage/200000-grape.png). Bandage and BandageNG
+  fill their images. Noted beside the picture table; for the owner to decide.
+- **BandageNG timing falls back to a stopwatch**: one 200k layout run came back
+  as -13,439,357,163 s, because Windows gave the process no exit time. The
+  wrapper now also runs a stopwatch and uses it when the process's own times
+  are not plausible; that run was removed and measured again (28.4 s).
+- **The comparison adds 1M rows**: all three tools lay out the 1M graph within
+  30 min, so the largest-graph row ties; open time and peak memory at 1M
+  carry the difference instead. BandageNG's PNG export at 200k is shown as
+  within noise, because its `image` and `layout` times overlap from run to run.
