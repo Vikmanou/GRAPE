@@ -17,7 +17,7 @@ pub fn write_record(
     out: &mut Vec<u8>,
     name: &[u8],
     length: u32,
-    depth: f32,
+    depth: f64,
     sequence: Option<&[u8]>,
 ) {
     out.extend_from_slice(b">NODE_");
@@ -25,11 +25,7 @@ pub fn write_record(
     out.extend_from_slice(b"+_length_");
     out.extend_from_slice(length.to_string().as_bytes());
     out.extend_from_slice(b"_cov_");
-    let depth = if depth.is_nan() {
-        DEFAULT_DEPTH
-    } else {
-        f64::from(depth)
-    };
+    let depth = if depth.is_nan() { DEFAULT_DEPTH } else { depth };
     out.extend_from_slice(format_g(depth).as_bytes());
     out.push(b'\n');
     let ns;
@@ -128,7 +124,7 @@ mod tests {
         let mut out = Vec::new();
         let seq = vec![b'A'; 141];
         write_record(&mut out, b"12", 141, 14.2, Some(&seq));
-        write_record(&mut out, b"x", 3, f32::NAN, None);
+        write_record(&mut out, b"x", 3, f64::NAN, None);
         let text = String::from_utf8(out).unwrap();
         let a70 = "A".repeat(70);
         assert_eq!(

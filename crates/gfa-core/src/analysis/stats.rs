@@ -67,7 +67,7 @@ pub(crate) fn compute(
         s.dead_ends += dead;
         s.isolated += u64::from(dead == 2);
         let w = f64::from(length);
-        let depth = f64::from(segments.depth[i]);
+        let depth = segments.depth[i];
         if !depth.is_nan() {
             depths.push(depth);
             depth_sum += depth * w;

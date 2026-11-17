@@ -103,7 +103,7 @@ pub fn gfa_segment_line(
     length: u32,
     bases: Option<Vec<u8>>,
     depth_tag: u8,
-    depth: f32,
+    depth: f64,
     custom: &[u8],
 ) -> Vec<u8> {
     let mut out = Vec::new();
@@ -113,7 +113,7 @@ pub fn gfa_segment_line(
 }
 
 #[wasm_bindgen(js_name = fastaRecord)]
-pub fn fasta_record(name: &[u8], length: u32, depth: f32, bases: Option<Vec<u8>>) -> Vec<u8> {
+pub fn fasta_record(name: &[u8], length: u32, depth: f64, bases: Option<Vec<u8>>) -> Vec<u8> {
     let mut out = Vec::new();
     fasta::write_record(&mut out, name, length, depth, bases.as_deref());
     out

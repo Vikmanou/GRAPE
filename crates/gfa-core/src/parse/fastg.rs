@@ -113,7 +113,7 @@ impl Fastg {
             if reverse {
                 b.segments.flags[id as usize] |= seg_flags::SEQ_REVERSED;
             }
-            b.segments.depth[id as usize] = cov as f32;
+            b.segments.depth[id as usize] = cov;
             self.current = Some(Record {
                 id,
                 offset: None,

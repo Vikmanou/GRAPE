@@ -98,7 +98,7 @@ pub(crate) fn describe(components: &mut Components, segments: &Segments, adjacen
     for s in 0..segments.len() {
         let c = segments.component[s] as usize;
         let length = f64::from(segments.length[s]);
-        let depth = f64::from(segments.depth[s]);
+        let depth = segments.depth[s];
         if !depth.is_nan() {
             depth_sum[c] += depth * length;
             depth_weight[c] += length;

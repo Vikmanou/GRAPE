@@ -223,13 +223,13 @@ pub(crate) fn sequences_dropped(b: &mut Builder, no: u64) {
 }
 
 /// Bandage's rule: DP, else KC, RC or FC divided by length.
-fn depth(tags: &SegmentTags, length: u64) -> f32 {
+fn depth(tags: &SegmentTags, length: u64) -> f64 {
     if let Some(dp) = tags.dp {
-        return dp as f32;
+        return dp;
     }
     match tags.kc.or(tags.rc).or(tags.fc) {
-        Some(c) if length > 0 => (c / length as f64) as f32,
-        _ => f32::NAN,
+        Some(c) if length > 0 => c / length as f64,
+        _ => f64::NAN,
     }
 }
 

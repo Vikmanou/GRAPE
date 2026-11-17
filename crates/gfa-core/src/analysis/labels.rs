@@ -40,7 +40,7 @@ pub fn label_lines(g: &Graph, segment: u32, content: LabelContent) -> Vec<String
             format_count(u64::from(g.segments.length[i]))
         ));
     }
-    let depth = f64::from(g.segments.depth[i]);
+    let depth = g.segments.depth[i];
     if content.depth && !depth.is_nan() {
         lines.push(format_depth(depth));
     }

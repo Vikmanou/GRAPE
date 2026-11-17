@@ -44,7 +44,7 @@ pub fn write_segment(
     length: u32,
     sequence: Option<&[u8]>,
     tag: DepthTag,
-    depth: f32,
+    depth: f64,
     custom: &[u8],
 ) {
     out.extend_from_slice(b"S\t");
@@ -53,11 +53,7 @@ pub fn write_segment(
     out.extend_from_slice(sequence.unwrap_or(b"*"));
     let length = sequence.map_or(u64::from(length), |s| s.len() as u64);
     out.extend_from_slice(format!("\tLN:i:{length}").as_bytes());
-    let depth = if depth.is_nan() {
-        DEFAULT_DEPTH
-    } else {
-        f64::from(depth)
-    };
+    let depth = if depth.is_nan() { DEFAULT_DEPTH } else { depth };
     let count = || ((depth * length as f64 + 0.5) as i64).to_string();
     let field = match tag {
         DepthTag::None => None,
@@ -277,6 +273,17 @@ mod tests {
                         L\t2\t+\t3\t+\t0M\n\
                         L\t2\t+\t10\t-\t1M\n";
         assert_eq!(written(gfa, &[("2", "ACG"), ("10", "TT")]), expected);
+    }
+
+    #[test]
+    fn depth_rounds_from_the_double_the_file_gave() {
+        // Segment 30 of samples/mitochondrion-acacia-spades.gfa: as an f32 the
+        // depth is 0.81582451, which rounds to 0.815825; Bandage writes 0.815824.
+        let gfa = "S\t30\tACGT\tdp:f:0.8158244860810399\n";
+        assert_eq!(
+            written(gfa, &[("30", "ACGT")]),
+            "S\t30\tACGT\tLN:i:4\tDP:f:0.815824\n"
+        );
     }
 
     #[test]

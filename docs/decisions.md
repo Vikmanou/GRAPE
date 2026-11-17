@@ -1421,3 +1421,20 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   'NODE_1_length_34015_cov_41.9818', cannot reconstruct path through the
   graph": SPAdes P lines step over scaffold gaps between segments with no
   link. The file is left as it is; its BandageNG cells say it did not open.
+
+## 2026-11-16: Segment depths are doubles, as in Bandage
+
+- **Decision**: `Segments.depth` holds an `f64` (Bandage keeps `double`); the
+  WASM side narrows it to `f32` only for the GPU attribute
+  (`segmentDepths`), and FASTA and GFA records cross the workers as a
+  `Float64Array`.
+- **Reason**: the Bandage comparison found GRAPE's whole-graph GFA of
+  `mitochondrion-acacia-spades.gfa` one digit off on segment 30: the file's
+  `dp:f:0.8158244860810399` became `0.81582451` as an `f32`, which `%g` rounds
+  to `0.815825` where Bandage writes `0.815824`. Any depth whose seventh digit
+  sits near a rounding boundary did the same, in GFA and FASTA headers.
+- **Cost**: 4 B more per segment in the graph worker (0.8 MB at 200k, 4 MB at
+  1M), inside its 300 B per segment budget.
+- **Alternatives**: keeping the depth's text from the file (no help for KC,
+  RC and FC depths, which are divided by the length); rounding the `f32` to
+  six digits first (wrong whenever the `f32` crosses the boundary).

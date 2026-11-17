@@ -185,7 +185,12 @@ impl Loaded {
 
     #[wasm_bindgen(js_name = segmentDepths)]
     pub fn segment_depths(&self) -> Vec<f32> {
-        self.graph.segments.depth.clone()
+        self.graph
+            .segments
+            .depth
+            .iter()
+            .map(|&d| d as f32)
+            .collect()
     }
 
     #[wasm_bindgen(js_name = segmentGc)]

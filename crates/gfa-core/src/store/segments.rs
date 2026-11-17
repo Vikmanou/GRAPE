@@ -13,7 +13,8 @@ pub const NO_SEQ: u64 = u64::MAX;
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Segments {
     pub length: Vec<u32>,
-    pub depth: Vec<f32>,
+    /// A double, as Bandage keeps it, so exports round the same way.
+    pub depth: Vec<f64>,
     pub gc: Vec<f32>,
     /// File byte offset for plain input, packed base offset for gzipped input.
     pub seq: Vec<u64>,
@@ -48,7 +49,7 @@ impl Segments {
 
     pub(crate) fn push_placeholder(&mut self) {
         self.length.push(0);
-        self.depth.push(f32::NAN);
+        self.depth.push(f64::NAN);
         self.gc.push(f32::NAN);
         self.seq.push(NO_SEQ);
         self.component.push(0);
@@ -66,7 +67,7 @@ impl Segments {
 
     pub fn heap_bytes(&self) -> usize {
         self.length.capacity() * 4
-            + self.depth.capacity() * 4
+            + self.depth.capacity() * 8
             + self.gc.capacity() * 4
             + self.seq.capacity() * 8
             + self.component.capacity() * 4

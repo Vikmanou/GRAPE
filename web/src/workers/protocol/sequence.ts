@@ -37,7 +37,7 @@ export function sourceTransfers(source: SequenceSource): Transferable[] {
 export interface FastaRecords {
   segments: Uint32Array<ArrayBuffer>;
   names: string[];
-  depths: Float32Array<ArrayBuffer>;
+  depths: Float64Array<ArrayBuffer>;
 }
 
 /** For each segment of a merged graph, the steps through the original segments that spell it (gfa-core `Merged`). */
@@ -59,7 +59,7 @@ export interface GfaRecords {
   segments: Uint32Array<ArrayBuffer>;
   names: string[];
   lengths: Uint32Array<ArrayBuffer>;
-  depths: Float32Array<ArrayBuffer>;
+  depths: Float64Array<ArrayBuffer>;
   /** Each line's LB, L2, CL and C2 fields. */
   custom: string[];
   /** 0 none, 1 DP, 2 KC, 3 RC, 4 FC (gfa-wasm `depth_tag_code`). */

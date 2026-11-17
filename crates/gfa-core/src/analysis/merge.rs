@@ -127,7 +127,7 @@ fn fill_segment(b: &mut Builder, g: &Graph, id: u32, group: &[u32], trims: &[u32
         let i = segment_of(st) as usize;
         let kept = u64::from(s.length[i] - trim);
         length += kept;
-        let depth = f64::from(s.depth[i]);
+        let depth = s.depth[i];
         if !depth.is_nan() {
             depth_sum += depth * f64::from(s.length[i]);
             depth_weight += f64::from(s.length[i]);
@@ -139,9 +139,9 @@ fn fill_segment(b: &mut Builder, g: &Graph, id: u32, group: &[u32], trims: &[u32
     let out = &mut b.segments;
     out.length[i] = u32::try_from(length).unwrap_or(u32::MAX);
     out.depth[i] = if depth_weight > 0.0 {
-        (depth_sum / depth_weight) as f32
+        depth_sum / depth_weight
     } else {
-        f32::NAN
+        f64::NAN
     };
     out.gc[i] = if length > 0 {
         (gc_sum / length as f64) as f32

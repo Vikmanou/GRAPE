@@ -13,7 +13,7 @@ impl Info {
         self.0.length
     }
 
-    pub fn depth(&self) -> f32 {
+    pub fn depth(&self) -> f64 {
         self.0.depth
     }
 
@@ -91,10 +91,10 @@ impl Loaded {
             .collect()
     }
 
-    pub fn depths(&self, ids: &[u32]) -> Vec<f32> {
+    pub fn depths(&self, ids: &[u32]) -> Vec<f64> {
         let depth = &self.graph().segments.depth;
         ids.iter()
-            .map(|&id| depth.get(id as usize).copied().unwrap_or(f32::NAN))
+            .map(|&id| depth.get(id as usize).copied().unwrap_or(f64::NAN))
             .collect()
     }
 

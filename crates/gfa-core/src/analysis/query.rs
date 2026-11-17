@@ -18,7 +18,7 @@ pub struct NeighbourLink {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SegmentInfo {
     pub length: u32,
-    pub depth: f32,
+    pub depth: f64,
     pub gc: f32,
     pub component: u32,
     /// Links at the segment's start and at its end.
@@ -107,7 +107,7 @@ pub fn selection_summary(g: &Graph, bits: &[u32]) -> SelectionSummary {
             gc_sum += gc * f64::from(length);
             gc_weight += f64::from(length);
         }
-        let depth = f64::from(g.segments.depth[i]);
+        let depth = g.segments.depth[i];
         if !depth.is_nan() {
             depth_sum += depth * f64::from(length);
             depth_weight += f64::from(length);
