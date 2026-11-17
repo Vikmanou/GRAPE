@@ -1480,9 +1480,10 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
 - **Name**: `GPU-Rendered Assembly Path Explorer`; short name `GRAPE` (owner).
 - **Icon**: the owner's `GRAPE_Icon.png` (1254 by 1254, transparent), and a
   banner `GRAPE_Banner.png` (2172 by 724) for the README. The owner put both in
-  `web/public`; they move to `web/assets-src/`, where the spec keeps the source,
-  because everything under `web/public` goes into the offline copy and the two
-  files weigh 1.7 MB. The icons the site serves are rendered from them by
+  `web/public`, but everything there goes into the offline copy and the two
+  files weigh 1.7 MB: the icon moves to `web/assets-src/`, where the spec keeps
+  the source, and the banner to `assets/grape-banner.png` beside the README's
+  other pictures, replacing `assets/grape-logo.png`. The icons the site serves are rendered from them by
   `scripts/app-icons.mjs` and never redrawn.
 - **Tab and iOS icon**: both use the new icon, and so does the top bar beside
   the name (owner: "update across the website to use the icon"). `favicon.svg`

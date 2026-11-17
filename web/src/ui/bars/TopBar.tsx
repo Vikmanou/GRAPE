@@ -22,7 +22,10 @@ export function TopBar({ file, onOpen }: Props) {
   useMenuGroup();
   return (
     <header className="top-bar" data-inset="top">
-      <span className="brand">GRAPE</span>
+      <span className="brand">
+        <img src="./icons/icon-64.png" alt="" width={22} height={22} />
+        GRAPE
+      </span>
       {file && (
         <span className="file-name" data-testid="file-name" title={file.name}>
           {file.name} <span className="muted">{formatBytes(file.size)}</span>
