@@ -2,7 +2,7 @@
 // A URL fragment names a member of a zip archive.
 //
 // Usage: npm run samples [-- --large] [-- --huge] [-- --check]
-//   --large   also fetch the 30-180 MB graphs
+//   --large   also fetch the 15-180 MB graphs
 //   --huge    also fetch the multi-GB stress graphs (implies --large)
 //   --check   parse every present sample natively and print its counts
 
