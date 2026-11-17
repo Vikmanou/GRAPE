@@ -1514,3 +1514,15 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   costs a few lines); `.gfa` only (the picker's list is what users already
   get); reusing `bench/screenshots` (those are benchmark views at 1200 by 800,
   not the sizes the install dialog wants).
+- **Installability is checked through Chromium's parsed manifest too**:
+  `Page.getInstallabilityErrors` returns no error even for a page with no
+  manifest in the Chromium that Playwright 1.64 runs (Chrome relaxed its install criteria), so
+  `tests/e2e/install.spec.ts` also reads `Page.getAppManifest` and expects the
+  manifest found, parsed without errors, standalone, with three icons and two
+  screenshots. CDP leaves `short_name` and `file_handlers` out of its parsed
+  copy; the spec checks those in the JSON, and the file handler is a hand check
+  in `docs/browser-checks.md`.
+- **The production-build specs run Vite with node**: `offline.spec.ts` called
+  `npx` without a shell, which fails on Windows (ENOENT), one of the seven
+  Windows failures noted in milestone 14. The shared `tests/e2e/serveBuild.ts`
+  runs Vite's own script with the running node instead, which needs no shell.

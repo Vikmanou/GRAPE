@@ -6,14 +6,15 @@ hand on a real machine.
 
 ## Automated
 
-| Browser          | What runs                                                       | Where                                 |
-| ---------------- | --------------------------------------------------------------- | ------------------------------------- |
-| Chromium, WebGL2 | every flow and the screenshot baselines                         | `npm run check`, CI                   |
-| Chromium, WebGPU | every flow, GPU kernels and layout                              | `npm run check:headed`, on a real GPU |
-| Firefox          | the packed share link                                           | `npm run check`                       |
-| Chromium         | the site opens and opens a file with no network after one visit | `tests/e2e/offline.spec.ts`           |
-| Chromium         | every control has a name, ids are unique, focus is outlined     | `tests/e2e/a11y.spec.ts`              |
-| Chromium         | text contrast 4.5:1 and control borders 3:1 in both themes      | `tests/unit/tokens.test.ts`           |
+| Browser          | What runs                                                           | Where                                 |
+| ---------------- | ------------------------------------------------------------------- | ------------------------------------- |
+| Chromium, WebGL2 | every flow and the screenshot baselines                             | `npm run check`, CI                   |
+| Chromium, WebGPU | every flow, GPU kernels and layout                                  | `npm run check:headed`, on a real GPU |
+| Firefox          | the packed share link                                               | `npm run check`                       |
+| Chromium         | the site opens and opens a file with no network after one visit     | `tests/e2e/offline.spec.ts`           |
+| Chromium         | every control has a name, ids are unique, focus is outlined         | `tests/e2e/a11y.spec.ts`              |
+| Chromium         | the build is installable; manifest images have their sizes, offline | `tests/e2e/install.spec.ts`           |
+| Chromium         | text contrast 4.5:1 and control borders 3:1 in both themes          | `tests/unit/tokens.test.ts`           |
 
 ## By hand
 
@@ -25,3 +26,15 @@ Open the live site, then do this in each browser. Tick it off when it works.
 - [ ] Offline: open the site, turn off the network, reload, open a file from the disk.
 - [ ] Screen reader (VoiceOver or NVDA): open a file, move through the four tabs, hear a selection's details.
 - [ ] 200% zoom and a 390 px wide window: nothing is cut off and every action is reachable.
+
+### Installed app (milestone 15)
+
+Install from the live site, then open the app from its icon. Note the browser
+version beside each line.
+
+- [ ] Chrome or Edge on Windows, macOS or Linux: Install from the address bar shows the larger dialog with the two screenshots; the app opens in its own window with the GRAPE icon and title bar colour.
+- [ ] Chrome on Android: Add to Home screen or Install; the icon is not cropped in a round or squircle mask.
+- [ ] Safari on macOS (File, Add to Dock) and on iOS or iPadOS (Share, Add to Home Screen): the icon shows on the cream backdrop, not on black.
+- [ ] Offline from a cold start: quit the app, turn off the network, open it from the icon, open an example.
+- [ ] Update: after a new version is deployed, the app shows it once every app window has been closed and opened again, as a browser tab does.
+- [ ] File handler (Chrome or Edge on the desktop): Open with, GRAPE on a `.gfa` file opens it in the app; the file is not uploaded (DevTools, Network shows no request).
