@@ -22,3 +22,6 @@ Thumbs.db
 /fuzz/corpus/
 /fuzz/artifacts/
 /fuzz/coverage/
+
+# Bandage and BandageNG for the comparison benchmarks, never committed
+/tools/

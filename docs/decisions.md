@@ -1376,3 +1376,48 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   rendering as the baseline); all four pass on this machine's real GPU, headed.
   The WebGL2 against WebGPU comparison keeps 1% and measures 0.000% on all four
   examples. No per-backend limit is needed.
+
+## 2026-11-16: Measure and compare (milestone 14)
+
+- **Machine**: every benchmark of this milestone runs on the AMD Ryzen 9 9950X
+  desktop with an NVIDIA GeForce RTX 5060 (Blackwell), 32 threads and 31 GB,
+  Windows 11 (10.0.26200), the machine of the 2026-11-13 layout numbers, so
+  the README, the spec and `bench/results.md` stay on it. WSL 2 Ubuntu
+  (kernel 6.6, 21 GB given to WSL) runs Bandage. Parts one to three run on it
+  together, unattended, on an otherwise idle machine.
+- **Toolchain on this machine**: a standalone Rust 1.92 in
+  `C:\Program Files\Rust stable MSVC 1.92\bin` comes before rustup on PATH,
+  so `rust-toolchain.toml` (1.99.1) was ignored and clippy failed. Every
+  command here runs with `~/.cargo/bin` first on PATH; the system is unchanged.
+- **Every benchmark**: `npm run bench:parse`, `npm run bench:layout` and
+  `npm run bench:interaction` once each, then all of parts two and three.
+  Chosen by the owner, so nothing is left to catch up.
+- **A missed target does not stop the run**: parts two and three still run, and
+  the miss is reported at the end with the per-level profile; nothing is cut or
+  retuned before the owner sets the target. Chosen by the owner.
+- **Every run is tried**: each tool runs five times on every graph, even after a
+  run hit the 30 min cap. Chosen by the owner for the most complete numbers;
+  this takes far longer than the 1 h 30 budget.
+- **Open to a laid-out picture**: for GRAPE, from choosing the file to the
+  layout reported done (settled); for Bandage and BandageNG, the wall time of
+  `image` at the screenshot size, which loads, lays out and draws. Chosen by the
+  owner, because Bandage only shows its finished layout.
+- **PNG export at 200k**: GRAPE's `exportPng(1)` after the layout settled;
+  BandageNG's `image` minus its `layout` (both medians); Bandage 0.9.0 has no
+  layout-only command (its commands are load, info, image, querypaths and
+  reduce), so its cell says so and the row compares the other two. Chosen by
+  the owner over dropping the row.
+- **Command lines checked**: `--help` of both tools, and the source:
+  Bandage's `reduce` calls `saveVisibleGraphToGfa`
+  ([command_line/reduce.cpp](https://github.com/rrwick/Bandage/blob/v0.9.0/command_line/reduce.cpp)),
+  BandageNG's calls `gfa::saveVisibleGraph`
+  ([command_line/reduce.cpp](https://github.com/asl/BandageNG/blob/v2026.11.1/command_line/reduce.cpp)),
+  both after `--scope aroundnodes --nodes <list> --distance 0`. BandageNG's
+  `layout` runs the same `GraphLayoutWorker` as its `image`
+  ([command_line/layout.cpp](https://github.com/asl/BandageNG/blob/v2026.11.1/command_line/layout.cpp)).
+  Both lay out with their defaults (Bandage `--iter 2`).
+- **BandageNG cannot open the SPAdes sample**: v2026.11.1 aborts on
+  `bacterial-spades.gfa` with "malformed path string for path
+  'NODE_1_length_34015_cov_41.9818', cannot reconstruct path through the
+  graph": SPAdes P lines step over scaffold gaps between segments with no
+  link. The file is left as it is; its BandageNG cells say it did not open.
