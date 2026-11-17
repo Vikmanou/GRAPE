@@ -1499,14 +1499,40 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   central 80% circle that a maskable crop keeps, so the maskable icon is the
   same art scaled down until its farthest opaque pixel lies inside that circle,
   on the backdrop colour. Scaled, not redrawn.
-- **File handler** (left to Claude, "do what's best"): yes, for the extensions
-  the file picker accepts except a bare `.gz` (`.gfa`, `.gfa.gz`, `.fastg`,
-  `.fastg.gz`, `.layout`), so a file opened with GRAPE from the operating system
-  goes where one opened from the picker does. A bare `.gz` would offer GRAPE for
-  every gzip file on the machine. Where the operating system keys on the last
-  extension only, the two-part ones may not register; that costs nothing.
-  Chromium only; elsewhere nothing changes. The file still never leaves the
-  browser: `launchQueue` hands the page a local file handle.
+- **File handler** (left to Claude, "do what's best"): yes, for `.gfa`,
+  `.gfa.gz` and `.fastg`, each under its own MIME type (`text/x-gfa`,
+  `application/x-gfa-gzip`, `text/x-fastg`). The file still never leaves the
+  browser: `launchQueue` hands the page a local file handle. Chromium only.
+- **Which names match was tested, not assumed** (owner, 2026-11-17): the built
+  app was installed in Edge through the DevTools `PWA` domain and
+  `PWA.launchFilesInApp` was asked for each name. Chromium compares
+  `FilePath::Extension()`, which reads a two-part extension when the last part
+  is `gz` (or another compression suffix) and the part before it has 1 to 4
+  characters
+  ([file_path.cc](https://source.chromium.org/chromium/chromium/src/+/main:base/files/file_path.cc)),
+  on every platform. So `a.gfa.gz`, `a.v2.gfa.gz` and `A.GFA.GZ` match `.gfa.gz`;
+  `a.fastg.gz` has the extension `.gz` and can never match a `.fastg.gz`
+  entry. A bare `.gz` was tested too: it adds `.fastg.gz`, but also `.fastq.gz`
+  reads and any `name.gz`, offering GRAPE for files it cannot open, and adds
+  nothing for `.gfa.gz`. So `.fastg.gz` opens from inside the app only.
+- **Own MIME types, for Linux**: on Linux Chromium writes the accept MIME types
+  into the app's `.desktop` file and registers each extension as a glob under
+  that type with `xdg-mime`
+  ([shell_integration_linux.cc](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/shell_integration_linux.cc)).
+  The first manifest used `application/octet-stream`, which would have listed
+  GRAPE for every unrecognised binary file on a Linux desktop. Windows keys on
+  extensions only. Shared MIME-info prefers the longest glob, so `*.gfa.gz`
+  wins over `*.gz` there.
+- **`.layout` is not handled**: opening a layout applies it to the graph already
+  open, so launching the app on one alone does nothing, and a `*.layout` glob
+  could retype other programs' files on Linux. It opens from the Open menu.
+- **Not tested here**: whether the desktop lists GRAPE under Open with. The
+  automated install wrote no association at all on Windows, not even for
+  `.gfa`, and the launched file opened no window (the first launch asks the
+  user to allow the file types). Windows writes `.gfa.gz` as written
+  (`HKCU\Software\Classes\.gfa.gz\OpenWithProgids`) and Explorer may key on
+  `.gz` only; Linux has no such limit. Both stay hand checks in
+  `docs/browser-checks.md`.
 - **Screenshots** (left to Claude): yes, one wide (1280 by 720) and one narrow
   (390 by 844), taken fresh of an example graph, so Chrome shows the larger
   install dialog.

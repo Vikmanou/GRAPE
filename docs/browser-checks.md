@@ -37,4 +37,4 @@ version beside each line.
 - [ ] Safari on macOS (File, Add to Dock) and on iOS or iPadOS (Share, Add to Home Screen): the icon shows on the cream backdrop, not on black.
 - [ ] Offline from a cold start: quit the app, turn off the network, open it from the icon, open an example.
 - [ ] Update: after a new version is deployed, the app shows it once every app window has been closed and opened again, as a browser tab does.
-- [ ] File handler (Chrome or Edge on the desktop): Open with, GRAPE on a `.gfa` file opens it in the app; the file is not uploaded (DevTools, Network shows no request).
+- [ ] File handler (Chrome or Edge on Windows, macOS and Linux): Open with, GRAPE on a `.gfa`, a `.gfa.gz` and a `.fastg` file opens each in the app after allowing the file types once; note whether `.gfa.gz` is listed at all. On Linux, GRAPE is not offered for an unrelated file such as a `.zip`. DevTools, Network shows no upload.

@@ -32,7 +32,9 @@
     {
       "action": "./",
       "accept": {
-        "application/octet-stream": [".gfa", ".gfa.gz", ".fastg", ".fastg.gz", ".layout"]
+        "text/x-gfa": [".gfa"],
+        "application/x-gfa-gzip": [".gfa.gz"],
+        "text/x-fastg": [".fastg"]
       }
     }
   ],
