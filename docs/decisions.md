@@ -1625,3 +1625,10 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   live site on an iPad with `?renderer=webgl2` and Safari draws it
   correctly, so this is recorded as a bug of WebKit's Windows port and GRAPE
   is not changed for it.
+
+- **The rest is left unchecked by the owner's choice**: the owner chose not
+  to run the remaining by-hand lines (Safari on iPadOS beyond the WebGL2
+  picture, the desktop install dialog, the Android icon mask, the Safari
+  home-screen icon, and Open with on Windows). They stay unticked in
+  `docs/browser-checks.md`, marked as not checked by decision, so a later
+  release can pick them up. Safari's share-link size limit stays unmeasured.
