@@ -1475,7 +1475,6 @@ component * p3` (primes from Teschner et al. 2003); `cell_key`, which tells
   carry the difference instead. BandageNG's PNG export at 200k is shown as
   within noise, because its `image` and `layout` times overlap from run to run.
 
-
 ## 2026-11-17: Installable app (milestone 15), the owner's answers
 
 - **Name**: `GPU-Rendered Assembly Path Explorer`; short name `GRAPE` (owner).
