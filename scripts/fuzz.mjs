@@ -29,7 +29,7 @@ for (const target of ['parse', 'pack']) {
   const corpus = join(fuzzDir, 'corpus', target);
   mkdirSync(corpus, { recursive: true });
   for (const name of readdirSync(join(root, 'data', 'fixtures'))) {
-    if (!name.endsWith('.gz') && name !== 'README.md' && name !== 'manifest.json')
+    if (!name.endsWith('.gz') && name !== 'manifest.json')
       copyFileSync(join(root, 'data', 'fixtures', name), join(corpus, name));
   }
   run('cargo', ['+nightly', 'fuzz', 'run', target, '--', `-max_total_time=${Math.round(minutes * 60)}`], {
