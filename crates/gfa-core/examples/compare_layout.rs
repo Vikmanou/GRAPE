@@ -1,6 +1,7 @@
 //! Measures a layout made elsewhere (the GPU's, read back from the browser)
 //! against the CPU reference on the same graph, seed and iteration budget.
-//! `cargo run -p gfa-core --release --example compare_layout -- <graph> <positions.f32> [--seed N] [--coarsest N] [--refine N] [--cpu-cache path.f32]`
+//! `cargo run -p gfa-core --release --example compare_layout -- <graph> <positions.f32> [--seed N] [--coarsest N] [--refine N] [--cpu-cache path.f32] [--gpu-only]`
+//! `--gpu-only` skips the CPU reference and prints only the measured layout, for graphs whose reference takes an hour.
 //! Positions files are `x, y` per point as little-endian f32. Prints one JSON line.
 
 use gfa_core::layout::{Layout, LayoutOptions, Quality, measure};
@@ -58,6 +59,15 @@ fn main() {
     let mut layout = Layout::new(graph.topology(), options).unwrap_or_else(|e| panic!("{e}"));
     let points = layout.points();
 
+    if std::env::args().any(|a| a == "--gpu-only") {
+        let gpu = read_f32(gpu_path);
+        assert_eq!(gpu.len(), points * 2, "{gpu_path} does not match the graph");
+        println!(
+            r#"{{"points":{points},"gpu":{}}}"#,
+            json(&measure(&layout, &gpu))
+        );
+        return;
+    }
     let cache = arg("--cpu-cache");
     let cached = cache
         .as_deref()
