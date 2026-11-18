@@ -4,8 +4,9 @@ use super::kmer::{HASH_MULTIPLIER, KmerIndex, MAX_K, MIN_K, bucket_of, each_kmer
 use crate::store::seq::Packed;
 use std::collections::VecDeque;
 
-/// Bytes of buckets and entries; larger graphs index minimizers only.
-pub const INDEX_BUDGET: u64 = 1 << 30;
+/// Bytes of buckets and entries; larger graphs index minimizers only. Half a
+/// gigabyte keeps a 200k graph's tab under its 1 GB target with the index built.
+pub const INDEX_BUDGET: u64 = 1 << 29;
 const BUCKET_LOAD: u64 = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
