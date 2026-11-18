@@ -1,5 +1,5 @@
 // Renders the app icons in web/public/icons from the owner's artwork in
-// web/assets-src/GRAPE_Icon.png. The art is only scaled, never redrawn. Run
+// assets/GRAPE_Icon.png. The art is only scaled, never redrawn. Run
 // once after the artwork changes; the output is committed.
 //
 // Usage: node scripts/app-icons.mjs
@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { root } from './lib.mjs';
 
-const SOURCE = join(root, 'web', 'assets-src', 'GRAPE_Icon.png');
+const SOURCE = join(root, 'assets', 'GRAPE_Icon.png');
 const out = join(root, 'web', 'public', 'icons');
 // The light --bg token, behind the icons that must be opaque (decisions.md, 2026-11-17).
 const BACKDROP = '#f6f2e9';
