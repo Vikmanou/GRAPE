@@ -1,0 +1,106 @@
+{
+  "linear.gfa": {
+    "purpose": "Three segments in a chain with dp, DP and KC depth tags: N50, GC and depth rules.",
+    "source": "handcrafted for GRAPE"
+  },
+  "linear.gfa.gz": {
+    "purpose": "linear.gfa gzipped, one member.",
+    "source": "handcrafted for GRAPE"
+  },
+  "bgzf.gfa.gz": {
+    "purpose": "A graph in BGZF blocks (bgzip): block-by-block reading.",
+    "source": "handcrafted for GRAPE"
+  },
+  "two_members.gfa.gz": {
+    "purpose": "Two concatenated gzip members: multi-member reading.",
+    "source": "handcrafted for GRAPE"
+  },
+  "circle.gfa": {
+    "purpose": "Three segments joined into a circle: no dead ends, circular component.",
+    "source": "handcrafted for GRAPE"
+  },
+  "circle.fastg": {
+    "purpose": "A FASTG circle, as SPAdes writes it.",
+    "source": "handcrafted for GRAPE"
+  },
+  "bubble.gfa": {
+    "purpose": "A bubble: one segment forks into two and rejoins.",
+    "source": "handcrafted for GRAPE"
+  },
+  "bubble.fastg": {
+    "purpose": "The bubble in FASTG, with reverse-complement records.",
+    "source": "handcrafted for GRAPE"
+  },
+  "tip.gfa": {
+    "purpose": "A chain with a dead-end tip.",
+    "source": "handcrafted for GRAPE"
+  },
+  "tangle.gfa": {
+    "purpose": "A tangle with three entries and three exits.",
+    "source": "handcrafted for GRAPE"
+  },
+  "two_components.gfa": {
+    "purpose": "Two components of different length: ranking by total length.",
+    "source": "handcrafted for GRAPE"
+  },
+  "self_loop.gfa": {
+    "purpose": "One segment linked to itself.",
+    "source": "handcrafted for GRAPE"
+  },
+  "palindrome.gfa": {
+    "purpose": "A palindromic link (a + a -) joining one end to itself.",
+    "source": "handcrafted for GRAPE"
+  },
+  "mirror_links.gfa": {
+    "purpose": "Links written twice, once as each mirror: deduplication.",
+    "source": "handcrafted for GRAPE"
+  },
+  "forward_refs.gfa": {
+    "purpose": "Links and paths that name segments defined later in the file, and one that is never defined.",
+    "source": "handcrafted for GRAPE"
+  },
+  "star_ln.gfa": {
+    "purpose": "Segments with * sequence and LN length tags, and one with neither.",
+    "source": "handcrafted for GRAPE"
+  },
+  "paths.gfa": {
+    "purpose": "GFA 1.1: P lines, W walks, C and J records, comments.",
+    "source": "handcrafted for GRAPE"
+  },
+  "colour_tags.gfa": {
+    "purpose": "CL, LB, cl, C2 and L2 tags, valid and invalid.",
+    "source": "handcrafted for GRAPE"
+  },
+  "malformed.gfa": {
+    "purpose": "Bad tags, short lines and bad numbers: each becomes a parse warning.",
+    "source": "handcrafted for GRAPE"
+  },
+  "malformed.fastg": {
+    "purpose": "Broken FASTG headers: each becomes a parse warning.",
+    "source": "handcrafted for GRAPE"
+  },
+  "reverse_only.fastg": {
+    "purpose": "A FASTG segment known only from its reverse-complement record.",
+    "source": "handcrafted for GRAPE"
+  },
+  "gfa2.gfa": {
+    "purpose": "GFA 2.0, which GRAPE rejects with a message.",
+    "source": "handcrafted for GRAPE"
+  },
+  "abyss.gfa": {
+    "purpose": "Two segments with * sequence and a link, for adding sequences from a FASTA file.",
+    "source": "handcrafted for GRAPE"
+  },
+  "abyss.fa": {
+    "purpose": "The two sequences that go with abyss.gfa.",
+    "source": "handcrafted for GRAPE"
+  },
+  "search.gfa": {
+    "purpose": "Random-base segments with a 25 base overlap, a SNP bubble, a link of unknown overlap and a two-segment chain: sequence search and joining across links.",
+    "source": "handcrafted for GRAPE, random bases"
+  },
+  "csgA.fasta": {
+    "purpose": "The csgA gene of Myxococcus xanthus DK 1622, 690 bases: the known-gene search check against myxococcus-10-assemblies.gfa.gz (a data/samples file).",
+    "source": "NCBI nucleotide NC_008095.1:1520199-1520888, public domain (INSDC)"
+  }
+}
