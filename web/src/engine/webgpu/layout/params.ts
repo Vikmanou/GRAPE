@@ -8,10 +8,12 @@ export interface LevelParams {
   coarseCell: number;
   repulsion: number;
   iterations: number;
+  /** Slots of the far table, less one. */
+  tailMask: number;
 }
 
 export function encodeParams(p: LevelParams): ArrayBuffer {
-  const data = new ArrayBuffer(32);
+  const data = new ArrayBuffer(36);
   const u = new Uint32Array(data);
   const f = new Float32Array(data);
   u[0] = p.count;
@@ -22,5 +24,6 @@ export function encodeParams(p: LevelParams): ArrayBuffer {
   f[5] = p.coarseCell;
   f[6] = p.repulsion;
   u[7] = p.iterations;
+  u[8] = p.tailMask;
   return data;
 }

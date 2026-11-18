@@ -9,6 +9,12 @@ const CELL_PER_REST = 2;
 export const COARSE_PER_CELL = 3;
 /** Coarse cells read on each side of a node's own; `FAR_REACH` in forces.wgsl. */
 export const FAR_REACH = 2;
+/** Cells per next-tier cell on a side, from coarse to tier 1 and on; `TAIL_PER_COARSE` in layout-common.wgsl. */
+export const TAIL_PER_COARSE = 3;
+/** Far tiers beyond the coarse cells; `TAIL_TIERS` in layout-common.wgsl. */
+export const TAIL_TIERS = 3;
+/** Far cells read on each side of a node's own, in each tier; `TAIL_REACH` in forces.wgsl. */
+export const TAIL_REACH = 2;
 /**
  * Levels this small repel every pair in one pass: cheaper than the seven
  * passes of the grid, whose cost on small levels is mostly fixed.
@@ -65,6 +71,7 @@ export class GpuLevel {
         coarseCell: this.cell * COARSE_PER_CELL,
         repulsion: input.repulsion,
         iterations: input.iterations,
+        tailMask: sizes.tail - 1,
       }),
     );
     this.nodes = b.upload('nodes', input.nodes);
@@ -137,6 +144,7 @@ export class GpuLevel {
             7: force,
             9: heat,
             12: grid.packed,
+            13: grid.tail,
           }),
     );
     const moveGroups = positions.map((p, k) =>

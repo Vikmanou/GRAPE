@@ -16,6 +16,8 @@
 // iteration within the level, then total displacement
 @group(0) @binding(8) var<storage, read_write> state: array<u32>;
 @group(0) @binding(9) var<storage, read_write> energy: array<u32>;
+// The same sums per far cell, which `TAIL_PER_COARSE` coarse cells make up.
+@group(0) @binding(13) var<storage, read_write> tail: array<atomic<i32>>;
 
 // Starts an iteration: empties both hashes, clears the energy and advances
 // the iteration, which a new level sets to u32::MAX so its first is 0. A
@@ -28,12 +30,16 @@ fn begin(@builtin(global_invocation_id) id: vec3u, @builtin(num_workgroups) grou
   }
   let buckets = params.fine_mask + 2u;
   let words = (params.coarse_mask + 1u) * 4u;
-  for (var i = id.x; i < max(buckets, words); i += groups.x * WORKGROUP) {
+  let tail_words = (params.tail_mask + 1u) * 4u;
+  for (var i = id.x; i < max(max(buckets, words), tail_words); i += groups.x * WORKGROUP) {
     if (i < buckets) {
       atomicStore(&counts[i], 0u);
     }
     if (i < words) {
       atomicStore(&coarse[i], 0);
+    }
+    if (i < tail_words) {
+      atomicStore(&tail[i], 0);
     }
   }
 }
@@ -67,6 +73,27 @@ fn bin(@builtin(global_invocation_id) id: vec3u) {
   atomicAdd(&coarse[slot * 4u + 1u], 1);
   atomicAdd(&coarse[slot * 4u + 2u], offset.x);
   atomicAdd(&coarse[slot * 4u + 3u], offset.y);
+
+  for (var tier = 1u; tier <= TAIL_TIERS; tier++) {
+    let far = tail_of(cell, tier);
+    let group = tail_group(component, tier);
+    let far_key = bitcast<i32>(cell_key(group, far));
+    var far_slot = cell_hash(group, far) & params.tail_mask;
+    for (var probes = 0u; probes < min(params.tail_mask + 1u, TAIL_PROBES); ) {
+      let r = atomicCompareExchangeWeak(&tail[far_slot * 4u], 0, far_key);
+      if (r.exchanged || r.old_value == far_key) {
+        break;
+      }
+      if (r.old_value != 0) {
+        far_slot = (far_slot + 1u) & params.tail_mask;
+        probes++;
+      }
+    }
+    let far_offset = tail_offset(p, far, tier);
+    atomicAdd(&tail[far_slot * 4u + 1u], 1);
+    atomicAdd(&tail[far_slot * 4u + 2u], far_offset.x);
+    atomicAdd(&tail[far_slot * 4u + 3u], far_offset.y);
+  }
 }
 
 // `counts` is bound to a copy of `starts` here: each bucket's cursor.

@@ -2,10 +2,10 @@ import { bind, type Buffers, groups, MAX_GROUPS, nextPowerOfTwo, type Passes } f
 import type { Kernels } from './kernels';
 import { Scan } from './scan';
 
-/** Fine buckets and coarse slots for `count` nodes; powers of two, so masks work. */
-export function gridSizes(count: number): { fine: number; coarse: number } {
+/** Fine buckets, coarse slots and far slots (the far tiers share them) for `count` nodes; powers of two, so masks work. */
+export function gridSizes(count: number): { fine: number; coarse: number; tail: number } {
   const size = nextPowerOfTwo(Math.max(2 * count, 2));
-  return { fine: size, coarse: size };
+  return { fine: size, coarse: size, tail: size };
 }
 
 /** Buffers the iteration's first kernel resets. */
@@ -27,6 +27,8 @@ export class Grid {
   /** Bucket counts, then their prefix sum: bucket `b` is `starts[b]..starts[b + 1]`. */
   readonly starts: GPUBuffer;
   readonly coarse: GPUBuffer;
+  /** The same per far cell: each tier blocks the one below. */
+  readonly tail: GPUBuffer;
   /** `x bits, y bits, component, node` per node, in bucket order. */
   readonly packed: GPUBuffer;
   private readonly scan: Scan;
@@ -49,19 +51,21 @@ export class Grid {
     const cursor = buffers.storage('grid cursor', (this.fine + 1) * 4);
     this.sorted = buffers.storage('grid sorted', count * 4);
     this.coarse = buffers.storage('grid coarse', sizes.coarse * 16);
+    this.tail = buffers.storage('grid tail', sizes.tail * 16);
     this.packed = buffers.storage('grid packed', count * 16);
     this.scan = new Scan(kernels, buffers, this.starts, this.fine + 1, cursor);
-    this.beginGroups = Math.min(MAX_GROUPS, groups(Math.max(this.fine + 1, sizes.coarse * 4)));
+    this.beginGroups = Math.min(MAX_GROUPS, groups(Math.max(this.fine + 1, sizes.coarse * 4, sizes.tail * 4)));
     const device = buffers.device;
     this.groups = positions.map((p) => ({
       begin: bind(device, kernels.begin, {
         0: params,
         3: this.starts,
         4: this.coarse,
+        13: this.tail,
         8: iteration.state,
         9: iteration.energy,
       }),
-      bin: bind(device, kernels.bin, { 0: params, 1: p, 2: nodes, 3: this.starts, 4: this.coarse }),
+      bin: bind(device, kernels.bin, { 0: params, 1: p, 2: nodes, 3: this.starts, 4: this.coarse, 13: this.tail }),
       scatter: bind(device, kernels.scatter, { 0: params, 1: p, 2: nodes, 3: cursor, 5: this.sorted }),
       sort: bind(device, kernels.sortBuckets, {
         0: params,

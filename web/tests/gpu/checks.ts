@@ -72,6 +72,7 @@ const binning: Check = async (device, kernels) => {
         coarseCell,
         repulsion: 0,
         iterations: 0,
+        tailMask: sizes.tail - 1,
       }),
     );
     const grid = new Grid(

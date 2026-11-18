@@ -23,8 +23,11 @@
 @group(0) @binding(11) var<storage, read_write> energy: atomic<u32>;
 // x bits, y bits, component, node per node, in bucket order
 @group(0) @binding(12) var<storage, read> packed: array<vec4u>;
+@group(0) @binding(13) var<storage, read> tail: array<i32>;
 
 const FAR_REACH = 2;
+// Far cells read on each side of a node's own; `TAIL_REACH` in level.ts.
+const TAIL_REACH = 2;
 const COLD = 0.4;
 const MIN_APART = 1e-2;
 
@@ -50,6 +53,23 @@ fn coarse_slot(component: u32, cell: vec2i) -> i32 {
       return -1;
     }
     slot = (slot + 1u) & params.coarse_mask;
+  }
+  return -1;
+}
+
+fn tail_slot(component: u32, cell: vec2i, tier: u32) -> i32 {
+  let group = tail_group(component, tier);
+  let key = bitcast<i32>(cell_key(group, cell));
+  var slot = cell_hash(group, cell) & params.tail_mask;
+  for (var probes = 0u; probes < min(params.tail_mask + 1u, TAIL_PROBES); probes++) {
+    let found = tail[slot * 4u];
+    if (found == key) {
+      return i32(slot);
+    }
+    if (found == 0) {
+      return -1;
+    }
+    slot = (slot + 1u) & params.tail_mask;
   }
   return -1;
 }
@@ -98,6 +118,12 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
     }
   }
 
+  // What each nearer ring reads holds, by cell of the next tier around the
+  // node's own, relative to the node: that tier's sums take it out. A ring
+  // reaches at most one cell of the next tier away. Slots 9 * tier on.
+  let own_tail = next_tier(own);
+  var covered_count: array<i32, 36>;
+  var covered_sum: array<vec2f, 36>;
   for (var dy = -FAR_REACH; dy <= FAR_REACH; dy++) {
     for (var dx = -FAR_REACH; dx <= FAR_REACH; dx++) {
       let cell = own + vec2i(dx, dy);
@@ -108,6 +134,10 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
       let s = u32(slot) * 4u;
       var count = coarse[s + 1u];
       var sum = vec2i(coarse[s + 2u], coarse[s + 3u]);
+      let t = next_tier(cell) - own_tail + vec2i(1);
+      let covers = 9 + t.y * 3 + t.x;
+      covered_count[covers] += count;
+      covered_sum[covers] += (vec2f(cell) * f32(count) + vec2f(sum) / FIXED) * params.coarse_cell - f32(count) * p;
       if (abs(dx) <= 1 && abs(dy) <= 1) {
         let at = (dy + 1) * 3 + dx + 1;
         count -= near_count[at];
@@ -119,6 +149,40 @@ fn repel(@builtin(global_invocation_id) id: vec3u) {
       let centroid = (vec2f(cell) + vec2f(sum) / (f32(count) * FIXED)) * params.coarse_cell;
       let d = p - centroid;
       f += f32(count) * d / max(dot(d, d), MIN_APART * MIN_APART);
+    }
+  }
+
+  for (var tier = 1u; tier <= TAIL_TIERS; tier++) {
+    let own_cell = tail_of(own, tier);
+    let size = tail_size(tier);
+    let above = next_tier(own_cell);
+    for (var dy = -TAIL_REACH; dy <= TAIL_REACH; dy++) {
+      for (var dx = -TAIL_REACH; dx <= TAIL_REACH; dx++) {
+        let cell = own_cell + vec2i(dx, dy);
+        let slot = tail_slot(component, cell, tier);
+        if (slot < 0) {
+          continue;
+        }
+        let s = u32(slot) * 4u;
+        var count = tail[s + 1u];
+        var offset = (vec2f(cell) * f32(count) + vec2f(f32(tail[s + 2u]), f32(tail[s + 3u])) / FIXED) * size - f32(count) * p;
+        if (tier < TAIL_TIERS) {
+          let t = next_tier(cell) - above + vec2i(1);
+          let covers = 9 * i32(tier + 1u) + t.y * 3 + t.x;
+          covered_count[covers] += count;
+          covered_sum[covers] += offset;
+        }
+        if (abs(dx) <= 1 && abs(dy) <= 1) {
+          let at = 9 * i32(tier) + (dy + 1) * 3 + dx + 1;
+          count -= covered_count[at];
+          offset -= covered_sum[at];
+        }
+        if (count <= 0) {
+          continue;
+        }
+        let d = -offset / f32(count);
+        f += f32(count) * d / max(dot(d, d), MIN_APART * MIN_APART);
+      }
     }
   }
   force[i] = f * params.repulsion;

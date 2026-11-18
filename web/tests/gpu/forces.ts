@@ -7,6 +7,9 @@ import {
   ALL_PAIRS_NODES,
   COARSE_PER_CELL,
   FAR_REACH,
+  TAIL_PER_COARSE,
+  TAIL_REACH,
+  TAIL_TIERS,
   GpuLevel,
   type LevelInput,
 } from '../../src/engine/webgpu/layout/level';
@@ -109,10 +112,29 @@ function cpuIteration(g: Graph, cell: number, pairs: boolean): Float64Array {
       Math.trunc(((y - cy * coarseCell) / coarseCell) * FIXED),
     ];
   };
+  // Tier 1 cells hold TAIL_PER_COARSE coarse cells on a side, each next tier the same many of the one below.
+  const span = (tier: number) => TAIL_PER_COARSE ** tier;
+  const tailSize = (tier: number) => coarseCell * span(tier);
+  const tailOf = ([cx, cy]: [number, number], tier: number): [number, number] => [
+    Math.floor(cx / span(tier)),
+    Math.floor(cy / span(tier)),
+  ];
+  const tailOffset = (i: number, tier: number): [number, number] => {
+    const [x, y] = at(i);
+    const [tx, ty] = tailOf(coarseOf(i), tier);
+    const size = tailSize(tier);
+    return [Math.trunc(((x - tx * size) / size) * FIXED), Math.trunc(((y - ty * size) / size) * FIXED)];
+  };
   const members = new Map<string, number[]>();
+  const tiers = Array.from({ length: TAIL_TIERS }, (_, k) => k + 1);
+  const tails = tiers.map(() => new Map<string, number[]>());
   for (let i = 0; i < n; i++) {
     const key = `${g.component[i]},${coarseOf(i).join()}`;
     members.set(key, [...(members.get(key) ?? []), i]);
+    tails.forEach((map, k) => {
+      const tailKey = `${g.component[i]},${tailOf(coarseOf(i), k + 1).join()}`;
+      map.set(tailKey, [...(map.get(tailKey) ?? []), i]);
+    });
   }
   const out = new Float64Array(n * 2);
   for (let i = 0; i < n; i++) {
@@ -149,6 +171,45 @@ function cpuIteration(g: Graph, cell: number, pairs: boolean): Float64Array {
         const d2 = Math.max(dx * dx + dy * dy, 1e-4);
         fx += (far.length * dx) / d2;
         fy += (far.length * dy) / d2;
+      }
+    }
+    for (const tier of tiers) {
+      const [tx, ty] = tailOf([ox, oy], tier);
+      const size = tailSize(tier);
+      for (let cy = ty - TAIL_REACH; cy <= ty + TAIL_REACH && !pairs; cy++) {
+        for (let cx = tx - TAIL_REACH; cx <= tx + TAIL_REACH; cx++) {
+          const all = tails[tier - 1]?.get(`${comp},${cx},${cy}`) ?? [];
+          if (all.length === 0) continue;
+          const [sx, sy] = all.reduce(
+            ([ax, ay], j) => [ax + tailOffset(j, tier)[0], ay + tailOffset(j, tier)[1]],
+            [0, 0],
+          );
+          let count = all.length;
+          let offsetX = (cx * count + sx / FIXED) * size - count * x;
+          let offsetY = (cy * count + sy / FIXED) * size - count * y;
+          // What the ring below covers: coarse cells for tier 1, the tier below's cells above.
+          const inner = tier === 1 ? FAR_REACH : TAIL_REACH;
+          const [ix, iy] = tailOf([ox, oy], tier - 1);
+          const innerSize = tier === 1 ? coarseCell : tailSize(tier - 1);
+          for (let by = iy - inner; by <= iy + inner; by++) {
+            for (let bx = ix - inner; bx <= ix + inner; bx++) {
+              if (Math.floor(bx / TAIL_PER_COARSE) !== cx || Math.floor(by / TAIL_PER_COARSE) !== cy) continue;
+              const key = `${comp},${bx},${by}`;
+              const covered = (tier === 1 ? members : tails[tier - 2])?.get(key) ?? [];
+              if (covered.length === 0) continue;
+              const frame = (j: number) => (tier === 1 ? offset(j) : tailOffset(j, tier - 1));
+              const [cxs, cys] = covered.reduce(([ax, ay], j) => [ax + frame(j)[0], ay + frame(j)[1]], [0, 0]);
+              count -= covered.length;
+              offsetX -= (bx * covered.length + cxs / FIXED) * innerSize - covered.length * x;
+              offsetY -= (by * covered.length + cys / FIXED) * innerSize - covered.length * y;
+            }
+          }
+          if (count <= 0) continue;
+          const [dx, dy] = [-offsetX / count, -offsetY / count];
+          const d2 = Math.max(dx * dx + dy * dy, 1e-4);
+          fx += (count * dx) / d2;
+          fy += (count * dy) / d2;
+        }
       }
     }
     fx *= g.input.repulsion;
