@@ -1,4 +1,4 @@
-// Downloads the real assembly graphs in samples/manifest.json into samples/.
+// Downloads the real assembly graphs in data/samples/manifest.json into data/samples/.
 // A URL fragment names a member of a zip archive.
 //
 // Usage: npm run samples [-- --large] [-- --huge] [-- --check]
@@ -22,7 +22,7 @@ import { pipeline } from 'node:stream/promises';
 import { createGunzip, inflateRawSync } from 'node:zlib';
 import { root, run } from './lib.mjs';
 
-const samplesDir = join(root, 'samples');
+const samplesDir = join(root, 'data', 'samples');
 const args = new Set(process.argv.slice(2));
 const huge = args.has('--huge');
 const tiers = ['small', ...(huge || args.has('--large') ? ['large'] : []), ...(huge ? ['huge'] : [])];

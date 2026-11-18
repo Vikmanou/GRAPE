@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { openSettled, repo, showDetail, showTab } from './helpers';
 
 test('labels show every segment of a small graph and hide again', async ({ page }) => {
-  await openSettled(page, repo('testdata/bubble.gfa'));
+  await openSettled(page, repo('data/fixtures/bubble.gfa'));
   await showTab(page, 'display');
   await page.keyboard.press('l');
   await expect(page.getByTestId('labels-show')).toBeChecked();
@@ -21,7 +21,7 @@ test('labels show every segment of a small graph and hide again', async ({ page 
 });
 
 test('thin ribbons label only segments long enough to hold their label, and tell when none fit', async ({ page }) => {
-  await openSettled(page, repo('testdata/bubble.gfa'));
+  await openSettled(page, repo('data/fixtures/bubble.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('labels-show').check();
   await expect(page.getByTestId('labels-count')).toHaveText('4 shown');

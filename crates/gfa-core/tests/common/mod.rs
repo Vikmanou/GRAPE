@@ -4,7 +4,7 @@ use gfa_core::{FatalError, Graph, ParseOptions, Parser, Stats, parse};
 use std::fmt::Write;
 
 pub fn testdata(name: &str) -> Vec<u8> {
-    let path = format!("{}/../../testdata/{name}", env!("CARGO_MANIFEST_DIR"));
+    let path = format!("{}/../../data/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
     std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 

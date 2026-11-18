@@ -9,7 +9,7 @@ async function background(page: Page): Promise<number[]> {
 
 test('neighbourhood, depth and size filters hide segments and clear at once', async ({ page }) => {
   // 1 - 2 - 3 with depths 10, 20 and 10.
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('dim-unselected').uncheck();
   await page.evaluate(() => {

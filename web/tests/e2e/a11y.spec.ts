@@ -37,7 +37,7 @@ async function problems(page: Page): Promise<string[]> {
 }
 
 test('every control has a name in each tab, with a selection and in the help overlay', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await page.evaluate(() => {
     document.body.insertAdjacentHTML('beforeend', '<button data-probe></button>');
   });
@@ -64,7 +64,7 @@ test('every control has a name in each tab, with a selection and in the help ove
 });
 
 test('the focused control is outlined while tabbing through the shell', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   const unseen: string[] = [];
   for (let i = 0; i < 25; i++) {
     await page.keyboard.press('Tab');
@@ -82,7 +82,7 @@ test('the focused control is outlined while tabbing through the shell', async ({
 });
 
 test('a selection is announced through a live region that is there before it', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   const heard = page.getByTestId('selection-heard');
   await expect(heard).toHaveAttribute('aria-live', 'polite');
   await expect(heard).toHaveText('');

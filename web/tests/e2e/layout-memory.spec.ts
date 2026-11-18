@@ -14,7 +14,7 @@ const gpuBytes = (page: Page) =>
   page.evaluate(async () => (await (window as unknown as { grapeTest: Hooks }).grapeTest.memory()).gpu);
 
 test('a refinement leaves the GPU holding what the settled layout held', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const settled = await gpuBytes(page);
   expect(settled).toBeGreaterThan(0);
 

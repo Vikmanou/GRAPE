@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { failOnPageError, gotoApp, repo, segmentsOnScreen, showTab, skipUnlessBackend } from './helpers';
 
-const PANGENOME = repo('samples/brca2-cactus.gfa');
+const PANGENOME = repo('data/samples/brca2-cactus.gfa');
 
 async function open(page: Page): Promise<void> {
   failOnPageError(page);

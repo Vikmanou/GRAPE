@@ -18,9 +18,9 @@ const arg = (name) => {
 };
 const only = arg('--graphs')?.split(',') ?? [];
 const graphs = [
-  join(root, 'samples', 'bacterial-spades.gfa'),
-  join(root, 'samples', 'mitochondrion-acacia-spades.gfa'),
-  join(root, 'samples', 'lpa-13-haplotypes.gfa'),
+  join(root, 'data', 'samples', 'bacterial-spades.gfa'),
+  join(root, 'data', 'samples', 'mitochondrion-acacia-spades.gfa'),
+  join(root, 'data', 'samples', 'lpa-13-haplotypes.gfa'),
   syntheticGraph(200_000),
 ].filter((path) => only.length === 0 || only.includes(basename(path)));
 const pictures = join(root, 'docs', 'benchmarks', 'screenshots', 'bandage');

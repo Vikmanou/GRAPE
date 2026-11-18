@@ -6,7 +6,7 @@ import { openSettled, repo } from './helpers';
 test.use({ viewport: { width: 390, height: 844 } });
 
 test('the sidebar sheet leaves the graph at least half the height', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await page.setViewportSize({ width: 390, height: 844 });
   const sheet = await page.getByTestId('sidebar').boundingBox();
   if (!sheet) throw new Error('no sidebar');

@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { openSettled, repo, segmentsOnScreen } from './helpers';
 
 test('double mode redraws both strands and keeps picking', async ({ page }) => {
-  await openSettled(page, repo('testdata/bubble.gfa'));
+  await openSettled(page, repo('data/fixtures/bubble.gfa'));
   const canvas = page.getByTestId('engine-canvas');
   const single = await canvas.screenshot();
   await page.keyboard.press('d');

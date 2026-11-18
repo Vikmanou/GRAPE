@@ -10,7 +10,7 @@ async function open(page: Page, width: number, height: number): Promise<void> {
   await gotoApp(page);
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
   await skipUnlessBackend(page);
-  await page.getByTestId('open-input').setInputFiles(repo('testdata/tangle.gfa'));
+  await page.getByTestId('open-input').setInputFiles(repo('data/fixtures/tangle.gfa'));
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
 }
 

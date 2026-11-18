@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn depth_rounds_from_the_double_the_file_gave() {
-        // Segment 30 of samples/mitochondrion-acacia-spades.gfa: as an f32 the
+        // Segment 30 of data/samples/mitochondrion-acacia-spades.gfa: as an f32 the
         // depth is 0.81582451, which rounds to 0.815825; Bandage writes 0.815824.
         let gfa = "S\t30\tACGT\tdp:f:0.8158244860810399\n";
         assert_eq!(

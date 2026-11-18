@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { appState, openSettled, repo, segmentsOnScreen } from './helpers';
 
 test('zoom and fit buttons change the view', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await page.getByTestId('fit').click();
   await page.waitForTimeout(600);
   const before = (await appState(page)).zoom ?? 0;
@@ -15,7 +15,7 @@ test('zoom and fit buttons change the view', async ({ page }) => {
 });
 
 test('the pointer over a segment shows its name, length and depth', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   const at = (await segmentsOnScreen(page, 3)).get(1);
   if (!at) throw new Error('segment 2 is not on screen');
   await page.mouse.move(at.x, at.y);

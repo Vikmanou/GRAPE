@@ -69,7 +69,7 @@ function pathNames(text: string, k: number): string[] {
 }
 
 test('paths and walks list with their lengths and highlight in their own colour', async ({ page }) => {
-  await openSettled(page, repo('testdata/paths.gfa'));
+  await openSettled(page, repo('data/fixtures/paths.gfa'));
   await showTab(page, 'paths');
   await expect(page.getByTestId('paths').locator('tbody tr')).toHaveCount(3);
   await expect(page.getByTestId('path-0')).toContainText('p1');
@@ -93,7 +93,7 @@ test('paths and walks list with their lengths and highlight in their own colour'
 });
 
 test('a segment on several highlighted paths shows a stripe for each', async ({ page }) => {
-  await openSettled(page, repo('testdata/paths.gfa'));
+  await openSettled(page, repo('data/fixtures/paths.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('dim-unselected').uncheck();
   const segments = await segmentsOnScreen(page, 3);
@@ -109,7 +109,7 @@ test('a segment on several highlighted paths shows a stripe for each', async ({ 
 });
 
 test('stepping selects each step in turn', async ({ page }) => {
-  await openSettled(page, repo('testdata/paths.gfa'));
+  await openSettled(page, repo('data/fixtures/paths.gfa'));
   await showTab(page, 'paths');
   await page.getByTestId('path-step-0').click();
   await expect(page.getByTestId('step-position')).toHaveText('Step 1 of 3 (+)');
@@ -122,14 +122,14 @@ test('stepping selects each step in turn', async ({ page }) => {
 
 const REAL = [
   { name: 'SPAdes', file: 'web/public/examples/acacia-mitochondrion-spades.gfa.gz', path: 4 },
-  { name: 'minigraph', file: 'samples/human-100-genes-walks.gfa.gz', path: 7 },
+  { name: 'minigraph', file: 'data/samples/human-100-genes-walks.gfa.gz', path: 7 },
 ];
 
 for (const { name, file, path } of REAL) {
   test(`highlighting colours exactly a path's segments on a ${name} graph`, async ({ page }) => {
     test.skip(!existsSync(repo(file)), `needs ${file} (npm run samples)`);
     // The colour table is the store's, whichever backend draws it; software WebGL2 takes minutes on this graph.
-    test.skip(file.startsWith('samples/') && backend() === 'webgl2', 'checked on the WebGPU project');
+    test.skip(file.startsWith('data/samples/') && backend() === 'webgl2', 'checked on the WebGPU project');
     test.setTimeout(180_000);
     await openLoaded(page, repo(file));
     const expected = pathNames(gunzipSync(readFileSync(repo(file))).toString('utf8'), path);

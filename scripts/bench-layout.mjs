@@ -23,10 +23,10 @@ const shots = join(root, 'docs', 'benchmarks', 'screenshots');
 // assembly, a tangled pangenome region, a 20k-segment hifiasm graph and the
 // spec's 200k-segment and 1M-segment performance targets.
 const STANDARD = [
-  'samples/bacterial-spades.gfa',
-  'samples/mitochondrion-acacia-spades.gfa',
-  'samples/lpa-13-haplotypes.gfa',
-  'samples/potato-hifiasm-unitigs-noseq.gfa',
+  'data/samples/bacterial-spades.gfa',
+  'data/samples/mitochondrion-acacia-spades.gfa',
+  'data/samples/lpa-13-haplotypes.gfa',
+  'data/samples/potato-hifiasm-unitigs-noseq.gfa',
 ];
 const SYNTHETIC = [200_000, 1_000_000];
 /** The CPU reference on the 200k graph before budgets scaled with level size (milestone 3). */

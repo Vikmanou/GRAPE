@@ -16,7 +16,7 @@ import {
   storeAction,
 } from './helpers';
 
-const GRAPH = repo('testdata/search.gfa');
+const GRAPH = repo('data/fixtures/search.gfa');
 const sequences = new Map(
   readFileSync(GRAPH, 'utf8')
     .split('\n')

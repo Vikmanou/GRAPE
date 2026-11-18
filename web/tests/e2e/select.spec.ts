@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { appState, openSettled, repo, segmentsOnScreen, showMoreActions } from './helpers';
 
 test('click selects, shift-click adds and removes, a click on nothing clears', async ({ page }) => {
-  await openSettled(page, repo('testdata/two_components.gfa'));
+  await openSettled(page, repo('data/fixtures/two_components.gfa'));
   // Left of where the info panel opens on the first click.
   const segments = [...(await segmentsOnScreen(page, 20)).entries()].filter(([, at]) => at.x < 800);
   const [[a, at] = [], [b, bt] = []] = segments;
@@ -27,7 +27,7 @@ test('click selects, shift-click adds and removes, a click on nothing clears', a
 });
 
 test('hovering a segment marks it', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const [[segment, at] = []] = [...(await segmentsOnScreen(page, 1)).entries()];
   if (segment === undefined || !at) throw new Error('no segment on screen');
   await page.mouse.move(at.x, at.y);
@@ -36,7 +36,7 @@ test('hovering a segment marks it', async ({ page }) => {
 });
 
 test('components select and frame, the selection grows to its components and inverts', async ({ page }) => {
-  await openSettled(page, repo('testdata/two_components.gfa'));
+  await openSettled(page, repo('data/fixtures/two_components.gfa'));
   const segments = Number((await page.getByTestId('stat-segments').textContent())?.replace(/\D/g, ''));
   const second = Number(
     await page.getByTestId('components').locator('tbody tr').nth(1).locator('td').nth(1).textContent(),

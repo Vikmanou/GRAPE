@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 import { openSettled, repo } from './helpers';
 
 test('a linear chain merges into one segment and saves as GFA', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await page.getByTestId('merge-chains').check();
   await expect(page.getByTestId('merged-chains')).toHaveText('1 chain merged.');
   await expect(page.getByTestId('status-segments')).toHaveText('1 segments');

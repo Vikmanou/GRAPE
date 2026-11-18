@@ -118,7 +118,7 @@ fn sequences_of(g: &Graph, file: &[u8]) -> Vec<Vec<u8>> {
 
 #[test]
 fn matches_brute_force_on_every_small_graph() {
-    let dir = format!("{}/../../testdata", env!("CARGO_MANIFEST_DIR"));
+    let dir = format!("{}/../../data/fixtures", env!("CARGO_MANIFEST_DIR"));
     let mut graphs = 0;
     for entry in std::fs::read_dir(dir).unwrap() {
         let path = entry.unwrap().path();

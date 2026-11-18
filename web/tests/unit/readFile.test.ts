@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { bgzfBlockSize, CHUNK_BYTES, detectCompression, readFile } from '../../src/workers/graph/readFile';
 
 function testdata(name: string): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(readFileSync(new URL(`../../../testdata/${name}`, import.meta.url)));
+  return new Uint8Array(readFileSync(new URL(`../../../data/fixtures/${name}`, import.meta.url)));
 }
 
 const BGZF_EOF = Buffer.from('1f8b08040000000000ff0600424302001b0003000000000000000000', 'hex');

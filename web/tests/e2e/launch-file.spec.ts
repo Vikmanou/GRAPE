@@ -24,7 +24,7 @@ test('a file handed over by the operating system opens in the app', async ({ pag
   await page.goto('/');
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
 
-  const text = readFileSync(repo('testdata/linear.gfa'), 'utf8');
+  const text = readFileSync(repo('data/fixtures/linear.gfa'), 'utf8');
   await page.evaluate(async (text) => {
     const directory = await navigator.storage.getDirectory();
     const handle = await directory.getFileHandle('linear.gfa', { create: true });

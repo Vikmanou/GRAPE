@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 import { openSettled, repo } from './helpers';
 
 test('top bar menus close each other, on a press outside and on Escape', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const exportMenu = page.getByTestId('export-menu');
   const share = page.getByTestId('share-menu');
   const examples = page.getByTestId('open-menu');

@@ -1,5 +1,5 @@
 // Fuzzes the parser and the link packer with cargo-fuzz, each for the given time. Installs the nightly toolchain and
-// cargo-fuzz when missing, seeds the corpus from testdata/.
+// cargo-fuzz when missing, seeds the corpus from data/fixtures/.
 //
 // Usage: npm run fuzz [-- --minutes N]   (default 10)
 
@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { root, run } from './lib.mjs';
 
 const CARGO_FUZZ = '0.13.2';
-const fuzzDir = join(root, 'fuzz');
+const fuzzDir = join(root, 'crates', 'gfa-core', 'fuzz');
 const minutesFlag = process.argv.indexOf('--minutes');
 const minutes = minutesFlag > 0 ? Number(process.argv[minutesFlag + 1]) : 10;
 
@@ -28,8 +28,8 @@ if (!installed.includes(CARGO_FUZZ)) {
 for (const target of ['parse', 'pack']) {
   const corpus = join(fuzzDir, 'corpus', target);
   mkdirSync(corpus, { recursive: true });
-  for (const name of readdirSync(join(root, 'testdata'))) {
-    if (!name.endsWith('.gz')) copyFileSync(join(root, 'testdata', name), join(corpus, name));
+  for (const name of readdirSync(join(root, 'data', 'fixtures'))) {
+    if (!name.endsWith('.gz')) copyFileSync(join(root, 'data', 'fixtures', name), join(corpus, name));
   }
   run('cargo', ['+nightly', 'fuzz', 'run', target, '--', `-max_total_time=${Math.round(minutes * 60)}`], {
     cwd: fuzzDir,

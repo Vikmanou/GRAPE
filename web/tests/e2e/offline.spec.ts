@@ -27,6 +27,6 @@ test('the site reloads and opens a file with no network after one visit', async 
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  await page.getByTestId('open-input').setInputFiles(repo('testdata/linear.gfa'));
+  await page.getByTestId('open-input').setInputFiles(repo('data/fixtures/linear.gfa'));
   await expect(page.getByTestId('status-layout')).toHaveAttribute('data-state', 'done', { timeout: 60_000 });
 });

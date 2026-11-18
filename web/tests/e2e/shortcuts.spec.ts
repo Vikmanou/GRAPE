@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { appState, openSettled, repo } from './helpers';
 
 test('the overlay lists the shortcuts and Escape closes it', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await page.keyboard.press('?');
   await expect(page.getByTestId('shortcuts')).toContainText('Fit the graph');
   await page.keyboard.press('Escape');
@@ -14,7 +14,7 @@ test('the overlay lists the shortcuts and Escape closes it', async ({ page }) =>
 });
 
 test('find, invert, clear, panels and fit from the keyboard', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await expect.poll(async () => (await appState(page)).zoom).toBeDefined();
   const fitted = (await appState(page)).zoom ?? 0;
 
@@ -47,14 +47,14 @@ test('find, invert, clear, panels and fit from the keyboard', async ({ page }) =
 });
 
 test('the help lists where Bandage controls live and the first-run card shows once', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const card = page.getByTestId('welcome');
   await expect(card).toBeVisible();
   await page.getByTestId('welcome-dismiss').click();
   await expect(card).toBeHidden();
   await page.reload();
   await expect(page.getByTestId('status-core')).toHaveAttribute('data-state', 'ready');
-  await page.getByTestId('open-input').setInputFiles(repo('testdata/tangle.gfa'));
+  await page.getByTestId('open-input').setInputFiles(repo('data/fixtures/tangle.gfa'));
   await expect(page.getByTestId('stat-segments')).toBeVisible();
   await expect(card).toBeHidden();
   await page.getByTestId('help').click();

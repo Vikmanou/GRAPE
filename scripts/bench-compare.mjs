@@ -45,7 +45,7 @@ const ledger = arg('--ledger', join(root, 'docs', 'benchmarks', 'compare.json'))
 const out = join(root, 'target', 'compare', 'out');
 mkdirSync(out, { recursive: true });
 
-const samples = SAMPLES.map((name) => join(root, 'samples', name));
+const samples = SAMPLES.map((name) => join(root, 'data', 'samples', name));
 const missing = samples.filter((path) => !existsSync(path));
 if (missing.length > 0) {
   console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples\``);

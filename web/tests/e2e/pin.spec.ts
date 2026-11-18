@@ -38,7 +38,7 @@ test('a dragged segment stays where it is dropped until unpinned', async ({ page
   page.on('console', (message) => {
     if (message.text().startsWith('GPU error')) gpuErrors.push(message.text());
   });
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const candidates = [...(await segmentsOnScreen(page, 20)).entries()].filter(([, at]) => at.x > 450 && at.x < 750);
   const [segment, at] = candidates[0] ?? [];
   if (segment === undefined || !at) throw new Error('no segment in the middle of the view');
@@ -61,7 +61,7 @@ test('a dragged segment stays where it is dropped until unpinned', async ({ page
 });
 
 test('re-layout selection moves only the selection', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const moved = 0;
   await page.evaluate((segment) => {
     type Store = { getState(): { select(s: Uint32Array, mode: string): void } };

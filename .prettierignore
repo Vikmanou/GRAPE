@@ -1,8 +1,8 @@
 target/
 node_modules/
-fuzz/
-samples/
-testdata/
+crates/gfa-core/fuzz/
+data/samples/
+data/fixtures/
 web/dist/
 web/src/wasm/pkg/
 web/test-results/

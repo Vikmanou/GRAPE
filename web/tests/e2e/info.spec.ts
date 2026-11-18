@@ -15,7 +15,7 @@ async function select(page: Page, segments: number[]): Promise<void> {
 }
 
 test('one segment: its numbers, neighbours, sequence and line', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   // Segments get ids in the order the file names them: 1, 2, 3.
   await select(page, [1]);
   const panel = page.getByTestId('info-panel');
@@ -35,7 +35,7 @@ test('one segment: its numbers, neighbours, sequence and line', async ({ page })
 });
 
 test('several segments: count, total length and weighted depth', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await select(page, [0, 1, 2]);
   const panel = page.getByTestId('info-panel');
   await expect(panel.getByTestId('info-title')).toHaveText('3 segments');
@@ -51,7 +51,7 @@ test('several segments: count, total length and weighted depth', async ({ page }
 
 test('several segments list their names and copy them all', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await select(page, [0, 1, 2]);
   const panel = page.getByTestId('info-panel');
   await panel.getByTestId('info-more').locator('summary').click();
@@ -65,7 +65,7 @@ test('a gzipped file shows its sequence but not its line', async ({ page }) => {
   const dir = test.info().outputPath();
   mkdirSync(dir, { recursive: true });
   const path = join(dir, 'linear.gfa.gz');
-  writeFileSync(path, gzipSync(readFileSync(repo('testdata/linear.gfa'))));
+  writeFileSync(path, gzipSync(readFileSync(repo('data/fixtures/linear.gfa'))));
   await openSettled(page, path);
   await select(page, [2]);
   const panel = page.getByTestId('info-panel');
@@ -74,7 +74,7 @@ test('a gzipped file shows its sequence but not its line', async ({ page }) => {
 });
 
 test('a long sequence shows its two ends', async ({ page }) => {
-  const bacterial = repo('samples/bacterial-spades.gfa');
+  const bacterial = repo('data/samples/bacterial-spades.gfa');
   test.skip(!existsSync(bacterial), 'run `npm run samples` first');
   await openSettled(page, bacterial);
   // The first segment of this SPAdes graph is several kilobases long.

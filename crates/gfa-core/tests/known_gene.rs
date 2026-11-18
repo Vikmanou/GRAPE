@@ -27,7 +27,7 @@ fn gunzip(path: &str) -> Vec<u8> {
 #[ignore = "needs the --large Myxococcus sample"]
 fn finds_csg_a_in_the_myxococcus_graph() {
     let path = format!(
-        "{}/../../samples/myxococcus-10-assemblies.gfa.gz",
+        "{}/../../data/samples/myxococcus-10-assemblies.gfa.gz",
         env!("CARGO_MANIFEST_DIR")
     );
     let file = gunzip(&path);

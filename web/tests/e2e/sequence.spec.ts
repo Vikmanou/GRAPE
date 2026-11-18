@@ -32,7 +32,7 @@ function gzipped(name: string): string {
   const dir = test.info().outputPath();
   mkdirSync(dir, { recursive: true });
   const path = join(dir, `${name}.gz`);
-  writeFileSync(path, gzipSync(readFileSync(repo(`testdata/${name}`))));
+  writeFileSync(path, gzipSync(readFileSync(repo(`data/fixtures/${name}`))));
   return path;
 }
 
@@ -57,13 +57,13 @@ async function downloadedFasta(page: Page): Promise<string> {
 }
 
 const cases: [string, () => string, string][] = [
-  ['plain GFA', () => repo('testdata/linear.gfa'), LINEAR],
+  ['plain GFA', () => repo('data/fixtures/linear.gfa'), LINEAR],
   ['gzipped GFA', () => gzipped('linear.gfa'), LINEAR],
-  ['FASTG', () => repo('testdata/bubble.fastg'), BUBBLE],
+  ['FASTG', () => repo('data/fixtures/bubble.fastg'), BUBBLE],
   ['gzipped FASTG', () => gzipped('bubble.fastg'), BUBBLE],
   [
     'segments known only from a reverse FASTG record',
-    () => repo('testdata/reverse_only.fastg'),
+    () => repo('data/fixtures/reverse_only.fastg'),
     fasta([
       ['1', 4, '2.5', 'ACGG'],
       ['2', 4, '3', 'ATCC'],
@@ -71,7 +71,7 @@ const cases: [string, () => string, string][] = [
   ],
   [
     'segments without sequence',
-    () => repo('testdata/star_ln.gfa'),
+    () => repo('data/fixtures/star_ln.gfa'),
     fasta([
       ['1', 5000, '3', 'N'.repeat(5000)],
       ['2', 100, '1', 'N'.repeat(100)],

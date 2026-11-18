@@ -18,10 +18,10 @@ Thumbs.db
 .claude/settings.local.json
 
 # Fuzzing
-/fuzz/target/
-/fuzz/corpus/
-/fuzz/artifacts/
-/fuzz/coverage/
+/crates/gfa-core/fuzz/target/
+/crates/gfa-core/fuzz/corpus/
+/crates/gfa-core/fuzz/artifacts/
+/crates/gfa-core/fuzz/coverage/
 
 # Bandage and BandageNG for the comparison benchmarks, never committed
 /tools/

@@ -6,7 +6,7 @@ import { near, openSettled, ribbonColor, repo, segmentsOnScreen, showTab } from 
 const MODES = ['uniform', 'random', 'depth', 'gc', 'length', 'component', 'tags'];
 
 test('every colour mode shows its legend', async ({ page }) => {
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await showTab(page, 'display');
   for (const mode of MODES) {
     await page.getByTestId('color-mode').selectOption(mode);
@@ -18,7 +18,7 @@ test('every colour mode shows its legend', async ({ page }) => {
 
 test("depth starts at Bandage's quartile range and colours segments along the ramp", async ({ page }) => {
   // Depths 10, 20 and 10: quartiles 10 and 17.5 over Bandage's doubled list.
-  await openSettled(page, repo('testdata/linear.gfa'));
+  await openSettled(page, repo('data/fixtures/linear.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('color-mode').selectOption('depth');
   await expect(page.getByTestId('range-min')).toHaveValue('10');
@@ -38,7 +38,7 @@ test("depth starts at Bandage's quartile range and colours segments along the ra
 });
 
 test('uniform and tag colours follow Bandage', async ({ page }) => {
-  await openSettled(page, repo('testdata/colour_tags.gfa'));
+  await openSettled(page, repo('data/fixtures/colour_tags.gfa'));
   await showTab(page, 'display');
   const segments = await segmentsOnScreen(page, 4);
   // Segments in file order: red (CL #ff0000), blue (CL blue), plain, bad (CL not a colour).
@@ -53,14 +53,14 @@ test('uniform and tag colours follow Bandage', async ({ page }) => {
 });
 
 test('display settings and the theme last across a reload', async ({ page }) => {
-  await openSettled(page, repo('testdata/bubble.gfa'));
+  await openSettled(page, repo('data/fixtures/bubble.gfa'));
   await showTab(page, 'display');
   await page.getByTestId('color-mode').selectOption('component');
   await page.getByTestId('double-mode').check();
   await page.getByTestId('theme').click();
   await expect(page.getByTestId('theme')).toHaveAttribute('data-theme-choice', 'light');
   await page.reload();
-  await page.getByTestId('open-input').setInputFiles(repo('testdata/bubble.gfa'));
+  await page.getByTestId('open-input').setInputFiles(repo('data/fixtures/bubble.gfa'));
   await expect(page.getByTestId('color-mode')).toHaveValue('component');
   await expect(page.getByTestId('double-mode')).toBeChecked();
   await expect(page.getByTestId('theme')).toHaveAttribute('data-theme-choice', 'light');

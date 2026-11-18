@@ -11,7 +11,7 @@ async function find(page: Page, text: string, regex = false): Promise<void> {
 }
 
 test('a list of names selects and frames those found and lists the rest', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await expect.poll(async () => (await appState(page)).zoom).toBeDefined();
   const fitted = (await appState(page)).zoom ?? 0;
   await find(page, 'a, r\nnope');
@@ -22,14 +22,14 @@ test('a list of names selects and frames those found and lists the rest', async 
 });
 
 test('a regex selects every name it matches', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await find(page, '^[a-c]$', true);
   await expect(page.getByTestId('find-result')).toContainText('Selected 3 segments.');
   await expect.poll(async () => (await appState(page)).selection.count).toBe(3);
 });
 
 test('a bad regex says why and selects nothing', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   await find(page, 'a(', true);
   await expect(page.getByTestId('find-result')).toContainText('Not a valid regular expression');
   expect((await appState(page)).selection.count).toBe(0);

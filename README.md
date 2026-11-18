@@ -115,7 +115,7 @@ npm run check          # the full gate CI runs
 npm run check:quick    # Rust and TypeScript checks with unit tests
 npm run check:headed   # full gate with browser tests on the real GPU
 npm run format         # rustfmt and Prettier
-npm run samples        # download real sample graphs (see samples/README.md)
+npm run samples        # download real sample graphs (see data/samples/README.md)
 npm run fuzz           # fuzz the parser and the link packer
 npm run bench:parse    # time parsing a synthetic 200k-segment graph
 npm run bench:layout   # GPU layout timings and quality against the CPU reference

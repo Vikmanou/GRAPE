@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { failOnPageError, repo } from './helpers';
 
-const testdata = (name: string) => repo(`testdata/${name}`);
+const testdata = (name: string) => repo(`data/fixtures/${name}`);
 
 test.beforeEach(({ page }) => {
   failOnPageError(page);

@@ -4,9 +4,9 @@ import { expect, test } from '@playwright/test';
 import { openSettled, repo } from './helpers';
 
 test('a FASTA file gives a sequence-less graph its sequences', async ({ page }) => {
-  await openSettled(page, repo('testdata/abyss.gfa'));
+  await openSettled(page, repo('data/fixtures/abyss.gfa'));
   await expect(page.getByTestId('sequence-file')).toContainText('This file has no sequences.');
-  await page.getByTestId('add-sequences-input').setInputFiles(repo('testdata/abyss.fa'));
+  await page.getByTestId('add-sequences-input').setInputFiles(repo('data/fixtures/abyss.fa'));
   await expect(page.getByTestId('sequences-added')).toHaveText('2 sequences from abyss.fa.');
   await expect(page.getByTestId('stat-gc')).toHaveText('57.1%');
 

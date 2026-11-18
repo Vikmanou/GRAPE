@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { failOnPageError, gotoApp, repo, showTab, skipUnlessBackend } from './helpers';
 
-const GRAPHS = ['testdata/tangle.gfa', 'testdata/two_components.gfa', 'samples/bacterial-spades.gfa'];
+const GRAPHS = ['data/fixtures/tangle.gfa', 'data/fixtures/two_components.gfa', 'data/samples/bacterial-spades.gfa'];
 
 /** Waits for the next settled layout and returns an FNV-1a hash of its positions' bits. */
 async function settledHash(page: Page, after: number): Promise<{ run: number; hash: string; finite: boolean }> {

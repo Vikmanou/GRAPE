@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { backend, failOnPageError, gotoApp, repo, skipUnlessBackend } from './helpers';
 
-const BACTERIAL = repo('samples/bacterial-spades.gfa');
+const BACTERIAL = repo('data/samples/bacterial-spades.gfa');
 
 async function start(page: Page): Promise<string[]> {
   const gpuErrors: string[] = [];
@@ -49,7 +49,7 @@ async function inkedFraction(page: Page): Promise<number> {
 test('draws every test graph without GPU errors', async ({ page }) => {
   const gpuErrors = await start(page);
   for (const name of ['linear.gfa', 'circle.gfa', 'tangle.gfa', 'self_loop.gfa', 'palindrome.gfa', 'bubble.fastg']) {
-    await open(page, repo(`testdata/${name}`));
+    await open(page, repo(`data/fixtures/${name}`));
     await page.waitForTimeout(200);
     expect(await inkedFraction(page), name).toBeGreaterThan(0.003);
   }

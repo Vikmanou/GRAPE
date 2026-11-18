@@ -171,8 +171,8 @@ test('a link with the graph opens the same graph and view in a tab with no file'
 
 test('a link carries an attached FASTA and opens when pasted into Open URL', async ({ page, context }) => {
   if (!firefox()) await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await openSettled(page, repo('testdata/abyss.gfa'));
-  await page.getByTestId('add-sequences-input').setInputFiles(repo('testdata/abyss.fa'));
+  await openSettled(page, repo('data/fixtures/abyss.gfa'));
+  await page.getByTestId('add-sequences-input').setInputFiles(repo('data/fixtures/abyss.fa'));
   await expect(page.getByTestId('sequences-added')).toHaveText('2 sequences from abyss.fa.');
   const before = await snapshot(page);
   const link = await packedLink(page);

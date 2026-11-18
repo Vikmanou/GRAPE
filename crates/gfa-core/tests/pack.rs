@@ -6,8 +6,11 @@ use proptest::prelude::*;
 
 #[test]
 fn every_test_file_round_trips() {
-    for entry in
-        std::fs::read_dir(format!("{}/../../testdata", env!("CARGO_MANIFEST_DIR"))).unwrap()
+    for entry in std::fs::read_dir(format!(
+        "{}/../../data/fixtures",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap()
     {
         let name = entry.unwrap().file_name().into_string().unwrap();
         let file = testdata(&name);

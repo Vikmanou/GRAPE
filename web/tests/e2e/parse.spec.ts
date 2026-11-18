@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { failOnPageError, repo } from './helpers';
 
-const testdata = (name: string) => repo(`testdata/${name}`);
+const testdata = (name: string) => repo(`data/fixtures/${name}`);
 
 async function open(page: Page, name: string): Promise<void> {
   await page.goto('/');

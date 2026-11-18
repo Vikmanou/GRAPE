@@ -16,7 +16,7 @@ async function shiftDrag(page: Page, from: { x: number; y: number }, to: { x: nu
 }
 
 test('a box around the whole graph selects every segment', async ({ page }) => {
-  await openSettled(page, repo('testdata/tangle.gfa'));
+  await openSettled(page, repo('data/fixtures/tangle.gfa'));
   const segments = Number((await page.getByTestId('stat-segments').textContent())?.replace(/\D/g, ''));
   const box = await page.getByTestId('engine-canvas').boundingBox();
   if (!box) throw new Error('no canvas');
@@ -25,7 +25,7 @@ test('a box around the whole graph selects every segment', async ({ page }) => {
 });
 
 test('a small box selects the segment under it and adds to the selection', async ({ page }) => {
-  await openSettled(page, repo('testdata/two_components.gfa'));
+  await openSettled(page, repo('data/fixtures/two_components.gfa'));
   // Left of where the info panel opens on the first selection.
   const segments = [...(await segmentsOnScreen(page, 20)).entries()].filter(([, at]) => at.x < 800);
   const [[a, at] = [], [b, bt] = []] = segments;
