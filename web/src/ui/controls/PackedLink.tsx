@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { FIREFOX_LINK_CHARS } from '../../state/sharing';
 import { useApp } from '../../state/store';
-import { copyText } from '../files';
-import { formatCount } from '../format';
+import { copyText } from '../lib/files';
+import { formatCount } from '../lib/format';
 
 type Packing =
   | { state: 'idle' }

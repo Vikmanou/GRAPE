@@ -1,5 +1,5 @@
 import type { CpuProgress, Geometry, Hierarchy, LayoutControl, PositionGrid } from '../workers/protocol/layout';
-import type { WithoutId } from '../workers/rpc';
+import type { WithoutId } from '../workers/shared/rpc';
 import type { Insets } from './core/camera';
 import type { FrameStats } from './core/frames';
 import type { DisplayOptions } from './style/display';

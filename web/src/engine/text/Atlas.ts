@@ -1,4 +1,4 @@
-/** web/public/fonts/label-atlas.json, written by scripts/font-atlas.mjs. */
+/** web/public/fonts/label-atlas.json, written by scripts/build/font-atlas.mjs. */
 export interface AtlasMetrics {
   /** The font size the atlas was drawn at, in its pixels. */
   size: number;

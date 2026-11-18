@@ -1,5 +1,5 @@
 import type { ParseWarnings } from '../../workers/protocol/graph';
-import { formatCount } from '../format';
+import { formatCount } from '../lib/format';
 
 interface Props {
   warnings: ParseWarnings;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../state/store';
-import { download, fileStem } from '../files';
-import { formatCount } from '../format';
+import { download, fileStem } from '../lib/files';
+import { formatCount } from '../lib/format';
 
 export function MergeControls() {
   const merged = useApp((s) => s.merged);

@@ -1,3 +1,4 @@
+import { RIBBON_WIDTH } from '../style/widths';
 import { type Bounds, type Camera, fit, type Insets, NO_INSETS, pan, zoomAt } from './camera';
 
 /** Free space around what is fitted, in CSS pixels. */
@@ -96,5 +97,18 @@ export class Framing {
       },
       maxZoom,
     );
+  }
+
+  /** Frames, or with `follow` only centres, the drawn extent `box`, which is relative to the positions' `origin`. */
+  frameBox(box: Bounds, origin: { x: number; y: number }, follow: boolean): void {
+    const pad = RIBBON_WIDTH;
+    const world: Bounds = {
+      minX: box.minX + origin.x - pad,
+      minY: box.minY + origin.y - pad,
+      maxX: box.maxX + origin.x + pad,
+      maxY: box.maxY + origin.y + pad,
+    };
+    if (follow) this.follow(world);
+    else this.frame(world);
   }
 }

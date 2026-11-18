@@ -1,6 +1,6 @@
 import type { Topology } from '../protocol/graph';
 import type { LayoutControl, LayoutLines, LayoutOptions, LayoutRequest, LayoutResponse } from '../protocol/layout';
-import { expect, RpcClient, type WithoutId, type WorkerMemory } from '../rpc';
+import { expect, RpcClient, type WithoutId, type WorkerMemory } from '../shared/rpc';
 
 export type LayoutListener = (response: LayoutResponse) => void;
 

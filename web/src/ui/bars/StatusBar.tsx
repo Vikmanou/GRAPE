@@ -3,7 +3,7 @@ import type { LayoutStatus } from '../../state/layout';
 import type { CoreStatus } from '../../state/load';
 import { shownGraph } from '../../state/load';
 import { useApp } from '../../state/store';
-import { formatCount, formatSeconds } from '../format';
+import { formatCount, formatSeconds } from '../lib/format';
 
 interface Props {
   onToggleWarnings: () => void;

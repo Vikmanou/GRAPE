@@ -2,7 +2,7 @@
 
 import init, { coreVersion, FastaReader, type Loaded, Parser } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 import type { GraphRequest, GraphResponse } from '../protocol/graph';
 import { type ChainMap, chainTransfers, linkTransfers, sourceTransfers } from '../protocol/sequence';
 import { exportRecords, find, segmentInfo, summary } from './queries';

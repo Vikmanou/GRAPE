@@ -5,11 +5,11 @@ import type { GraphClient } from '../workers/graph/GraphClient';
 import type { Topology } from '../workers/protocol/graph';
 import type { LayoutControl, LayoutLines, LayoutOptions, LayoutResponse } from '../workers/protocol/layout';
 import type { PackClient } from '../workers/pack/PackClient';
-import type { WithoutId, WorkerMemory } from '../workers/rpc';
+import type { WithoutId, WorkerMemory } from '../workers/shared/rpc';
 import type { SequenceClient } from '../workers/sequence/SequenceClient';
 import { Bridge, type EngineLike } from './bridge';
 import { createDetailsSlice, type DetailsSlice } from './details';
-import { createDisplaySlice, type DisplaySlice } from './display';
+import { createShellSlice, type ShellSlice } from './shell';
 import { createDisplayOptionsSlice, type DisplayOptionsSlice } from './displayOptions';
 import { createLabelSlice, type LabelSlice } from './labels';
 import { createLayoutSlice, type LayoutSlice } from './layout';
@@ -95,7 +95,7 @@ export interface Services {
 
 export type AppState = FileSlice &
   LayoutSlice &
-  DisplaySlice &
+  ShellSlice &
   DisplayOptionsSlice &
   ToastSlice &
   SelectionSlice &
@@ -129,7 +129,7 @@ export function createAppStore(services: Services): AppStore {
     return {
       ...createFileSlice(ctx),
       ...createLayoutSlice(ctx),
-      ...createDisplaySlice(ctx),
+      ...createShellSlice(ctx),
       ...createDisplayOptionsSlice(ctx),
       ...createToastSlice(ctx),
       ...createSelectionSlice(ctx),

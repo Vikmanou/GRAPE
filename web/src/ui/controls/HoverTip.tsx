@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../../state/store';
 import type { SegmentInfo } from '../../workers/protocol/graph';
-import { formatBases, formatDepth } from '../format';
+import { formatBases, formatDepth } from '../lib/format';
 
 const DELAY_MS = 120;
 const OFFSET = 14;

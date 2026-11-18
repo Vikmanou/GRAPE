@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../state/store';
-import { formatCount } from '../format';
+import { formatCount } from '../lib/format';
 import { SequenceSearch } from './SequenceSearch';
 
 /** Missing names listed before the rest are summarised. */

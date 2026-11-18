@@ -5,9 +5,9 @@
 import init, { packFile, unpackFile } from '../../wasm/pkg/gfa_wasm';
 import wasmUrl from '../../wasm/pkg/gfa_wasm_bg.wasm?url';
 import { detectCompression, readFile } from '../graph/readFile';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 import type { LinkFile, PackRequest, PackResponse } from '../protocol/pack';
-import { base64url, fromBase64url } from './base64url';
+import { base64url, fromBase64url } from '../shared/base64url';
 import { joinParts, type Part, splitParts } from './payload';
 
 const ready = init({ module_or_path: wasmUrl });

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/store';
 import { ExampleList } from '../controls/ExampleList';
-import { ACCEPTED_FILES } from '../files';
+import { ACCEPTED_FILES } from '../lib/files';
 
 interface Props {
   dragging: boolean;

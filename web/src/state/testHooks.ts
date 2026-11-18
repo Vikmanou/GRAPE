@@ -1,6 +1,6 @@
 import type { LevelRecord } from '../engine/core/backend';
 import type { EngineCommand, EngineEvent } from '../engine/commands';
-import type { WorkerMemory } from '../workers/rpc';
+import type { WorkerMemory } from '../workers/shared/rpc';
 import type { Bridge } from './bridge';
 import type { AppStore, Context } from './store';
 

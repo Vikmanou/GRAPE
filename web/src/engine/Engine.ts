@@ -1,6 +1,6 @@
 import type { EngineCommand, EngineEvent } from './commands';
 import type { Backend, Style } from './core/backend';
-import { boundsOf, type Bounds } from './core/camera';
+import { boundsOf } from './core/camera';
 import { Bands } from './core/Bands';
 import { Filtering } from './core/Filtering';
 import { Framing } from './core/Framing';
@@ -10,9 +10,10 @@ import { attachInput } from './core/input';
 import { Pointer } from './core/Pointer';
 import { Positions } from './core/Positions';
 import { RubberBand } from './core/RubberBand';
+import { CAMERA_EVENT_MS, INTERACTION_MS, layoutRedrawDue } from './core/pacing';
+import { canvasSize, observeSize } from './core/sizing';
 import { throttle } from './core/throttle';
 import { DEFAULT_DISPLAY } from './style/display';
-import { RIBBON_WIDTH } from './style/widths';
 import { Atlas } from './text/Atlas';
 import { Labels } from './text/Labels';
 import { openBackend } from './openBackend';
@@ -20,18 +21,6 @@ import { Exporter } from './export/Exporter';
 import type { View } from './core/backend';
 
 type Listener = (event: EngineEvent) => void;
-
-/**
- * While the layout runs, the graph is redrawn at most this often, and less
- * often when a draw is slow, so drawing takes at most a tenth of the GPU.
- * Moving the view still redraws every frame.
- */
-const LAYOUT_REDRAW_MS = 100;
-const LAYOUT_DRAW_SHARE = 10;
-/** The view counts as moving for this long after the last pan or zoom. */
-const INTERACTION_MS = 250;
-/** The store mirrors the camera at most ten times a second (spec, Architecture). */
-const CAMERA_EVENT_MS = 100;
 
 /**
  * Owns the canvas, the camera and the frame loop, and draws through a
@@ -121,15 +110,9 @@ export class Engine {
         this.scheduleFrame();
       },
     });
-    this.resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) this.resize(entry);
+    this.resizeObserver = observeSize(host, (entry) => {
+      this.resize(entry);
     });
-    try {
-      this.resizeObserver.observe(host, { box: 'device-pixel-content-box' });
-    } catch {
-      // Safari rejects this box type; resize() falls back to CSS size × DPR.
-      this.resizeObserver.observe(host);
-    }
     this.detachInput = attachInput(
       canvas,
       gestures({
@@ -330,18 +313,9 @@ export class Engine {
 
   /** Frames the drawn extent of the segments whose bit is set, or only centres it when `follow`. */
   private async zoomTo(bits: Uint32Array<ArrayBuffer>, follow = false): Promise<void> {
-    const origin = this.positions.origin;
     const box = await this.backend.bounds(bits);
     if (!box || this.destroyed) return;
-    const pad = RIBBON_WIDTH;
-    const world: Bounds = {
-      minX: box.minX + origin.x - pad,
-      minY: box.minY + origin.y - pad,
-      maxX: box.maxX + origin.x + pad,
-      maxY: box.maxY + origin.y + pad,
-    };
-    if (follow) this.framing.follow(world);
-    else this.framing.frame(world);
+    this.framing.frameBox(box, this.positions.origin, follow);
     this.viewMoved();
   }
 
@@ -361,16 +335,11 @@ export class Engine {
   }
 
   private resize(entry: ResizeObserverEntry): void {
-    // `devicePixelContentBoxSize` is undefined, not empty, in Safari.
-    const box = (entry.devicePixelContentBoxSize as ResizeObserverSize[] | undefined)?.[0];
-    const dpr = window.devicePixelRatio;
-    const width = box ? box.inlineSize : Math.round(entry.contentRect.width * dpr);
-    const height = box ? box.blockSize : Math.round(entry.contentRect.height * dpr);
-    const max = this.backend.maxCanvasSize;
-    this.canvas.width = Math.max(1, Math.min(width, max));
-    this.canvas.height = Math.max(1, Math.min(height, max));
+    const { width, height } = canvasSize(entry, window.devicePixelRatio, this.backend.maxCanvasSize);
+    this.canvas.width = width;
+    this.canvas.height = height;
     this.framing.refit();
-    this.emit({ type: 'resize', width: this.canvas.width, height: this.canvas.height });
+    this.emit({ type: 'resize', width, height });
     this.requestFrame();
   }
 
@@ -391,15 +360,14 @@ export class Engine {
 
   /**
    * Runs the layout's batch every frame, but redraws a settling layout only
-   * as `LAYOUT_REDRAW_MS` and `LAYOUT_DRAW_SHARE` allow.
+   * as `layoutRedrawDue` allows.
    */
   private render(now: number): void {
     const layout = this.backend.layout;
     const interactive = now - this.lastInteraction < INTERACTION_MS;
     this.stale = layout.tick(now, interactive) || this.stale;
     const busy = layout.busy;
-    const redraw = Math.max(LAYOUT_REDRAW_MS, this.backend.drawMs * LAYOUT_DRAW_SHARE);
-    if (this.dirty || (this.stale && (!busy || now - this.lastDraw >= redraw))) this.draw(now);
+    if (this.dirty || (this.stale && layoutRedrawDue(busy, now, this.lastDraw, this.backend.drawMs))) this.draw(now);
     this.pointer.pickHover();
     if (busy) this.scheduleFrame();
   }

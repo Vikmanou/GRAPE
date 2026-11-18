@@ -1,6 +1,6 @@
 import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
-import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../format';
+import { formatBases, formatBytes, formatCount, formatDepth, formatPercent } from '../lib/format';
 import { Welcome } from '../overlays/Welcome';
 import { ComponentTable } from './ComponentTable';
 import { MergeControls } from './MergeControls';

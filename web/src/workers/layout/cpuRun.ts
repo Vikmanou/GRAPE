@@ -1,7 +1,7 @@
 import type { Grid, Layout } from '../../wasm/pkg/gfa_wasm';
 import { RIBBON_WIDTH } from '../../engine/style/widths';
 import type { CellLists, LayoutResponse, PositionGrid } from '../protocol/layout';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 
 /** How often positions are posted while the layout settles, and while a refinement follows a drag. */
 const POST_INTERVAL_MS = 100;

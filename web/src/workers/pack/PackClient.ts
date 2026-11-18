@@ -1,5 +1,5 @@
 import type { LinkFile, PackRequest, PackResponse } from '../protocol/pack';
-import { expect, RpcClient } from '../rpc';
+import { expect, RpcClient } from '../shared/rpc';
 
 /** One worker per request, stopped when it answers or is cancelled. */
 export class PackClient {

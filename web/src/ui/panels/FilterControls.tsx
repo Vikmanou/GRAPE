@@ -1,7 +1,7 @@
 import { shownGraph } from '../../state/load';
 import { useApp } from '../../state/store';
 import { NumberField } from '../controls/NumberField';
-import { formatCount } from '../format';
+import { formatCount } from '../lib/format';
 
 const MAX_STEPS = 50;
 const DEFAULT_STEPS = 3;

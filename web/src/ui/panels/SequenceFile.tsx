@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useApp } from '../../state/store';
-import { formatCount, formatPercent } from '../format';
+import { formatCount, formatPercent } from '../lib/format';
 
 /** For files whose segments are all `*`, as ABySS writes them: sequences from a FASTA file. */
 export function SequenceFile() {

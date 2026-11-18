@@ -1,6 +1,6 @@
 import type { LayoutFormat } from '../graph/layoutFile';
 import type { LayoutLines } from './layout';
-import type { ErrorResponse, WorkerMemory } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../shared/rpc';
 import type { FindQuery } from '../graph/findQuery';
 import type { Compression } from '../graph/readFile';
 import type { ChainMap, FastaRecords, GfaRecords, SearchLinks, SequenceSource } from './sequence';

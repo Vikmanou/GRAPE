@@ -1,8 +1,8 @@
 import type { Details } from '../../state/details';
 import { useApp } from '../../state/store';
-import { copyText } from '../files';
+import { copyText } from '../lib/files';
 import type { SegmentLink } from '../../workers/protocol/graph';
-import { formatBases, formatCount, formatDepth, formatPercent } from '../format';
+import { formatBases, formatCount, formatDepth, formatPercent } from '../lib/format';
 
 type Segment = Extract<Details, { state: 'segment' }>;
 

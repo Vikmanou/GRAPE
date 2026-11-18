@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../state/store';
 import { cssColor, pathColor } from '../../engine/style/colors';
 import type { PathList } from '../../workers/protocol/graph';
-import { formatBases, formatCount } from '../format';
+import { formatBases, formatCount } from '../lib/format';
 
 const SHOWN = 200;
 

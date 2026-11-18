@@ -3,7 +3,7 @@ import { cssColor, pathColor } from '../../engine/style/colors';
 import { listedHits, MAX_BANDS, readHit, type SearchHit, type SearchPart } from '../../state/search';
 import { useApp } from '../../state/store';
 import { HIT_WORDS, PART_WORDS } from '../../workers/protocol/sequence';
-import { formatCount, formatPercent } from '../format';
+import { formatCount, formatPercent } from '../lib/format';
 
 function strand(part: SearchPart): string {
   return part.reverse ? '−' : '+';

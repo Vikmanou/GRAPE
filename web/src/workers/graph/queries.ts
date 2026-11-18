@@ -1,5 +1,5 @@
 import type { Loaded } from '../../wasm/pkg/gfa_wasm';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 import type { SegmentInfo, SegmentLink, SelectionSummary } from '../protocol/graph';
 import type { FastaRecords } from '../protocol/sequence';
 import { compileFindRegex, type FindQuery } from './findQuery';

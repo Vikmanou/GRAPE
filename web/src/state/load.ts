@@ -1,5 +1,5 @@
 import type { FastaAttached, ParseResult } from '../workers/protocol/graph';
-import { WorkerTerminatedError } from '../workers/rpc';
+import { WorkerTerminatedError } from '../workers/shared/rpc';
 import { EXAMPLES, fetchExample } from './examples';
 import { fetchFile, fileNameOf } from './fetchFile';
 import { type Fingerprint, headHash } from './share/fingerprint';

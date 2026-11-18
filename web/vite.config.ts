@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { offline } from './build/offline.ts';
+import { offline } from './build/serviceWorkerPlugin.ts';
 
 export default defineConfig({
   // Relative base so the static build works from a GitHub Pages subpath.

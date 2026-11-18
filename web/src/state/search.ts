@@ -1,7 +1,7 @@
 import type { HitBands } from '../engine/core/Bands';
 import { pathColor } from '../engine/style/colors';
 import { HIT_WORDS, type IndexInfo, PART_WORDS, type SearchResults } from '../workers/protocol/sequence';
-import { SearchCancelledError } from '../workers/rpc';
+import { SearchCancelledError } from '../workers/shared/rpc';
 import { shownGraph } from './load';
 import type { Context } from './store';
 

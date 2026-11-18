@@ -1,7 +1,7 @@
 import { COLOR_MODES, DEFAULT_DISPLAY, type DisplayOptions } from '../engine/style/display';
-import type { SidebarTab } from './display';
+import type { SidebarTab } from './shell';
 import { DEFAULT_LABELS, type LabelSettings } from './labels';
-import { sameShape } from './shape';
+import { sameShape } from './util/shape';
 import type { AppState, AppStore } from './store';
 import type { ThemeChoice } from './theme';
 

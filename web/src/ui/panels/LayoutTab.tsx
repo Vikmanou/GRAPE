@@ -1,5 +1,5 @@
 import { useApp } from '../../state/store';
-import { formatCount } from '../format';
+import { formatCount } from '../lib/format';
 import { LayoutControls } from './LayoutControls';
 
 export function LayoutTab() {

@@ -7,7 +7,7 @@ import { resolveTheme, type ThemeChoice } from './theme';
 export type FindMode = 'name' | 'sequence';
 export type SidebarTab = 'overview' | 'display' | 'find' | 'paths';
 
-export interface DisplaySlice {
+export interface ShellSlice {
   renderer: BackendKind | 'detecting';
   /** Set when the engine could not start or lost its device. */
   engineError: string | undefined;
@@ -55,7 +55,7 @@ export interface DisplaySlice {
   setInsets: (insets: Insets) => void;
 }
 
-export function createDisplaySlice(ctx: Context): DisplaySlice {
+export function createShellSlice(ctx: Context): ShellSlice {
   const { set, get, services } = ctx;
   return {
     renderer: 'detecting',

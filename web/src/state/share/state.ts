@@ -1,7 +1,7 @@
 import { COLOR_MODES, DEFAULT_DISPLAY, type DisplayOptions } from '../../engine/style/display';
 import type { Quality } from '../../workers/protocol/layout';
 import { DEFAULT_LABELS, type LabelSettings } from '../labels';
-import { sameShape } from '../shape';
+import { sameShape } from '../util/shape';
 import type { Fingerprint } from './fingerprint';
 import { ShareLinkError } from './codec';
 

@@ -1,6 +1,6 @@
 import type { SegmentInfo, SelectionSummary } from '../workers/protocol/graph';
 import type { Preview } from '../workers/sequence/SequenceClient';
-import { setBits } from './bits';
+import { setBits } from './util/bits';
 import type { Context } from './store';
 
 /** Bases shown at each end of a sequence and of a raw line. */

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../../state/store';
 import type { ComponentTable as Components } from '../../workers/protocol/graph';
-import { formatBases, formatCount, formatDepth } from '../format';
+import { formatBases, formatCount, formatDepth } from '../lib/format';
 
 const SHOWN = 100;
 

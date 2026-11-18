@@ -10,7 +10,7 @@ import type {
   LayoutRequest,
   LayoutResponse,
 } from '../protocol/layout';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 import { CpuRun, gridBuffers, takeGrid } from './cpuRun';
 import { iterationsFor } from './quality';
 

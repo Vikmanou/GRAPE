@@ -7,8 +7,8 @@ import { OpenMenu } from '../controls/OpenMenu';
 import { HelpIcon, MoonIcon, SunIcon, SystemIcon } from '../controls/Icons';
 import { ShareMenu } from '../controls/ShareMenu';
 import { useMenuGroup } from '../controls/menus';
-import { ACCEPTED_FILES } from '../files';
-import { formatBytes } from '../format';
+import { ACCEPTED_FILES } from '../lib/files';
+import { formatBytes } from '../lib/format';
 
 interface Props {
   file: FileInfo | undefined;

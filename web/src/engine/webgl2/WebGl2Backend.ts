@@ -11,7 +11,7 @@ import type {
 } from '../core/backend';
 import type { Bounds } from '../core/camera';
 import type { Hidden } from '../core/Visibility';
-import { CpuLayoutDriver } from '../core/CpuLayoutDriver';
+import { CpuLayoutDriver } from '../layout/CpuLayoutDriver';
 import { DEFAULT_DISPLAY } from '../style/display';
 import { palettes } from '../style/palette';
 import { drawnView } from '../style/uniforms';

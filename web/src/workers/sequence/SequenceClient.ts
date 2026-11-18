@@ -12,7 +12,7 @@ import {
   type SequenceSource,
   sourceTransfers,
 } from '../protocol/sequence';
-import { expect, RpcClient, SearchCancelledError, type WorkerMemory } from '../rpc';
+import { expect, RpcClient, SearchCancelledError, type WorkerMemory } from '../shared/rpc';
 
 export interface Preview {
   length: number;

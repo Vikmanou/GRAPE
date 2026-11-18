@@ -1,6 +1,6 @@
 import type { SegmentAttributes } from '../../workers/protocol/graph';
 import type { CpuProgress, Geometry, Hierarchy, LayoutControl, PositionGrid } from '../../workers/protocol/layout';
-import type { WithoutId } from '../../workers/rpc';
+import type { WithoutId } from '../../workers/shared/rpc';
 import type { DisplayOptions } from '../style/display';
 import type { Atlas } from '../text/Atlas';
 import type { Theme } from '../style/palette';

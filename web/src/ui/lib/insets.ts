@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useApp } from '../state/store';
+import { useApp } from '../../state/store';
 
 /** Panels marked `data-inset` are kept clear when fitting; `key` changes when panels come or go. */
 export function usePanelInsets(key: string): void {

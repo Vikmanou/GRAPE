@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import type { SidebarTab } from '../../state/display';
+import type { SidebarTab } from '../../state/shell';
 import { useApp } from '../../state/store';
 import type { ParseResult } from '../../workers/protocol/graph';
 import { ChevronLeftIcon, ChevronRightIcon } from '../controls/Icons';
 import { Tabs } from '../controls/Tabs';
-import { SHEET_QUERY, useMedia } from '../useMedia';
-import { sheetKeys, sidebarControl } from '../useSheetFocus';
+import { SHEET_QUERY, useMedia } from '../lib/useMedia';
+import { sheetKeys, sidebarControl } from '../lib/useSheetFocus';
 import { Display } from './Display';
 import { Find } from './Find';
 import { Overview } from './Overview';

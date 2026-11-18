@@ -1,6 +1,6 @@
 import type { EngineCommand } from '../engine/commands';
 import type { LayoutFormat } from '../workers/graph/layoutFile';
-import { setBits } from './bits';
+import { setBits } from './util/bits';
 import type { Context } from './store';
 
 export type ExportScope = 'selection' | 'visible';

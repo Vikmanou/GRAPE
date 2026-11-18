@@ -1,6 +1,6 @@
-import { setBits } from './bits';
+import { setBits } from './util/bits';
 import type { LinkFile } from '../workers/protocol/pack';
-import { WorkerTerminatedError } from '../workers/rpc';
+import { WorkerTerminatedError } from '../workers/shared/rpc';
 import { isPackedFragment, packedFragment, packedPayload } from './share/codec';
 import { restoreShared, until } from './share/restore';
 import { parseShareState, type ShareState } from './share/state';

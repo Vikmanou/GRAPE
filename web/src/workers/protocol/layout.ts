@@ -1,4 +1,4 @@
-import type { ErrorResponse, WorkerMemory } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../shared/rpc';
 import type { Topology } from './graph';
 
 export type Quality = 'fast' | 'balanced' | 'best';

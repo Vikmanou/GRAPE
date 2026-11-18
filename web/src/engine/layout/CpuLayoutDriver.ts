@@ -1,7 +1,7 @@
 import type { CpuProgress, LayoutControl } from '../../workers/protocol/layout';
-import type { WithoutId } from '../../workers/rpc';
-import { type LayoutDriver, type LevelRecord, USABLE_LEVEL } from './backend';
-import type { Bounds } from './camera';
+import type { WithoutId } from '../../workers/shared/rpc';
+import { type LayoutDriver, type LevelRecord, USABLE_LEVEL } from '../core/backend';
+import type { Bounds } from '../core/camera';
 
 /**
  * The layout driver for a layout that runs in the layout worker, as the CPU

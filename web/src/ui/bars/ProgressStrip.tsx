@@ -1,5 +1,5 @@
 import { useApp } from '../../state/store';
-import { formatPercent } from '../format';
+import { formatPercent } from '../lib/format';
 
 interface Task {
   testId: string;

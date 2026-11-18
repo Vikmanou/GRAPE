@@ -1,6 +1,6 @@
 import { useApp } from '../../state/store';
 import type { LabelContent } from '../../workers/protocol/graph';
-import { formatCount } from '../format';
+import { formatCount } from '../lib/format';
 
 const LINES: [keyof LabelContent, string][] = [
   ['name', 'Name'],

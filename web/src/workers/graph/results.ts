@@ -1,5 +1,5 @@
 import type { Loaded } from '../../wasm/pkg/gfa_wasm';
-import { plain } from '../plain';
+import { plain } from '../shared/plain';
 import type { ParseResult, SegmentAttributes } from '../protocol/graph';
 import type { GfaRecords, SequenceSource } from '../protocol/sequence';
 import type { Compression } from './readFile';

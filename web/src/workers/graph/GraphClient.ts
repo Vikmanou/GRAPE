@@ -12,7 +12,7 @@ import type {
 } from '../protocol/graph';
 import type { ChainMap, FastaRecords, GfaRecords, SearchLinks, SequenceSource } from '../protocol/sequence';
 import type { FindQuery } from './findQuery';
-import { expect, RpcClient, type WorkerMemory } from '../rpc';
+import { expect, RpcClient, type WorkerMemory } from '../shared/rpc';
 
 export type ProgressListener = (bytesRead: number, totalBytes: number) => void;
 

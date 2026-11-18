@@ -1,4 +1,4 @@
-import type { ErrorResponse, WorkerMemory } from '../rpc';
+import type { ErrorResponse, WorkerMemory } from '../shared/rpc';
 
 /** Gzipped input's bases, 2 bits each, with runs of other bytes and lowercase spans. */
 export interface PackedArrays {

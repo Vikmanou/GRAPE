@@ -1,9 +1,9 @@
 import { useApp } from '../../state/store';
-import { copyText, download } from '../files';
-import { formatBases, formatCount, formatDepth, formatPercent } from '../format';
+import { copyText, download } from '../lib/files';
+import { formatBases, formatCount, formatDepth, formatPercent } from '../lib/format';
 import { Disclosure } from '../controls/Disclosure';
-import { SHEET_QUERY, useMedia } from '../useMedia';
-import { sheetKeys, sidebarControl } from '../useSheetFocus';
+import { SHEET_QUERY, useMedia } from '../lib/useMedia';
+import { sheetKeys, sidebarControl } from '../lib/useSheetFocus';
 import { SegmentDetails } from './SegmentDetails';
 
 /** Bandage's default name for saved sequences (ui/mainwindow.cpp, `saveSelectedSequencesToFile`). */

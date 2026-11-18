@@ -3,7 +3,7 @@ import { MAX_SEED, MIN_SEED } from '../../state/search';
 import { useApp } from '../../state/store';
 import { Disclosure } from '../controls/Disclosure';
 import { NumberField } from '../controls/NumberField';
-import { formatBases, formatBytes, formatCount, formatPercent } from '../format';
+import { formatBases, formatBytes, formatCount, formatPercent } from '../lib/format';
 import { SearchResults } from './SearchResults';
 
 /** Finds DNA in the segments: pasted bases or a FASTA file, against an index built on first use. */

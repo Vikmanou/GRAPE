@@ -1,4 +1,4 @@
-import type { ErrorResponse } from '../rpc';
+import type { ErrorResponse } from '../shared/rpc';
 
 export interface LinkFile {
   kind: 'graph' | 'fasta';

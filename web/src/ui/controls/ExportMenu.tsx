@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { ExportScope } from '../../state/export';
 import { useApp } from '../../state/store';
-import { download, fileStem } from '../files';
+import { download, fileStem } from '../lib/files';
 
 interface Item {
   id: string;
