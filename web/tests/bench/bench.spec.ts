@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Run through scripts/bench-parse.mjs, which generates the files and sets
+// Run through scripts/bench/parse.mjs, which generates the files and sets
 // GRAPE_BENCH_FILES to a comma-separated list of paths.
 const files = (process.env.GRAPE_BENCH_FILES ?? '').split(',').filter(Boolean);
 

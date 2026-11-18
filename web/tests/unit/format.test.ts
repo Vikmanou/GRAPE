@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatBases, formatBytes, formatCount, formatDepth, formatPercent, formatSeconds } from '../../src/ui/format';
+import {
+  formatBases,
+  formatBytes,
+  formatCount,
+  formatDepth,
+  formatPercent,
+  formatSeconds,
+} from '../../src/ui/lib/format';
 
 describe('format', () => {
   it('scales bases', () => {

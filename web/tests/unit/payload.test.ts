@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { base64url, fromBase64url } from '../../src/workers/pack/base64url';
+import { base64url, fromBase64url } from '../../src/workers/shared/base64url';
 import { joinParts, PayloadError, splitParts } from '../../src/workers/pack/payload';
 
 describe('packed link payload', () => {

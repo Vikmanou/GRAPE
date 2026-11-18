@@ -1,6 +1,6 @@
 import { Script } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { workerSource } from '../../build/offline';
+import { workerSource } from '../../build/serviceWorkerPlugin';
 
 describe('the offline worker', () => {
   const source = workerSource(['index.html', 'assets/app-1.js', 'sw.js'], 'abc123');

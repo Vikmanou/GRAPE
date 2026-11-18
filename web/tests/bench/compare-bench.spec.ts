@@ -1,4 +1,4 @@
-// Run through scripts/bench-compare.mjs and scripts/bench-bandage.mjs, which set
+// Run through scripts/bench/compare.mjs and scripts/bench/bandage.mjs, which set
 // GRAPE_COMPARE_BENCH to one run: a graph to open in a fresh browser, how long it
 // may take, and what to export once it is laid out.
 
@@ -31,7 +31,7 @@ interface Store {
 }
 
 test.describe('comparison run', () => {
-  test.skip(!job, 'run through scripts/bench-compare.mjs');
+  test.skip(!job, 'run through scripts/bench/compare.mjs');
   test.setTimeout((job?.timeoutMs ?? 0) + 5 * 60_000);
 
   test('open and export', async ({ page }) => {

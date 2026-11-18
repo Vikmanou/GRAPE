@@ -1,4 +1,4 @@
-// Run through scripts/bench-interaction.mjs, which sets GRAPE_INTERACTION_BENCH
+// Run through scripts/bench/interaction.mjs, which sets GRAPE_INTERACTION_BENCH
 // to a JSON job: graphs to open and where to write what was measured. Times
 // are taken in the page, from the input event to the engine's answer.
 
@@ -6,7 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
 import { memoryMb, panAndZoom, zoomIn } from './benchHelpers';
-import { segmentsOnScreen } from './helpers';
+import { segmentsOnScreen } from '../e2e/helpers';
 
 interface Job {
   files: string[];
@@ -71,7 +71,7 @@ async function timings(page: Page): Promise<number[]> {
 }
 
 test.describe('interaction benchmark', () => {
-  test.skip(!job, 'run through scripts/bench-interaction.mjs');
+  test.skip(!job, 'run through scripts/bench/interaction.mjs');
   test.setTimeout(2 * SETTLE_MS);
 
   for (const path of job?.files ?? []) {

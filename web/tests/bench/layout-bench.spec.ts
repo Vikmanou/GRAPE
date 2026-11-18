@@ -1,4 +1,4 @@
-// Run through scripts/bench-layout.mjs, which sets GRAPE_LAYOUT_BENCH to a JSON
+// Run through scripts/bench/layout.mjs, which sets GRAPE_LAYOUT_BENCH to a JSON
 // job: graphs to lay out on the GPU, where to write their positions and
 // timings, and where to put a screenshot of each.
 
@@ -6,7 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { memoryMb, panAndZoom, zoomIn } from './benchHelpers';
-import { segmentsOnScreen } from './helpers';
+import { segmentsOnScreen } from '../e2e/helpers';
 
 interface Job {
   files: string[];
@@ -34,7 +34,7 @@ async function openGraph(page: Page, path: string): Promise<void> {
 }
 
 test.describe('layout benchmark', () => {
-  test.skip(!job, 'run through scripts/bench-layout.mjs');
+  test.skip(!job, 'run through scripts/bench/layout.mjs');
   test.setTimeout(2 * SETTLE_MS);
 
   test('adapter', async ({ page }) => {

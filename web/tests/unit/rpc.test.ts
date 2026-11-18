@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expect as expectType, RpcClient, WorkerTerminatedError } from '../../src/workers/rpc';
+import { expect as expectType, RpcClient, WorkerTerminatedError } from '../../src/workers/shared/rpc';
 
 type Req = { type: 'echo'; id: number; value: number } | { type: 'count'; id: number; to: number };
 type Res =

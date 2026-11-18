@@ -1,4 +1,4 @@
-// Shared by the benchmark specs, which scripts/bench-*.mjs run.
+// Shared by the benchmark specs, which scripts/bench/*.mjs run.
 
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';

@@ -6,7 +6,7 @@ import { createAppStore, type LayoutService, type Services } from '../../src/sta
 import type { ParseResult } from '../../src/workers/protocol/graph';
 import type { LayoutLines, LayoutResponse } from '../../src/workers/protocol/layout';
 import type { SearchResults } from '../../src/workers/protocol/sequence';
-import { SearchCancelledError, WorkerTerminatedError } from '../../src/workers/rpc';
+import { SearchCancelledError, WorkerTerminatedError } from '../../src/workers/shared/rpc';
 
 class FakeEngine implements EngineLike {
   readonly sent: EngineCommand[] = [];

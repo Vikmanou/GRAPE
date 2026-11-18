@@ -36,7 +36,8 @@ const chromium = (['webgl2', 'webgpu'] as const).map((renderer) => ({
 }));
 
 export default defineConfig({
-  testDir: 'tests/e2e',
+  testDir: 'tests',
+  testMatch: '**/*.spec.ts',
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
@@ -55,7 +56,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Expects the WASM module to be built already (scripts/build-wasm.mjs).
+    // Expects the WASM module to be built already (scripts/build/wasm.mjs).
     command: `npx vite --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
