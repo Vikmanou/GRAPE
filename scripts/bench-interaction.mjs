@@ -1,6 +1,6 @@
 // Times interaction on large graphs in Chromium on the real GPU (headless
 // through Vulkan): frame rates zoomed out and in, hover, click and box select
-// answered by the engine, and a regex find, and writes bench/interaction.md.
+// answered by the engine, and a regex find, and writes docs/benchmarks/interaction.md.
 //
 // Usage: npm run bench:interaction                  the 200k and 1M synthetic graphs
 //        npm run bench:interaction -- a.gfa b.gfa   these files instead
@@ -42,5 +42,5 @@ for (const path of files) {
   );
 }
 lines.push('');
-writeFileSync(join(root, 'bench', 'interaction.md'), lines.join('\n'));
-console.log('\nwrote bench/interaction.md');
+writeFileSync(join(root, 'docs', 'benchmarks', 'interaction.md'), lines.join('\n'));
+console.log('\nwrote docs/benchmarks/interaction.md');

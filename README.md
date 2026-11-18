@@ -98,8 +98,8 @@ opens in 30 ms to 220 ms and GRAPE in 598 ms to 1.0 s, and at 10,000 segments Ba
 is still ahead (867 ms against GRAPE's 1.5 s).
 
 Every measure, the pictures each tool draws and the exports compared byte for byte are in
-[docs/benchmarks.md](docs/benchmarks.md); GRAPE on its own against its targets is in
-[bench/results.md](bench/results.md) and [bench/interaction.md](bench/interaction.md).
+[docs/benchmarks/compare.md](docs/benchmarks/compare.md); GRAPE on its own against its targets is in
+[docs/benchmarks/results.md](docs/benchmarks/results.md) and [docs/benchmarks/interaction.md](docs/benchmarks/interaction.md).
 
 <!-- compare:end -->
 
@@ -122,7 +122,7 @@ npm run bench:layout   # GPU layout timings and quality against the CPU referenc
 npm run bench:interaction  # frame rates and pointer latency on the 200k and 1M graphs
 node scripts/bench-bandage.mjs   # pictures and GFA exports against Bandage and BandageNG
 node scripts/bench-compare.mjs   # open time, memory and export against both, resumable
-node scripts/compare-table.mjs   # the comparison table from bench/compare.json
+node scripts/compare-table.mjs   # the comparison table from docs/benchmarks/compare.json
 ```
 
 Native tools for the Rust core, run with
@@ -130,7 +130,7 @@ Native tools for the Rust core, run with
 times parsing, `layout_file` times the CPU reference layout (`--svg out.svg`
 draws it) and `compare_layout` measures a GPU layout against it.
 
-Design decisions are recorded in [docs/decisions.md](docs/decisions.md). The
+Design decisions are recorded in [docs/decisions/](docs/decisions/). The
 browsers and assistive tools the site was checked in are listed in
 [docs/browser-checks.md](docs/browser-checks.md). Pushing to `main` publishes the
 site to GitHub Pages once the CI gate passes (`.github/workflows/ci.yml`).

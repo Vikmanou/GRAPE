@@ -1,6 +1,6 @@
 // Benchmarks the GPU layout in Chromium on the real GPU (headless through
 // Vulkan, so a sleeping display cannot stall it), compares each layout with
-// the CPU reference, and writes bench/results.md and a screenshot per graph.
+// the CPU reference, and writes docs/benchmarks/results.md and a screenshot per graph.
 // CPU reference layouts are cached in target/bench/cpu.
 //
 // Usage: npm run bench:layout                  the standard set below
@@ -17,7 +17,7 @@ import { checkMemory, tabTargetMb } from './memory-budgets.mjs';
 const bench = join(root, 'target', 'bench');
 const out = join(bench, 'layout');
 const cpuCache = join(bench, 'cpu');
-const shots = join(root, 'bench', 'screenshots');
+const shots = join(root, 'docs', 'benchmarks', 'screenshots');
 
 // A bacterial isolate from the most common assembler, a real organelle
 // assembly, a tangled pangenome region, a 20k-segment hifiasm graph and the
@@ -41,7 +41,7 @@ if (missing.length > 0) {
   console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples -- --large\` for the standard set`);
   process.exit(1);
 }
-// Only this benchmark's own pictures: bench/screenshots/bandage belongs to scripts/bench-bandage.mjs.
+// Only this benchmark's own pictures: docs/benchmarks/screenshots/bandage belongs to scripts/bench-bandage.mjs.
 mkdirSync(shots, { recursive: true });
 for (const file of readdirSync(shots)) if (file.endsWith('.png')) rmSync(join(shots, file));
 
@@ -226,8 +226,8 @@ if (indexed.length > 0) {
   }
 }
 lines.push('');
-writeFileSync(join(root, 'bench', 'results.md'), lines.join('\n'));
-console.log(`\nwrote bench/results.md and ${files.length} screenshots in bench/screenshots`);
+writeFileSync(join(root, 'docs', 'benchmarks', 'results.md'), lines.join('\n'));
+console.log(`\nwrote docs/benchmarks/results.md and ${files.length} screenshots in docs/benchmarks/screenshots`);
 if (over.length > 0) {
   console.error(`over the memory budget:\n  ${over.join('\n  ')}`);
   process.exit(1);

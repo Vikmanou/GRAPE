@@ -1,6 +1,6 @@
 // Draws the same graphs in GRAPE, Bandage and BandageNG at the same size, and
 // compares the GFA each saves of the same segments byte for byte. Writes the
-// pictures to bench/screenshots/bandage and the outcome to bench/bandage.json,
+// pictures to docs/benchmarks/screenshots/bandage and the outcome to docs/benchmarks/bandage.json,
 // which scripts/compare-table.mjs puts beside the comparison table.
 //
 // Usage: node scripts/bench-bandage.mjs [--graphs a.gfa,b.gfa] [--report other.json]
@@ -23,7 +23,7 @@ const graphs = [
   join(root, 'samples', 'lpa-13-haplotypes.gfa'),
   syntheticGraph(200_000),
 ].filter((path) => only.length === 0 || only.includes(basename(path)));
-const pictures = join(root, 'bench', 'screenshots', 'bandage');
+const pictures = join(root, 'docs', 'benchmarks', 'screenshots', 'bandage');
 const gfa = join(root, 'target', 'compare', 'gfa');
 for (const dir of [pictures, gfa]) mkdirSync(dir, { recursive: true });
 
@@ -91,5 +91,8 @@ for (const path of graphs) {
   console.log(`${graph}: ${JSON.stringify(entry.exports)}`);
   report.graphs.push(entry);
 }
-writeFileSync(arg('--report') ?? join(root, 'bench', 'bandage.json'), `${JSON.stringify(report, null, 1)}\n`);
-console.log('\nwrote bench/bandage.json and the pictures in bench/screenshots/bandage');
+writeFileSync(
+  arg('--report') ?? join(root, 'docs', 'benchmarks', 'bandage.json'),
+  `${JSON.stringify(report, null, 1)}\n`,
+);
+console.log('\nwrote docs/benchmarks/bandage.json and the pictures in docs/benchmarks/screenshots/bandage');

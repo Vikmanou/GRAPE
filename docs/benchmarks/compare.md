@@ -86,7 +86,7 @@ over their names, and the whole graph against `reduce` with no scope.
 Why they differ. Bandage: on bacterial-spades one pair of links that its `compareEdgePointers`
 ranks equal (same start and end numbers, other signs) comes out in the other order; Bandage
 leaves such ties to an unstable sort over its node pointers, and GRAPE orders them by the signed
-end name (docs/decisions.md). BandageNG writes its own GFA: segments in hash order, P lines,
+end name (docs/decisions/). BandageNG writes its own GFA: segments in hash order, P lines,
 links that are not in the input (173 more on lpa-13-haplotypes), and on the mitochondrion no
 sequences or depths after it rejects Bandage's lowercase `z` tags. It cannot open
 bacterial-spades at all: SPAdes P lines step over scaffold gaps, which it calls malformed.

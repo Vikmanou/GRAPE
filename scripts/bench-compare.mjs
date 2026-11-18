@@ -1,8 +1,8 @@
 // Opens the same graphs in GRAPE, Bandage and BandageNG, five times each, and
-// appends every run to bench/compare.json as soon as it ends. A rerun skips the
+// appends every run to docs/benchmarks/compare.json as soon as it ends. A rerun skips the
 // runs already recorded, so the run can stop and carry on, here or on another
-// machine with bench/compare.json copied over. scripts/compare-table.mjs turns
-// the runs into bench/compare.md.
+// machine with docs/benchmarks/compare.json copied over. scripts/compare-table.mjs turns
+// the runs into docs/benchmarks/compare.md.
 //
 // Usage: node scripts/bench-compare.mjs [--runs 5] [--tools grape,bandage,bandageng]
 //        [--graphs a.gfa,b.gfa] [--ledger other.json]   a subset, into another file
@@ -41,7 +41,7 @@ const SYNTHETIC = [10_000, 50_000, 200_000, 1_000_000];
 /** PNG export and BandageNG's layout-only run are timed on this graph. */
 const EXPORT_GRAPH = '200000.gfa';
 
-const ledger = arg('--ledger', join(root, 'bench', 'compare.json'));
+const ledger = arg('--ledger', join(root, 'docs', 'benchmarks', 'compare.json'));
 const out = join(root, 'target', 'compare', 'out');
 mkdirSync(out, { recursive: true });
 
@@ -133,4 +133,4 @@ for (const graph of graphs) {
     }
   }
 }
-console.log('\nall runs recorded in bench/compare.json; run node scripts/compare-table.mjs');
+console.log('\nall runs recorded in docs/benchmarks/compare.json; run node scripts/compare-table.mjs');

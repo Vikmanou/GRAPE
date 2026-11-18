@@ -1,5 +1,5 @@
-// Turns bench/compare.json (scripts/bench-compare.mjs) and bench/bandage.json
-// (scripts/bench-bandage.mjs) into bench/compare.md, docs/benchmarks.md and the
+// Turns docs/benchmarks/compare.json (scripts/bench-compare.mjs) and docs/benchmarks/bandage.json
+// (scripts/bench-bandage.mjs) into docs/benchmarks/compare.md and the
 // comparison section of the README.
 //
 // Usage: node scripts/compare-table.mjs
@@ -18,9 +18,9 @@ const TOOLS = [
 ];
 const LADDER = ['10000.gfa', '50000.gfa', '200000.gfa', '1000000.gfa'];
 
-const { runs } = JSON.parse(readFileSync(join(root, 'bench', 'compare.json'), 'utf8'));
-const pairs = existsSync(join(root, 'bench', 'bandage.json'))
-  ? JSON.parse(readFileSync(join(root, 'bench', 'bandage.json'), 'utf8'))
+const { runs } = JSON.parse(readFileSync(join(root, 'docs', 'benchmarks', 'compare.json'), 'utf8'));
+const pairs = existsSync(join(root, 'docs', 'benchmarks', 'bandage.json'))
+  ? JSON.parse(readFileSync(join(root, 'docs', 'benchmarks', 'bandage.json'), 'utf8'))
   : undefined;
 
 const median = (values) => {
@@ -169,7 +169,7 @@ const footer = [
   '',
   'Search by segment name is not compared: neither Bandage tool has it on the command line.',
   'Pan and zoom have no counterpart there either; GRAPE keeps them smooth on the 1M graph',
-  '(frame rates in [bench/interaction.md](interaction.md)). The layouts differ (Bandage and',
+  '(frame rates in [interaction.md](interaction.md)). The layouts differ (Bandage and',
   'BandageNG lay out on the CPU with OGDF, GRAPE on the GPU), so judge the pictures below.',
   '',
   "BandageNG's PNG export is its `image` time minus its `layout` time; at 200k the two overlap run",
@@ -225,7 +225,7 @@ const pictureTable = pairs
       'Why they differ. Bandage: on bacterial-spades one pair of links that its `compareEdgePointers`',
       'ranks equal (same start and end numbers, other signs) comes out in the other order; Bandage',
       'leaves such ties to an unstable sort over its node pointers, and GRAPE orders them by the signed',
-      'end name (docs/decisions.md). BandageNG writes its own GFA: segments in hash order, P lines,',
+      'end name (docs/decisions/). BandageNG writes its own GFA: segments in hash order, P lines,',
       'links that are not in the input (173 more on lpa-13-haplotypes), and on the mitochondrion no',
       "sequences or depths after it rejects Bandage's lowercase `z` tags. It cannot open",
       'bacterial-spades at all: SPAdes P lines step over scaffold gaps, which it calls malformed.',
@@ -234,38 +234,20 @@ const pictureTable = pairs
 
 const body = [...table, '', ...examples, '', ...footer, ...pictureTable];
 writeFileSync(
-  join(root, 'bench', 'compare.md'),
+  join(root, 'docs', 'benchmarks', 'compare.md'),
   [
     '# GRAPE against Bandage and BandageNG',
     '',
-    'Written by `node scripts/compare-table.mjs` from `bench/compare.json`.',
+    'Written by `node scripts/compare-table.mjs` from `docs/benchmarks/compare.json`.',
     '',
     ...body,
-    '',
-  ].join('\n'),
-);
-const docsBody = body.map((line) =>
-  line
-    .replace('](interaction.md)', '](../bench/interaction.md)')
-    .replace(/!\[(\w+)\]\(screenshots\//g, '![$1](../bench/screenshots/'),
-);
-writeFileSync(
-  join(root, 'docs', 'benchmarks.md'),
-  [
-    '# Benchmarks against Bandage and BandageNG',
-    '',
-    'From [bench/compare.md](../bench/compare.md); the layout and interaction',
-    'benchmarks of GRAPE alone are in [bench/results.md](../bench/results.md) and',
-    '[bench/interaction.md](../bench/interaction.md).',
-    '',
-    ...docsBody,
     '',
   ].join('\n'),
 );
 
 /**
  * The README's one table: the measures where the tools differ most, as medians
- * in plain units, with the best in bold; docs/benchmarks.md has the rest.
+ * in plain units, with the best in bold; docs/benchmarks/compare.md has the rest.
  */
 function readmeTable() {
   const time = (ms) =>
@@ -326,8 +308,8 @@ function readmeTable() {
     `is still ahead (${time(n10)} against GRAPE's ${time(g10)}).`,
     '',
     'Every measure, the pictures each tool draws and the exports compared byte for byte are in',
-    '[docs/benchmarks.md](docs/benchmarks.md); GRAPE on its own against its targets is in',
-    '[bench/results.md](bench/results.md) and [bench/interaction.md](bench/interaction.md).',
+    '[docs/benchmarks/compare.md](docs/benchmarks/compare.md); GRAPE on its own against its targets is in',
+    '[docs/benchmarks/results.md](docs/benchmarks/results.md) and [docs/benchmarks/interaction.md](docs/benchmarks/interaction.md).',
   ];
 }
 
@@ -341,6 +323,6 @@ if (text.includes(start)) {
     text.replace(new RegExp(`${start}[\\s\\S]*${end}`), `${start}\n\n${inReadme.join('\n')}\n\n${end}`),
   );
 }
-console.log(`wrote bench/compare.md and docs/benchmarks.md${text.includes(start) ? ' and the README section' : ''}`);
+console.log(`wrote docs/benchmarks/compare.md${text.includes(start) ? ' and the README section' : ''}`);
 if (pendingRows.length > 0)
   console.log(`rows pending or without a winner: ${pendingRows.map((r) => r.label).join('; ')}`);
