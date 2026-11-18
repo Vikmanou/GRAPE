@@ -11,7 +11,7 @@ Spec = Claude Doc "GRAPE: Build Spec"
 
 Run with `/milestone <n>`, or by hand:
 
-1. **Read** milestone, acceptance criteria, every spec section it touches. Read current code + `docs/decisions.md`.
+1. **Read** milestone, acceptance criteria, every spec section it touches. Read current code + `docs/decisions/`.
 2. **Plan**, then stop: files to create/change, approach, key data structures, tests to add, new deps + why, risks, decisions spec leaves open. Ask every question via AskUserQuestion, never as reply text; anything affecting file formats, share-link format or public API always asked. Wait for approval before code.
 3. **Build** in small commits, logical order. Each commit builds + passes `npm run check:quick`.
 4. **Verify**: `npm run check` green; GPU stuff checked with `npm run check:headed` or headed-browser screenshot; perf targets measured, not assumed.
@@ -40,13 +40,13 @@ Most time + machine goes to writing code, not running it. Benchmarks and long br
 
 ## Code rules
 
-- **Rust**: rustfmt + `clippy -D warnings` clean. No panics on user input; return errors or collect parse warnings. No `unsafe` without entry in `docs/decisions.md`. `gfa-core` stays pure (bytes in, data out, tested natively); `gfa-wasm` only converts + maps errors.
+- **Rust**: rustfmt + `clippy -D warnings` clean. No panics on user input; return errors or collect parse warnings. No `unsafe` without entry in `docs/decisions/`. `gfa-core` stays pure (bytes in, data out, tested natively); `gfa-wasm` only converts + maps errors.
 - **TypeScript**: strict, ESLint `strictTypeChecked`, no `any`. Engine owns every GPU object behind `Backend` interface; React reaches engine + workers only via store (`state/`), which alone calls `engine.send` and worker clients. Main thread never blocks > one frame: heavy work → worker or GPU. Worker messages = discriminated unions in `workers/protocol/`; big data crosses as transferable typed arrays.
 - **Files** under ~400 lines; split into modules before growth. Place code per spec's Code organisation section.
 - **Comments**: rare. Code should read clear without them; write one only when not obvious from code (non-obvious reason, format rule, source citation). No doc comments restating a name.
 - **Dependencies**: none without reason stated in plan; prefer platform (`DecompressionStream`, raw WebGPU, `node:` built-ins). Pin exact versions.
 - **Facts**: check GFA rules, Bandage behavior, WebGPU limits against real source (GFA spec, Bandage source, WebGPU spec), cite in comment. Don't trust memory.
-- Record every non-obvious decision in `docs/decisions.md`: date, decision, reason, alternatives.
+- Record every non-obvious decision in `docs/decisions/`: date, decision, reason, alternatives.
 
 ## Privacy (hard rules)
 

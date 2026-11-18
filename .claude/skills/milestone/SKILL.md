@@ -18,7 +18,7 @@ Follow the working agreement in `CLAUDE.md`. This is the procedure.
 1. Read the doc's outline, then this milestone, its acceptance criteria, and
    every section it depends on (architecture, code organisation, data model,
    layout, rendering, features, testing, performance targets, risks).
-2. Read `docs/decisions.md`, `git log --oneline -20`, and the code the
+2. Read `docs/decisions/` (newest entry in the last file), `git log --oneline -20`, and the code the
    milestone will touch.
 3. Run `npm run check:quick` so the plan starts from a known-green tree. If it is
    red, report that first.
@@ -52,7 +52,7 @@ Then stop and wait for approval. Do not write code in this phase.
   belong to that commit.
 - Commit with `git commit -m "<one sentence no punctuation>"`. No
   co-author trailer. Never push.
-- Record non-obvious decisions in `docs/decisions.md` as they are made, in
+- Record non-obvious decisions in `docs/decisions/` (newest entry in the last file) as they are made, in
   the commit they belong to.
 - **Stop and replan** on any surprise (see `CLAUDE.md`). Report evidence and a
   revised plan, then wait.
@@ -79,7 +79,7 @@ End with:
 - **Measured numbers** against the spec's targets, and which were not
   measured.
 - **Known gaps** and anything deferred, with the reason.
-- **Decisions made** (also in `docs/decisions.md`).
+- **Decisions made** (also in `docs/decisions/` (newest entry in the last file)).
 - **Commits**: `git log --oneline` for the milestone.
 
 Once the owner accepts, update the doc: the Status table row, and any section

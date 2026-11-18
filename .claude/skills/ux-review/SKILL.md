@@ -74,4 +74,4 @@ skill and offer two or three directions.
 
 Then ask the owner, through AskUserQuestion, which findings to fix and which
 direction to take. Stop there. Record the approved direction in
-`docs/decisions.md` when the first fix is committed.
+`docs/decisions/` (newest entry in the last file) when the first fix is committed.
