@@ -11,7 +11,7 @@ import { cpus, platform, release } from 'node:os';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { root, run, syntheticGraph } from './lib.mjs';
+import { root, run, syntheticGraph } from '../lib.mjs';
 import { checkMemory, tabTargetMb } from './memory-budgets.mjs';
 
 const bench = join(root, 'target', 'bench');
@@ -41,20 +41,24 @@ if (missing.length > 0) {
   console.error(`missing: ${missing.join(', ')}\nrun \`npm run samples -- --large\` for the standard set`);
   process.exit(1);
 }
-// Only this benchmark's own pictures: docs/benchmarks/screenshots/bandage belongs to scripts/bench-bandage.mjs.
+// Only this benchmark's own pictures: docs/benchmarks/screenshots/bandage belongs to scripts/bench/bandage.mjs.
 mkdirSync(shots, { recursive: true });
 for (const file of readdirSync(shots)) if (file.endsWith('.png')) rmSync(join(shots, file));
 
-run('node', ['scripts/build-wasm.mjs']);
+run('node', ['scripts/build/wasm.mjs']);
 run('npx', ['playwright', 'install', 'chromium']);
-run('npx', ['playwright', 'test', 'tests/e2e/layout-bench.spec.ts', '--workers=1', '--retries=1', '--reporter=list'], {
-  cwd: join(root, 'web'),
-  env: {
-    ...process.env,
-    GRAPE_GPU_HEADLESS: '1',
-    GRAPE_LAYOUT_BENCH: JSON.stringify({ files, out, screenshots: shots }),
+run(
+  'npx',
+  ['playwright', 'test', 'tests/bench/layout-bench.spec.ts', '--workers=1', '--retries=1', '--reporter=list'],
+  {
+    cwd: join(root, 'web'),
+    env: {
+      ...process.env,
+      GRAPE_GPU_HEADLESS: '1',
+      GRAPE_LAYOUT_BENCH: JSON.stringify({ files, out, screenshots: shots }),
+    },
   },
-});
+);
 
 /** The comparator reads plain GFA; the browser handled gzip itself. */
 function plainCopy(path) {
@@ -186,7 +190,7 @@ lines.push(
   '## Memory against the budgets',
   '',
   'What each part of the page holds once the layout settled, in MB, against',
-  'its budget in `scripts/memory-budgets.mjs`. Workers count their WASM memory',
+  'its budget in `scripts/bench/memory-budgets.mjs`. Workers count their WASM memory',
   'and the arrays they keep; the main thread its JS heap and its typed arrays.',
   '',
   '| Graph | Tab | Main heap | Main arrays | GPU | Graph worker | Sequence worker | Layout worker |',

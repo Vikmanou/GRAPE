@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { root } from './lib.mjs';
+import { root } from '../lib.mjs';
 
 const RELEASE = 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/v2.304';
 const FONT_SHA256 = 'a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f';

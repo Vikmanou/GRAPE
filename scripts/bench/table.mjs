@@ -1,12 +1,12 @@
-// Turns docs/benchmarks/compare.json (scripts/bench-compare.mjs) and docs/benchmarks/bandage.json
-// (scripts/bench-bandage.mjs) into docs/benchmarks/compare.md and the
+// Turns docs/benchmarks/compare.json (scripts/bench/compare.mjs) and docs/benchmarks/bandage.json
+// (scripts/bench/bandage.mjs) into docs/benchmarks/compare.md and the
 // comparison section of the README.
 //
-// Usage: node scripts/compare-table.mjs
+// Usage: node scripts/bench/table.mjs
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { root } from './lib.mjs';
+import { root } from '../lib.mjs';
 
 const RUNS = 5;
 /** Two values within 5% of each other tie, and every tied value is bold. */
@@ -238,7 +238,7 @@ writeFileSync(
   [
     '# GRAPE against Bandage and BandageNG',
     '',
-    'Written by `node scripts/compare-table.mjs` from `docs/benchmarks/compare.json`.',
+    'Written by `node scripts/bench/table.mjs` from `docs/benchmarks/compare.json`.',
     '',
     ...body,
     '',

@@ -1,15 +1,15 @@
 // Opens the same graphs in GRAPE, Bandage and BandageNG, five times each, and
 // appends every run to docs/benchmarks/compare.json as soon as it ends. A rerun skips the
 // runs already recorded, so the run can stop and carry on, here or on another
-// machine with docs/benchmarks/compare.json copied over. scripts/compare-table.mjs turns
+// machine with docs/benchmarks/compare.json copied over. scripts/bench/table.mjs turns
 // the runs into docs/benchmarks/compare.md.
 //
-// Usage: node scripts/bench-compare.mjs [--runs 5] [--tools grape,bandage,bandageng]
+// Usage: node scripts/bench/compare.mjs [--runs 5] [--tools grape,bandage,bandageng]
 //        [--graphs a.gfa,b.gfa] [--ledger other.json]   a subset, into another file
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { root, run, syntheticGraph } from './lib.mjs';
+import { root, run, syntheticGraph } from '../lib.mjs';
 import {
   BANDAGE_VERSION,
   BANDAGENG_VERSION,
@@ -19,7 +19,7 @@ import {
   grapeVersion,
   machine,
   stageWsl,
-} from './compare/tools.mjs';
+} from './tools.mjs';
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(name);
@@ -77,7 +77,7 @@ const versions = { grape: grapeVersion(), bandage: BANDAGE_VERSION, bandageng: B
 console.log(`machine: ${here}\nGRAPE ${versions.grape}, Bandage ${BANDAGE_VERSION}, BandageNG ${BANDAGENG_VERSION}`);
 
 if (TOOLS.includes('grape')) {
-  run('node', ['scripts/build-wasm.mjs']);
+  run('node', ['scripts/build/wasm.mjs']);
   run('npx', ['playwright', 'install', 'chromium'], { cwd: join(root, 'web') });
 }
 if (TOOLS.includes('bandage')) stageWsl(graphs.map((g) => g.path));
@@ -133,4 +133,4 @@ for (const graph of graphs) {
     }
   }
 }
-console.log('\nall runs recorded in docs/benchmarks/compare.json; run node scripts/compare-table.mjs');
+console.log('\nall runs recorded in docs/benchmarks/compare.json; run node scripts/bench/table.mjs');

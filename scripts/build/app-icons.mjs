@@ -2,12 +2,12 @@
 // assets/GRAPE_Icon.png. The art is only scaled, never redrawn. Run
 // once after the artwork changes; the output is committed.
 //
-// Usage: node scripts/app-icons.mjs
+// Usage: node scripts/build/app-icons.mjs
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { root } from './lib.mjs';
+import { root } from '../lib.mjs';
 
 const SOURCE = join(root, 'assets', 'GRAPE_Icon.png');
 const out = join(root, 'web', 'public', 'icons');

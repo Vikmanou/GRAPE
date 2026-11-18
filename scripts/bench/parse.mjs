@@ -7,7 +7,7 @@ import { createReadStream, createWriteStream, existsSync, mkdirSync, statSync } 
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
-import { root, run } from './lib.mjs';
+import { root, run } from '../lib.mjs';
 
 const out = join(root, 'target', 'bench');
 const flag = process.argv.indexOf('--segments');
@@ -29,8 +29,8 @@ for (const segments of sizes) {
   files.push(plain, gz);
 }
 
-run('node', ['scripts/build-wasm.mjs']);
-run('npx', ['playwright', 'test', 'tests/e2e/bench.spec.ts', '--reporter=list'], {
+run('node', ['scripts/build/wasm.mjs']);
+run('npx', ['playwright', 'test', 'tests/bench/bench.spec.ts', '--reporter=list'], {
   cwd: join(root, 'web'),
   env: { ...process.env, GRAPE_BENCH_FILES: files.join(',') },
 });

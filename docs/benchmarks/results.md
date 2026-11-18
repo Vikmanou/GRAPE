@@ -120,7 +120,7 @@ level's first batch to the next level's.
 ## Memory against the budgets
 
 What each part of the page holds once the layout settled, in MB, against
-its budget in `scripts/memory-budgets.mjs`. Workers count their WASM memory
+its budget in `scripts/bench/memory-budgets.mjs`. Workers count their WASM memory
 and the arrays they keep; the main thread its JS heap and its typed arrays.
 
 | Graph                            |         Tab | Main heap | Main arrays |       GPU | Graph worker | Sequence worker | Layout worker |

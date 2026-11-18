@@ -1,12 +1,12 @@
 // Prints a markdown table of built asset sizes (raw and gzip). In GitHub
 // Actions it also appends the table to the job summary.
 //
-// Usage: node scripts/size-report.mjs (after the site is built)
+// Usage: node scripts/build/size-report.mjs (after the site is built)
 
 import { appendFileSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { root } from './lib.mjs';
+import { root } from '../lib.mjs';
 
 const distDir = join(root, 'web', 'dist');
 

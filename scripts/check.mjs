@@ -23,7 +23,7 @@ const steps = [
   ['prettier', 'npx', ['prettier', '--check', '.']],
   ['clippy', 'cargo', ['clippy', '--workspace', '--all-targets', '--', '-D', 'warnings']],
   ['cargo test', 'cargo', ['test', '--workspace']],
-  ['wasm build', 'node', ['scripts/build-wasm.mjs']],
+  ['wasm build', 'node', ['scripts/build/wasm.mjs']],
   ['typecheck', ...web('typecheck')],
   ['eslint', ...web('lint')],
   ['vitest', ...web('test')],
@@ -31,7 +31,7 @@ const steps = [
     ? []
     : [
         ['vite build', ...web('build')],
-        ['bundle size', 'node', ['scripts/size-report.mjs']],
+        ['bundle size', 'node', ['scripts/build/size-report.mjs']],
         // Playwright's browsers are a separate download from `npm install`;
         // Firefox runs the packed-link flow, whose URL limit is half Chrome's.
         // This is a no-op once the browser is present, so it runs every time

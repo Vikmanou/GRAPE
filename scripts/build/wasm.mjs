@@ -1,13 +1,13 @@
 // Builds crates/gfa-wasm to wasm32 and runs wasm-bindgen into
 // web/src/wasm/pkg.
 //
-// Usage: node scripts/build-wasm.mjs [--dev]
+// Usage: node scripts/build/wasm.mjs [--dev]
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { root, run } from './lib.mjs';
+import { root, run } from '../lib.mjs';
 
 const dev = process.argv.includes('--dev');
 const profile = dev ? 'debug' : 'release';

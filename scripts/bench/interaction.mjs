@@ -8,16 +8,16 @@
 import { cpus, platform, release } from 'node:os';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { root, run, syntheticGraph } from './lib.mjs';
+import { root, run, syntheticGraph } from '../lib.mjs';
 
 const out = join(root, 'target', 'bench', 'interaction');
 mkdirSync(out, { recursive: true });
 const given = process.argv.slice(2).map((path) => resolve(path));
 const files = given.length > 0 ? given : [syntheticGraph(200_000), syntheticGraph(1_000_000)];
 
-run('node', ['scripts/build-wasm.mjs']);
+run('node', ['scripts/build/wasm.mjs']);
 run('npx', ['playwright', 'install', 'chromium']);
-run('npx', ['playwright', 'test', 'tests/e2e/interaction-bench.spec.ts', '--workers=1', '--reporter=list'], {
+run('npx', ['playwright', 'test', 'tests/bench/interaction-bench.spec.ts', '--workers=1', '--reporter=list'], {
   cwd: join(root, 'web'),
   env: { ...process.env, GRAPE_GPU_HEADLESS: '1', GRAPE_INTERACTION_BENCH: JSON.stringify({ files, out }) },
 });

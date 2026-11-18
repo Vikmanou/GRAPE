@@ -1,14 +1,14 @@
 // Draws the same graphs in GRAPE, Bandage and BandageNG at the same size, and
 // compares the GFA each saves of the same segments byte for byte. Writes the
 // pictures to docs/benchmarks/screenshots/bandage and the outcome to docs/benchmarks/bandage.json,
-// which scripts/compare-table.mjs puts beside the comparison table.
+// which scripts/bench/table.mjs puts beside the comparison table.
 //
-// Usage: node scripts/bench-bandage.mjs [--graphs a.gfa,b.gfa] [--report other.json]
+// Usage: node scripts/bench/bandage.mjs [--graphs a.gfa,b.gfa] [--report other.json]
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { root, run, syntheticGraph } from './lib.mjs';
-import { bandage, bandageNg, grape, stageWsl } from './compare/tools.mjs';
+import { root, run, syntheticGraph } from '../lib.mjs';
+import { bandage, bandageNg, grape, stageWsl } from './tools.mjs';
 
 /** Segments GRAPE selects for the selection export: the first ones in the file. */
 const SELECTED = 20;
@@ -27,7 +27,7 @@ const pictures = join(root, 'docs', 'benchmarks', 'screenshots', 'bandage');
 const gfa = join(root, 'target', 'compare', 'gfa');
 for (const dir of [pictures, gfa]) mkdirSync(dir, { recursive: true });
 
-run('node', ['scripts/build-wasm.mjs']);
+run('node', ['scripts/build/wasm.mjs']);
 stageWsl(graphs);
 
 /** "identical", or how many lines differ, with the first difference kept for the record. */

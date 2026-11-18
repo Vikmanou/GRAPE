@@ -126,14 +126,14 @@ export function bandageNg(command, file, args, out) {
   return { ...result, status: 'ok' };
 }
 
-/** One GRAPE run in a fresh headless Chromium on the real GPU (web/tests/e2e/compare-bench.spec.ts). */
+/** One GRAPE run in a fresh headless Chromium on the real GPU (web/tests/bench/compare-bench.spec.ts). */
 export function grape(job) {
   const result = join(work, 'grape-result.json');
   rmSync(result, { force: true });
   const started = Date.now();
   const r = capture(
     'npx',
-    ['playwright', 'test', 'tests/e2e/compare-bench.spec.ts', '--project=webgpu', '--workers=1', '--reporter=line'],
+    ['playwright', 'test', 'tests/bench/compare-bench.spec.ts', '--project=webgpu', '--workers=1', '--reporter=line'],
     {
       cwd: join(root, 'web'),
       env: {

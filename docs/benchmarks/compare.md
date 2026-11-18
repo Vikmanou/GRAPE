@@ -1,6 +1,6 @@
 # GRAPE against Bandage and BandageNG
 
-Written by `node scripts/compare-table.mjs` from `bench/compare.json`.
+Written by `node scripts/bench/table.mjs` from `docs/benchmarks/compare.json`.
 
 | Measure                                         |                      GRAPE |                   Bandage |                                                          BandageNG |
 | ----------------------------------------------- | -------------------------: | ------------------------: | -----------------------------------------------------------------: |

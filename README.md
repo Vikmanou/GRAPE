@@ -120,9 +120,9 @@ npm run fuzz           # fuzz the parser and the link packer
 npm run bench:parse    # time parsing a synthetic 200k-segment graph
 npm run bench:layout   # GPU layout timings and quality against the CPU reference
 npm run bench:interaction  # frame rates and pointer latency on the 200k and 1M graphs
-node scripts/bench-bandage.mjs   # pictures and GFA exports against Bandage and BandageNG
-node scripts/bench-compare.mjs   # open time, memory and export against both, resumable
-node scripts/compare-table.mjs   # the comparison table from docs/benchmarks/compare.json
+node scripts/bench/bandage.mjs   # pictures and GFA exports against Bandage and BandageNG
+node scripts/bench/compare.mjs   # open time, memory and export against both, resumable
+node scripts/bench/table.mjs   # the comparison table from docs/benchmarks/compare.json
 ```
 
 Native tools for the Rust core, run with
